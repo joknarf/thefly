@@ -1,0 +1,224 @@
+
+: "${_fenvdir:=$HOME}"
+case "$1" in
+install|remote)
+    unset _floaded
+    mkdir -p "$_fenvdir/.flyrc.d"
+    [ -f "$_fenvdir/.flyrc.d/.flyrc" ] || touch "$_fenvdir/.flyrc.d/.flyrc"
+    touch $_fenvdir/.flyrc.d/thefly
+    chmod +x $_fenvdir/.flyrc.d/thefly
+    _flycmd="tee $_fenvdir/.flyrc.d/thefly"
+    ;;
+*)  _flycmd="cat"
+    ;;
+esac
+
+. <($(echo $_flycmd) <<'EOFLY'
+[ "$_floaded" ] && echo "skip" && return
+echo "the fly !!!"
+_floaded=1
+: "${_fenvdir:=$HOME}"
+: "${_fgithub=https://github.com}"
+
+function _fshell
+{
+    case "$KSH_VERSION$BASH$ZSH_VERSION" in
+        "$KSH_VERSION") _fshell=ksh;;
+        "$BASH")        _fshell=bash;;
+        "$ZSH_VERSION") _fshell=zsh;;
+        *) echo unsupported;;
+    esac
+}
+
+function _fpackage
+{
+    (\cd $_fenvdir && tar czf - --exclude-vcs .flyrc.d 2>/dev/null)
+}
+
+function _fxpackage
+{
+    printf %s 'umask 077;mkdir -p /tmp/.fly.$USER;cd /tmp/.fly.$USER;tar xzf -'
+}
+
+function _fsource_plugins
+{
+    typeset p="$1" plugin
+
+    [ -r $_fenvdir/.flyrc.d/.flyrc ] && . $_fenvdir/.flyrc.d/.flyrc
+    [ -r $_fenvdir/.flyrc.d/.flyrc.$_fshell ] && . $_fenvdir/.flyrc.d/.flyrc.$_fshell
+    for plugin in $([ "$p" ] && ls $_fenvdir/.flyrc.d/$p/*.plugin.$_fshell 2>/dev/null || \
+                                ls $_fenvdir/.flyrc.d/*/*.plugin.$_fshell)
+    do
+        \cd "${plugin%/*}" && { . "$plugin"; \cd "$OLDPWD"; }
+    done
+}
+
+function _fsource_profile_bash
+{
+    \cd /;\cd
+    alias typeset="typeset +r"
+    alias readonly=typeset
+    $_gprof && . /etc/profile
+    $_uprof && for i in .bash_profile .bash_login .profile;do
+        [ -r $i ] && . ./$i && break
+    done
+    unalias typeset
+    unalias readonly
+}
+
+function _fsource_profile_zsh
+{
+    \cd /;cd
+    ZDOTDIR=~/
+    for i in zshenv zprofile zshrc;do
+        [ -r /etc/zsh/$i ] && $_gprof && . /etc/zsh/$i
+        [ -r .$i ] && $_uprof && . ./.$i
+    done
+    typeset +r PS1
+}
+
+function _fsource_profile_ksh
+{
+    \cd /;\cd
+    typeset +x ENV
+    ENV=~/.kshrc
+    #alias typeset="typeset +r"
+    alias readonly=typeset
+    $_gprof && . /etc/profile
+    [ -r .profile ] && $_uprof && . ./.profile
+    [ -r "$ENV" ] && $_uprof && . $ENV
+    unalias typeset
+    unalias readonly
+}
+
+function _fsource_profile
+{
+    _gprof=true _uprof=true
+    eval "_fsource_profile_$_fshell"
+    unset _gprof _uprof
+    _fsource_plugins
+}
+
+function _flogin_shell
+{
+    typeset shell="${1:-$_fshell}"
+    case "$shell" in 
+    bash) _flogin_rc >$_fenvdir/.flyrc.d/.bashrc;exec bash --init-file $_fenvdir/.flyrc.d/.bashrc;;
+    zsh)  _flogin_rc >$_fenvdir/.flyrc.d/.zshrc;ZDOTDIR=$_fenvdir/.flyrc.d exec zsh -di;;
+    ksh)  _flogin_rc >$_fenvdir/.flyrc.d/.kshrc;ENV=$_fenvdir/.flyrc.d/.kshrc exec ksh -i;;
+    esac
+}
+
+function _flogin_rc
+{
+    typeset fenvd="${1:-$_fenvdir}"
+    printf '%s\n' ". $fenvd/.flyrc.d/thefly login $fenvd"
+}
+
+function fsudo
+{
+    typeset user=${1:-root}
+    _fpackage |sudo -H -u "$user" bash -c "$(_fxpackage)"
+    sudo -H -u "$user" -i . /tmp/.fly.$user/.flyrc.d/thefly loginshell /tmp/.fly.$user
+}
+
+function fssh2
+{
+    _fpackage | ssh "$@" "$(_fxpackage)"
+    ssh "$@" -t '. /tmp/.fly.$USER/.flyrc.d/thefly loginshell /tmp/.fly.$USER'
+}
+
+function _fssh_cmd
+{
+    typeset destdir='/tmp/.fly.$USER' b64opt
+    echo ok |base64 -w0 >/dev/null 2>&1 && b64opt='-w0'
+    cat - <<EOF
+umask 077
+mkdir -p $destdir
+! chmod 700 $destdir && echo "Not owner of $destdir. Abort" && exit 1
+cd $destdir
+echo $(_fpackage |base64 $b64opt) |base64 -d |tar xzf -
+[ $? != 0 ] && echo "Unpack env failed. Abort." && exit 1
+. ./.flyrc.d/thefly loginshell $destdir
+EOF
+}
+
+function fssh
+{
+    typeset ssh_config cmd
+    for i in "$@";do
+       [ $i = -F ] && shift && ssh_config="Include $1" && shift && continue
+       shift
+       set -- "$@" "$i"
+    done
+    [ ! "$ssh_config" ] && [ -f ~/.ssh/config ] && ssh_config="Include $HOME/.ssh/config"
+    cmd="$(_fssh_cmd)"
+    cmd="${cmd//$'\n'/;}"
+    cat - <<EOF >$_fenvdir/.fly_ssh
+$ssh_config
+RemoteCommand $cmd
+EOF
+    ssh -t -F $_fenvdir/.fly_ssh "$@"
+}
+
+function fly_init
+{
+    mkdir -p $_fenvdir/.flyrc.d
+}
+
+function fly
+{
+    typeset plugin
+    case "$1" in
+    add)
+        mkdir -p "$_fenvdir/.flyrc.d"
+        (\cd $_fenvdir/.flyrc.d && git clone "$_fgithub/$2")
+        _fsource_plugins "${2#*/}"
+    ;;
+    update)
+        [ ! "$2" ] && echo "usage: fly update <plugin>" && return 1 
+        (\cd $_fenvdir/.flyrc.d/${2#*/} && git pull origin $(sed -e 's#.*/##' .git/HEAD))
+        _fsource_plugins "${2#*/}"
+    ;;
+    updateall)
+        for plugin in $(ls -d $_fenvdir/.flyrc.d/*/.git) ;do
+            (\cd $plugin/.. && git pull origin $(sed -e 's#.*/##' .git/HEAD))
+        done
+        _fsource_plugins
+    ;;
+    list)
+        ls -1 $_fenvdir/.flyrc.d/*/*.plugin.bash
+    ;;
+    source)
+        _fsource_plugins
+    ;;
+    esac
+}
+
+_fshell
+
+# ssh -t xxx . <(curl -s http://xxx/thefly) --url http://xxx/thefly.tgz
+[ "$1" = "--url" ] && {
+    \cd $_fenvdir
+    curl -o ./.fly.pak -L "$2"
+    tar tzvf .fly.pak |grep -qv ' .flyrc'
+    [ $? = 0 ] && echo "not fly package" && return
+    tar xzf .fly.pak
+    _flogin_shell
+}
+
+[ "$1" = "--git" ] && {
+    \cd $_fenvdir
+    git clone "$_fgithub/$3" .flyrc.d
+    _flogin_shell
+}
+
+case "$1" in
+    login) _fenvdir="${2:-$_fenvdir}";_fsource_profile;;
+    loginshell) _fenvdir="${2:-$_fenvdir}";_flogin_shell;;
+    source) _fsource_plugins;;
+esac
+:
+EOFLY
+)
+:
