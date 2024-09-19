@@ -23,6 +23,7 @@ _floaded=1
 function _fshell
 {
     : "${_fshell:=$_fdestshell}"
+    unset _fdestshell
     [ "$_fshell" ] && return
     case "$KSH_VERSION$BASH$ZSH_VERSION" in
         "$KSH_VERSION") _fshell=ksh;;
