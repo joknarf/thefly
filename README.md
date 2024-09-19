@@ -9,11 +9,11 @@ Your shell plugins are available everywhere (hosts/users)
 $ git clone https://github.com/joknarf/thefly
 $ . thefly/thefly install
 ```
-Creates ~/.flyrc.d/thefly
+Creates ~/.fly.d/fly
 
 Add in your rc file (.profile .bash_profile .bashrc .zshrc):
 ```
-. ~/.flyrc.d/thefly source
+. ~/.fly.d/fly source
 ```
 
 ## Add plugins
@@ -21,8 +21,8 @@ Add in your rc file (.profile .bash_profile .bashrc .zshrc):
 ```
 fly add joknarf/redo
 ```
-will clone `https://github.com/joknarf/redo` in `~/.flyrc.d/redo`  
-all plugins in `~/flyrc.d/*/*.plugin.<shell>` will be sourced at login
+will clone `https://github.com/joknarf/redo` in `~/.fly.d/redo`  
+all plugins in `~/fly.d/*/*.plugin.<shell>` will be sourced at login
 
 ## Teleport plugins
 
@@ -30,18 +30,18 @@ all plugins in `~/flyrc.d/*/*.plugin.<shell>` will be sourced at login
 ```
 $ fsudo <user>
 ```
-will duplicate `~/.flyrc.d` in `/tmp/.fly.<user>/.flyrc.d` and source all plugins
+will duplicate `~/.fly.d` in `/tmp/.fly.<user>/.fly.d` and source all plugins
 
 * To another host/user
 ```
 $ fssh <user>@<host>
 ```
-will duplicate `~/.flyrc.d` in `<host>:/tmp/.fly.<user>/.flyrc.d` and source all plugins
+will duplicate `~/.fly.d` in `<host>:/tmp/.fly.<user>/.fly.d` and source all plugins
 
 ## Customize env
 
-Putting your env in `~/.flyrc.d/.flyrc` will be automatically sourced (must be compatible with different shells)
-Putting additional env in `~/.flyrc.d/.flyrc.<shell>` will be automically sourced for shell
+Putting your env in `~/.fly.d/.flyrc` will be automatically sourced (must be compatible with different shells)  
+Putting additional env in `~/.fly.d/.flyrc.<shell>` will be automically sourced for shell
 
 ## Connect using thefly from http
 
@@ -49,7 +49,7 @@ Putting additional env in `~/.flyrc.d/.flyrc.<shell>` will be automically source
 $ ssh -t <user>@<host> '. <(curl https://raw.githubusercontent.com/joknarf/thefly/main/thefly) loginshell'  
 ```
 
-## Connect and download .flyrc.d plugins from a git repository
+## Connect and download .fly.d plugins from a git repository
 
 ```
 $ ssh -h <user>@<host> ''. <(curl https://raw.githubusercontent.com/joknarf/thefly/main/thefly) --git joknarf/myflyrc'  
