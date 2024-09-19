@@ -1,19 +1,17 @@
 
 : "${_fenvdir:=$HOME}"
 case "$1" in
-install|remote)
+install|loginshell)
     unset _floaded
     mkdir -p "$_fenvdir/.flyrc.d"
     [ -f "$_fenvdir/.flyrc.d/.flyrc" ] || touch "$_fenvdir/.flyrc.d/.flyrc"
-    touch $_fenvdir/.flyrc.d/thefly
-    chmod +x $_fenvdir/.flyrc.d/thefly
-    _flycmd="tee $_fenvdir/.flyrc.d/thefly"
     ;;
-*)  _flycmd="cat"
+*)  echo "usage: source thefly [install|remote]"
+    return
     ;;
 esac
 
-. <($(echo $_flycmd) <<'EOFLY'
+cat - >$_fenvdir/.flyrc.d/thefly <<'EOFLY' && . $_fenvdir/.flyrc.d/thefly
 [ "$_floaded" ] && echo "skip" && return
 echo "the fly !!!"
 _floaded=1
@@ -191,7 +189,7 @@ function fly
         _fsource_plugins
     ;;
     list)
-        ls -1 $_fenvdir/.flyrc.d/*/*.plugin.bash
+        (\cd $_fenvdir/.flyrc.d && ls -1 */*.plugin.bash)
     ;;
     source)
         _fsource_plugins
@@ -232,7 +230,5 @@ alias fsshk='_fdestshell=ksh fssh'
 alias fsudob='_fdestshell=bash fsudo'
 alias fsudoz='_fdestshell=zsh fsudo'
 alias fsudok='_fdestshell=ksh fsudo'
-:
+
 EOFLY
-)
-:
