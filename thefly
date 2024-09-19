@@ -11,7 +11,7 @@ install|loginshell)
     ;;
 esac
 
-cat - >$_fenvdir/.flyrc.d/thefly <<'EOFLY' && . $_fenvdir/.flyrc.d/thefly
+cat - >"$_fenvdir/.flyrc.d/thefly" <<'EOFLY' && . "$_fenvdir/.flyrc.d/thefly"
 [ "$_floaded" ] && echo "skip" && return
 echo "the fly !!!"
 _floaded=1
@@ -33,22 +33,22 @@ function _fshell
 
 function _fpackage
 {
-    (\cd $_fenvdir && tar czf - --exclude-vcs .flyrc.d 2>/dev/null)
+    (\cd "$_fenvdir" && tar czf - --exclude-vcs .flyrc.d 2>/dev/null)
 }
 
 function _fxpackage
 {
-    printf %s 'umask 077;mkdir -p /tmp/.fly.$USER;cd /tmp/.fly.$USER;tar xzf -'
+    printf %s 'umask 077;mkdir -p "/tmp/.fly.$USER";\cd "/tmp/.fly.$USER";tar xzf -'
 }
 
 function _fsource_plugins
 {
     typeset p="$1" plugin
 
-    [ -r $_fenvdir/.flyrc.d/.flyrc ] && . $_fenvdir/.flyrc.d/.flyrc
-    [ -r $_fenvdir/.flyrc.d/.flyrc.$_fshell ] && . $_fenvdir/.flyrc.d/.flyrc.$_fshell
-    for plugin in $([ "$p" ] && ls $_fenvdir/.flyrc.d/$p/*.plugin.$_fshell 2>/dev/null || \
-                                ls $_fenvdir/.flyrc.d/*/*.plugin.$_fshell)
+    [ -r "$_fenvdir/.flyrc.d/.flyrc" ] && . "$_fenvdir/.flyrc.d/.flyrc"
+    [ -r "$_fenvdir/.flyrc.d/.flyrc.$_fshell" ] && . "$_fenvdir/.flyrc.d/.flyrc.$_fshell"
+    for plugin in $([ "$p" ] && ls "$_fenvdir/.flyrc.d/$p/"*.plugin."$_fshell" 2>/dev/null || \
+                                ls "$_fenvdir/.flyrc.d/"*/*.plugin."$_fshell")
     do
         \cd "${plugin%/*}" && { . "$plugin"; \cd "$OLDPWD"; }
     done
@@ -61,7 +61,7 @@ function _fsource_profile_bash
     alias readonly=typeset
     $_gprof && . /etc/profile
     $_uprof && for i in .bash_profile .bash_login .profile;do
-        [ -r $i ] && . ./$i && break
+        [ -r "$i" ] && . "./$i" && break
     done
     unalias typeset
     unalias readonly
@@ -69,7 +69,7 @@ function _fsource_profile_bash
 
 function _fsource_profile_zsh
 {
-    \cd /;cd
+    \cd /;\cd
     ZDOTDIR=~/
     for i in zshenv zprofile zshrc;do
         [ -r /etc/zsh/$i ] && $_gprof && . /etc/zsh/$i
@@ -104,9 +104,9 @@ function _flogin_shell
 {
     typeset shell="${1:-$_fshell}"
     case "$shell" in 
-    bash) _flogin_rc >$_fenvdir/.flyrc.d/.bashrc;exec bash --init-file $_fenvdir/.flyrc.d/.bashrc;;
-    zsh)  _flogin_rc >$_fenvdir/.flyrc.d/.zshrc;ZDOTDIR=$_fenvdir/.flyrc.d exec zsh -di;;
-    ksh)  _flogin_rc >$_fenvdir/.flyrc.d/.kshrc;ENV=$_fenvdir/.flyrc.d/.kshrc exec ksh -i;;
+    bash) _flogin_rc >$_fenvdir/.flyrc.d/.bashrc && exec bash --init-file $_fenvdir/.flyrc.d/.bashrc;;
+    zsh)  _flogin_rc >$_fenvdir/.flyrc.d/.zshrc && ZDOTDIR=$_fenvdir/.flyrc.d exec zsh -di;;
+    ksh)  _flogin_rc >$_fenvdir/.flyrc.d/.kshrc && ENV=$_fenvdir/.flyrc.d/.kshrc exec ksh -i;;
     esac
 }
 
@@ -135,12 +135,12 @@ function _fssh_cmd
     echo ok |base64 -w0 >/dev/null 2>&1 && b64opt='-w0'
     cat - <<EOF
 umask 077
-mkdir -p $destdir
-! chmod 700 $destdir && echo "Not owner of $destdir. Abort" && exit 1
-cd $destdir
+mkdir -p "$destdir"
+! chmod 700 "$destdir" && echo "Not owner of $destdir. Abort" && exit 1
+cd "$destdir"
 echo $(_fpackage |base64 $b64opt) |base64 -d |tar xzf -
 [ $? != 0 ] && echo "Unpack env failed. Abort." && exit 1
-_fdestshell=$_fdestshell
+_fdestshell="$_fdestshell"
 . ./.flyrc.d/thefly loginshell $destdir
 EOF
 }
@@ -149,23 +149,18 @@ function fssh
 {
     typeset ssh_config cmd
     for i in "$@";do
-       [ $i = -F ] && shift && ssh_config="Include $1" && shift && continue
+       [ "$i" = -F ] && shift && ssh_config="Include $1" && shift && continue
        shift
        set -- "$@" "$i"
     done
     [ ! "$ssh_config" ] && [ -f ~/.ssh/config ] && ssh_config="Include $HOME/.ssh/config"
     cmd="$(_fssh_cmd)"
     cmd="${cmd//$'\n'/;}"
-    cat - <<EOF >$_fenvdir/.fly_ssh
+    cat - <<EOF >"$_fenvdir/.fly_ssh"
 $ssh_config
 RemoteCommand $cmd
 EOF
-    ssh -t -F $_fenvdir/.fly_ssh "$@"
-}
-
-function fly_init
-{
-    mkdir -p $_fenvdir/.flyrc.d
+    ssh -t -F "$_fenvdir/.fly_ssh" "$@"
 }
 
 function fly
@@ -174,27 +169,27 @@ function fly
     case "$1" in
     add)
         mkdir -p "$_fenvdir/.flyrc.d"
-        (\cd $_fenvdir/.flyrc.d && git clone "$_fgithub/$2")
+        (\cd "$_fenvdir/.flyrc.d" && git clone "$_fgithub/$2")
         _fsource_plugins "${2#*/}"
     ;;
     update)
         [ ! "$2" ] && echo "usage: fly update <plugin>" && return 1 
-        (\cd $_fenvdir/.flyrc.d/${2#*/} && git pull origin $(sed -e 's#.*/##' .git/HEAD))
+        (\cd "$_fenvdir/.flyrc.d/${2#*/}" && git pull origin "$(sed -e 's#.*/##' .git/HEAD)")
         _fsource_plugins "${2#*/}"
     ;;
     updateall)
-        for plugin in $(ls -d $_fenvdir/.flyrc.d/*/.git) ;do
-            (\cd $plugin/.. && git pull origin $(sed -e 's#.*/##' .git/HEAD))
+        for plugin in $(ls -d "$_fenvdir/.flyrc.d"/*/.git) ;do
+            (\cd "$plugin/.." && git pull origin "$(sed -e 's#.*/##' .git/HEAD)")
         done
         _fsource_plugins
     ;;
     list)
-        (\cd $_fenvdir/.flyrc.d && ls -1 */*.plugin.bash)
+        (\cd "$_fenvdir/.flyrc.d" && ls -1 -- */*.plugin.bash)
     ;;
     source)
         _fsource_plugins
     ;;
-    shell) _fshell="${2:-$_fshell}" _flogin_shell;;
+    shell) _fshell="${2:-$_fshell}" "_flogin_shell";;
     esac
 }
 
@@ -202,7 +197,7 @@ _fshell
 
 # ssh -t xxx . <(curl -s http://xxx/thefly) --url http://xxx/thefly.tgz
 [ "$1" = "--url" ] && {
-    \cd $_fenvdir
+    \cd "$_fenvdir"
     curl -o ./.fly.pak -L "$2"
     tar tzvf .fly.pak |grep -qv ' .flyrc'
     [ $? = 0 ] && echo "not fly package" && return
@@ -211,7 +206,7 @@ _fshell
 }
 
 [ "$1" = "--git" ] && {
-    \cd $_fenvdir
+    \cd "$_fenvdir"
     git clone "$_fgithub/$3" .flyrc.d
     _flogin_shell
 }
