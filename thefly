@@ -40,7 +40,7 @@ function _fpackage
 
 function _fxpackage
 {
-    printf %s 'umask 077;mkdir -p "/tmp/.fly.$USER";\cd "/tmp/.fly.$USER";tar xzf -'
+    printf %s 'umask 077;mkdir -p "/tmp/.fly.$USER";\cd "/tmp/.fly.$USER" && tar xzf -'
 }
 
 function _fsource_plugins
