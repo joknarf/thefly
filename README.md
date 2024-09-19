@@ -30,13 +30,17 @@ all plugins in `~/fly.d/*/*.plugin.<shell>` will be sourced at login
 ```
 $ fsudo <user>
 ```
-will duplicate `~/.fly.d` in `/tmp/.fly.<user>/.fly.d` and source all plugins
+will duplicate `~/.fly.d` in `/tmp/.fly.<user>/.fly.d` and source all plugins  
+by default uses `<user>` shell, to force your favorite shell:  
+fsudob (bash) - fsudoz (zsh) - fsudok (ksh)
 
 * To another host/user
 ```
 $ fssh <user>@<host>
 ```
-will duplicate `~/.fly.d` in `<host>:/tmp/.fly.<user>/.fly.d` and source all plugins
+will duplicate `~/.fly.d` in `<host>:/tmp/.fly.<user>/.fly.d` and source all plugins  
+by default uses `<user>` shell, to force your favorite shell:  
+fsshb (bash) - fsshz (zsh) - fsshk (ksh)
 
 ## Customize env
 
