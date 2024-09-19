@@ -17,10 +17,12 @@ echo "the fly !!!"
 _floaded=1
 : "${_fenvdir:=$HOME}"
 : "${_fgithub=https://github.com}"
+: "${FLY_USER_RC=true}"
+: "${FLY_ETC_RC=true}"
 
 function _fshell
 {
-    : "${_fshell:=$_fdestshell}"
+    _fshell=$_fdestshell
     unset _fdestshell
     [ "$_fshell" ] && return
     case "$KSH_VERSION$BASH$ZSH_VERSION" in
@@ -59,8 +61,8 @@ function _fsource_profile_bash
     \cd /;\cd
     alias typeset="typeset +r"
     alias readonly=typeset
-    $_gprof && . /etc/profile
-    $_uprof && for i in .bash_profile .bash_login .profile;do
+    $FLY_ETC_RC && . /etc/profile
+    $FLY_USER_RC && for i in .bash_profile .bash_login .profile;do
         [ -r "$i" ] && . "./$i" && break
     done
     unalias typeset
@@ -72,8 +74,8 @@ function _fsource_profile_zsh
     \cd /;\cd
     ZDOTDIR=~/
     for i in zshenv zprofile zshrc;do
-        [ -r /etc/zsh/$i ] && $_gprof && . /etc/zsh/$i
-        [ -r .$i ] && $_uprof && . ./.$i
+        [ -r /etc/zsh/$i ] && $FLY_ETC_RC && . /etc/zsh/$i
+        [ -r .$i ] && $FLY_USER_RC && . ./.$i
     done
     typeset +r PS1
 }
@@ -85,18 +87,17 @@ function _fsource_profile_ksh
     ENV=~/.kshrc
     #alias typeset="typeset +r"
     alias readonly=typeset
-    $_gprof && . /etc/profile
-    [ -r .profile ] && $_uprof && . ./.profile
-    [ -r "$ENV" ] && $_uprof && . $ENV
+    $FLY_ETC_RC && . /etc/profile
+    [ -r .profile ] && $FLY_USER_RC && . ./.profile
+    [ -r "$ENV" ] && $FLY_USER_RC && . $ENV
     unalias typeset
     unalias readonly
 }
 
 function _fsource_profile
 {
-    _gprof=true _uprof=true
     eval "_fsource_profile_$_fshell"
-    unset _gprof _uprof
+    FLY_HOST_PROFILE=true FLY_USER_PROFILE=true
     _fsource_plugins
 }
 
@@ -104,7 +105,7 @@ function _flogin_shell
 {
     typeset shell="${1:-$_fshell}"
     case "$shell" in 
-    bash) _flogin_rc >$_fenvdir/.flyrc.d/.bashrc && exec bash --init-file $_fenvdir/.flyrc.d/.bashrc;;
+    bash) _flogin_rc >$_fenvdir/.flyrc.d/.bashrc && exec bash --noprofile --init-file $_fenvdir/.flyrc.d/.bashrc;;
     zsh)  _flogin_rc >$_fenvdir/.flyrc.d/.zshrc && ZDOTDIR=$_fenvdir/.flyrc.d exec zsh -di;;
     ksh)  _flogin_rc >$_fenvdir/.flyrc.d/.kshrc && ENV=$_fenvdir/.flyrc.d/.kshrc exec ksh -i;;
     esac
@@ -113,20 +114,16 @@ function _flogin_shell
 function _flogin_rc
 {
     typeset fenvd="${1:-$_fenvdir}"
+    printf '%s\n' "FLY_USER_RC=$FLY_USER_RC"
+    printf '%s\n' "FLY_ETC_RC=$FLY_ETC_RC"
     printf '%s\n' ". $fenvd/.flyrc.d/thefly login $fenvd"
 }
 
 function fsudo
 {
     typeset user=${1:-root}
-    _fpackage |sudo -H -u "$user" bash -c "$(_fxpackage)"
-    sudo -H -u "$user" -i _fdestshell=$_fdestshell . /tmp/.fly.$user/.flyrc.d/thefly loginshell /tmp/.fly.$user
-}
-
-function fssh2
-{
-    _fpackage | ssh "$@" "$(_fxpackage)"
-    ssh "$@" -t '. /tmp/.fly.$USER/.flyrc.d/thefly loginshell /tmp/.fly.$USER'
+    _fpackage |sudo -H -u "$user" $_fshell -c "$(_fxpackage)"
+    sudo -H -u "$user" -i FLY_USER_RC="$FLY_USER_RC" FLY_ETC_RC="$FLY_ETC_RC" _fdestshell="$_fdestshell" . /tmp/.fly.$user/.flyrc.d/thefly loginshell /tmp/.fly.$user
 }
 
 function _fssh_cmd
@@ -141,12 +138,27 @@ cd "$destdir"
 echo $(_fpackage |base64 $b64opt) |base64 -d |tar xzf -
 [ $? != 0 ] && echo "Unpack env failed. Abort." && exit 1
 _fdestshell="$_fdestshell"
+FLY_USER_RC="$FLY_USER_RC"
+FLY_ETC_RC="$FLY_ETC_RC"
 . ./.flyrc.d/thefly loginshell $destdir
 EOF
 }
 
+function _fssh_ok
+{
+    typeset ssh_ver
+    _fssh_ok=false
+    type ssh >/dev/null 2>&1 || return
+    typeset ssh_ver="$(ssh -V 2>&1)"
+    ssh_ver="${ssh_ver%% *}";ssh_ver="${ssh_ver#*_}";ssh_ver="${ssh_ver%p*}"
+    [[ "$ssh_ver" = *.*.* ]] && ssh_ver="${ssh_ver%.*}"
+    ssh_maj=${ssh_ver%.*}
+    [[ "$ssh_maj" > 8 ]] && _fssh_ok=true 
+}
+
 function fssh
 {
+    ! $_fssh_ok && { fssh2 "$@"; return; } 
     typeset ssh_config cmd
     for i in "$@";do
        [ "$i" = -F ] && shift && ssh_config="Include $1" && shift && continue
@@ -162,6 +174,13 @@ RemoteCommand $cmd
 EOF
     ssh -t -F "$_fenvdir/.fly_ssh" "$@"
 }
+
+function fssh2
+{
+    _fpackage | ssh -o LogLevel=Error "$@" "$(_fxpackage)"
+    ssh "$@" -t '. /tmp/.fly.$USER/.flyrc.d/thefly loginshell /tmp/.fly.$USER'
+}
+
 
 function fly
 {
@@ -194,6 +213,7 @@ function fly
 }
 
 _fshell
+_fssh_ok
 
 # ssh -t xxx . <(curl -s http://xxx/thefly) --url http://xxx/thefly.tgz
 [ "$1" = "--url" ] && {
