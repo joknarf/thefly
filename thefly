@@ -22,6 +22,8 @@ _floaded=1
 
 function _fshell
 {
+    : "${_fshell:=$_fdestshell}"
+    [ "$_fshell" ] && return
     case "$KSH_VERSION$BASH$ZSH_VERSION" in
         "$KSH_VERSION") _fshell=ksh;;
         "$BASH")        _fshell=bash;;
@@ -119,7 +121,7 @@ function fsudo
 {
     typeset user=${1:-root}
     _fpackage |sudo -H -u "$user" bash -c "$(_fxpackage)"
-    sudo -H -u "$user" -i . /tmp/.fly.$user/.flyrc.d/thefly loginshell /tmp/.fly.$user
+    sudo -H -u "$user" -i _fdestshell=$_fdestshell . /tmp/.fly.$user/.flyrc.d/thefly loginshell /tmp/.fly.$user
 }
 
 function fssh2
@@ -139,6 +141,7 @@ mkdir -p $destdir
 cd $destdir
 echo $(_fpackage |base64 $b64opt) |base64 -d |tar xzf -
 [ $? != 0 ] && echo "Unpack env failed. Abort." && exit 1
+_fdestshell=$_fdestshell
 . ./.flyrc.d/thefly loginshell $destdir
 EOF
 }
@@ -192,6 +195,7 @@ function fly
     source)
         _fsource_plugins
     ;;
+    shell) _fshell="${2:-$_fshell}" _flogin_shell;;
     esac
 }
 
@@ -215,9 +219,18 @@ _fshell
 
 case "$1" in
     login) _fenvdir="${2:-$_fenvdir}";_fsource_profile;;
-    loginshell) _fenvdir="${2:-$_fenvdir}";_flogin_shell;;
+    loginshell) _fenvdir="${2:-$_fenvdir}";_flogin_shell $_fdestshell;;
     source) _fsource_plugins;;
 esac
+alias fbash='fly shell bash'
+alias fzsh='fly shell zsh'
+alias fksh='fly shell ksh'
+alias fsshb='_fdestshell=bash fssh'
+alias fsshz='_fdestshell=zsh fssh'
+alias fsshk='_fdestshell=ksh fssh'
+alias fsudob='_fdestshell=bash fsudo'
+alias fsudoz='_fdestshell=zsh fsudo'
+alias fsudok='_fdestshell=ksh fsudo'
 :
 EOFLY
 )
