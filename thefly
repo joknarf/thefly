@@ -122,7 +122,7 @@ function _flogin_rc
 function fsudo
 {
     typeset user=${1:-root}
-    _fpackage |sudo -H -u "$user" $FLY_SHELL -c "$(_fxpackage)"
+    _fpackage |sudo -H -u "$user" $FLY_SHELL -c "$(_fxpackage)" || return $?
     sudo -H -u "$user" -i FLY_USER_RC="$FLY_USER_RC" FLY_ETC_RC="$FLY_ETC_RC" _fdestshell="$_fdestshell" . /tmp/.fly.$user/.fly.d/fly loginshell /tmp/.fly.$user
 }
 
@@ -177,7 +177,7 @@ EOF
 
 function fssh2
 {
-    _fpackage | ssh -o LogLevel=Error "$@" "$(_fxpackage)"
+    _fpackage | ssh -o LogLevel=Error "$@" "$(_fxpackage)" || return $?
     ssh "$@" -t '. /tmp/.fly.$USER/.fly.d/fly loginshell /tmp/.fly.$USER'
 }
 
