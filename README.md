@@ -42,7 +42,7 @@ $ fsudo <user>
 ```
 will duplicate `~/.fly.d` (without dot files/tests) in `/tmp/.fly.<user>/<flyid>/.fly.d` and source all plugins  
 by default uses `<user>` shell, to force your favorite shell:  
-fsudob (bash) - fsudoz (zsh) - fsudok (ksh)
+`fsudob` (bash) - `fsudoz` (zsh) - `fsudok` (ksh)
 
 * To another host/user
 ```
@@ -50,11 +50,11 @@ $ fssh <user>@<host>
 ```
 will duplicate `~/.fly.d` (without dot files/tests) in `<host>:/tmp/.fly.<user>/<flyid>/.fly.d` and source all plugins  
 by default uses `<user>` shell, to force your favorite shell:  
-fsshb (bash) - fsshz (zsh) - fsshk (ksh)
+`fsshb` (bash) - `fsshz` (zsh) - `fsshk` (ksh)
 
-* To another shell
-When connected with a shell change shell and load your env/plugins:
-fbash - fzsh - fksh
+* To another shell  
+When connected with a shell change shell and load your env/plugins:  
+`fbash` - `fzsh` - `fksh`
  
 ## Customize env
 
