@@ -35,12 +35,12 @@ function _fshell
 
 function _fpackage
 {
-    (\cd "$_fenvdir" && tar czf - --no-xattrs --exclude-vcs --exclude=README.md --exclude='*/*/.*' --exclude '*/*/tests' .fly.d )
+    tar czf - -C "$_fenvdir" --no-xattrs --exclude-vcs --exclude=README.md --exclude='*/*/.*' --exclude '*/*/tests' .fly.d
 }
 
 function _fxpackage
 {
-    printf %s 'umask 077;mkdir -p "/tmp/.fly.$USER";\cd "/tmp/.fly.$USER" && tar xzf -'
+    printf %s 'umask 077;mkdir -p "/tmp/.fly.$USER";tar xzf - -C "/tmp/.fly.$USER"'
 }
 
 function _fsource_plugins
