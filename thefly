@@ -26,7 +26,7 @@ _floaded=1
 : "${FLY_USER_RC=true}"
 : "${FLY_ETC_RC=true}"
 : "${_fuuid:=$(cat "$_fenvdir/.fly.d/.flyuuid" 2>/dev/null || uuidgen)}"
-: "${_ftmpdir:="/tmp/.fly.\$USER.$_fuuid"}"
+: "${_ftmpdir:="/tmp/.fly.\$USER/$_fuuid"}"
 
 function _fshell
 {
