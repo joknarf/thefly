@@ -22,20 +22,20 @@ _floaded=1
 
 function _fshell
 {
-    _fshell=$_fdestshell
+    FLY_SHELL=$_fdestshell
     unset _fdestshell
-    [ "$_fshell" ] && return
+    [ "$FLY_SHELL" ] && return
     case "$KSH_VERSION$BASH$ZSH_VERSION" in
-        "$KSH_VERSION") _fshell=ksh;;
-        "$BASH")        _fshell=bash;;
-        "$ZSH_VERSION") _fshell=zsh;;
+        "$KSH_VERSION") FLY_SHELL=ksh;;
+        "$BASH")        FLY_SHELL=bash;;
+        "$ZSH_VERSION") FLY_SHELL=zsh;;
         *) echo unsupported;;
     esac
 }
 
 function _fpackage
 {
-    (\cd "$_fenvdir" && tar czf - --exclude-vcs .fly.d 2>/dev/null)
+    (\cd "$_fenvdir" && tar czf - --no-xattrs --exclude-vcs --exclude=README.md --exclude='*/*/.*' --exclude '*/*/tests' .fly.d )
 }
 
 function _fxpackage
@@ -48,9 +48,9 @@ function _fsource_plugins
     typeset p="$1" plugin
 
     [ -r "$_fenvdir/.fly.d/.flyrc" ] && . "$_fenvdir/.fly.d/.flyrc"
-    [ -r "$_fenvdir/.fly.d/.flyrc.$_fshell" ] && . "$_fenvdir/.fly.d/.flyrc.$_fshell"
-    for plugin in $([ "$p" ] && ls "$_fenvdir/.fly.d/$p/"*.plugin."$_fshell" 2>/dev/null || \
-                                ls "$_fenvdir/.fly.d/"*/*.plugin."$_fshell" 2>/dev/null)
+    [ -r "$_fenvdir/.fly.d/.flyrc.$FLY_SHELL" ] && . "$_fenvdir/.fly.d/.flyrc.$FLY_SHELL"
+    for plugin in $([ "$p" ] && ls "$_fenvdir/.fly.d/$p/"*.plugin."$FLY_SHELL" 2>/dev/null || \
+                                ls "$_fenvdir/.fly.d/"*/*.plugin."$FLY_SHELL" 2>/dev/null)
     do
         \cd "${plugin%/*}" && { . "$plugin"; \cd "$OLDPWD"; }
     done
@@ -96,14 +96,14 @@ function _fsource_profile_ksh
 
 function _fsource_profile
 {
-    eval "_fsource_profile_$_fshell"
+    eval "_fsource_profile_$FLY_SHELL"
     FLY_HOST_PROFILE=true FLY_USER_PROFILE=true
     _fsource_plugins
 }
 
 function _flogin_shell
 {
-    typeset shell="${1:-$_fshell}"
+    typeset shell="${1:-$FLY_SHELL}"
     case "$shell" in 
     bash) _flogin_rc >$_fenvdir/.fly.d/.bashrc && exec bash --noprofile --init-file $_fenvdir/.fly.d/.bashrc;;
     zsh)  _flogin_rc >$_fenvdir/.fly.d/.zshrc && ZDOTDIR=$_fenvdir/.fly.d exec zsh -di;;
@@ -122,7 +122,7 @@ function _flogin_rc
 function fsudo
 {
     typeset user=${1:-root}
-    _fpackage |sudo -H -u "$user" $_fshell -c "$(_fxpackage)"
+    _fpackage |sudo -H -u "$user" $FLY_SHELL -c "$(_fxpackage)"
     sudo -H -u "$user" -i FLY_USER_RC="$FLY_USER_RC" FLY_ETC_RC="$FLY_ETC_RC" _fdestshell="$_fdestshell" . /tmp/.fly.$user/.fly.d/fly loginshell /tmp/.fly.$user
 }
 
@@ -208,7 +208,7 @@ function fly
     source)
         _fsource_plugins
     ;;
-    shell) _fshell="${2:-$_fshell}" "_flogin_shell";;
+    shell) FLY_SHELL="${2:-$FLY_SHELL}" "_flogin_shell";;
     esac
 }
 
