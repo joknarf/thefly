@@ -52,6 +52,10 @@ will duplicate `~/.fly.d` (without dot files/tests) in `<host>:/tmp/.fly.<user>/
 by default uses `<user>` shell, to force your favorite shell:  
 fsshb (bash) - fsshz (zsh) - fsshk (ksh)
 
+* To another shell
+When connected with a shell change shell and load your env/plugins:
+fbash - fzsh - fksh
+ 
 ## Customize env
 
 Putting your env in `~/.fly.d/.flyrc` will be automatically sourced (must be compatible with different shells)  
