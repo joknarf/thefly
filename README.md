@@ -8,7 +8,7 @@ bash/zsh/ksh plugin manager and env teleporter
 
 Your shell env and plugins are available everywhere (hosts/users)  
 &nbsp;  
-bzzz bzzz!  
+bzzz bzzz !  
 <br/>  
 ## Install
 ```
