@@ -6,7 +6,7 @@
 <br/>
 bash/zsh/ksh plugin manager and env teleporter  
 
-Your shell plugins are available everywhere (hosts/users)  
+Your shell env and plugins are available everywhere (hosts/users)  
 &nbsp;  
 bzzz bzzz!  
 <br/>  
