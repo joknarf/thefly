@@ -1,10 +1,20 @@
+
 # thefly
 
+<img align=left width="150px" src="https://github.com/user-attachments/assets/a537f833-a64f-40b0-99a3-fff9cca08ce8">
+
+<br/>
 bash/zsh/ksh plugin manager teleporter  
-Your shell plugins are available everywhere (hosts/users)
 
+Your shell plugins are available everywhere (hosts/users)  
+&nbsp;  
+bzzz bzzz!  
+<br/>  
 ## Install
-
+```
+. <(curl https://raw.githubusercontent.com/joknarf/thefly/main/thefly) install
+```
+or
 ```
 $ git clone https://github.com/joknarf/thefly
 $ . thefly/thefly install
@@ -30,7 +40,7 @@ all plugins in `~/fly.d/*/*.plugin.<shell>` will be sourced at login
 ```
 $ fsudo <user>
 ```
-will duplicate `~/.fly.d` in `/tmp/.fly.<user>/.fly.d` and source all plugins  
+will duplicate `~/.fly.d` (without dot files/tests) in `/tmp/.fly.<user>/.fly.d` and source all plugins  
 by default uses `<user>` shell, to force your favorite shell:  
 fsudob (bash) - fsudoz (zsh) - fsudok (ksh)
 
@@ -38,7 +48,7 @@ fsudob (bash) - fsudoz (zsh) - fsudok (ksh)
 ```
 $ fssh <user>@<host>
 ```
-will duplicate `~/.fly.d` in `<host>:/tmp/.fly.<user>/.fly.d` and source all plugins  
+will duplicate `~/.fly.d` (without dot files/tests) in `<host>:/tmp/.fly.<user>/.fly.d` and source all plugins  
 by default uses `<user>` shell, to force your favorite shell:  
 fsshb (bash) - fsshz (zsh) - fsshk (ksh)
 
@@ -58,3 +68,9 @@ $ ssh -t <user>@<host> '. <(curl https://raw.githubusercontent.com/joknarf/thefl
 ```
 $ ssh -h <user>@<host> ''. <(curl https://raw.githubusercontent.com/joknarf/thefly/main/thefly) --git joknarf/myflyrc'  
 ```
+
+## Don't transform your fly in a MONSTER !
+
+Remember that ~/.fly.d directory will be duplicated in /tmp, don't put huge data in your ~/.fly.d directory, the consequences could be huge ! (ask Jeff G. ;-)
+
+Bzzz Bzzz
