@@ -12,8 +12,8 @@ install|loginshell)
 esac
 
 cat - >"$_fenvdir/.fly.d/fly" <<'EOFLY' && . "$_fenvdir/.fly.d/fly"
-[ "$_floaded" ] && echo "skip" && return
-echo "the fly !!!"
+[ "$_floaded" ] && return
+#echo "the fly !!!"
 _floaded=1
 : "${_fenvdir:=$HOME}"
 : "${_fgithub=https://github.com}"
