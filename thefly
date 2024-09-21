@@ -1,5 +1,8 @@
 
 : "${_fenvdir:=$HOME}"
+type uuidgen >/dev/null 2>&1 || uuidgen() {
+    tr -dc 'a-f0-9' </dev/urandom| head -c 16
+}
 case "$1" in
 install|loginshell)
     unset _floaded
