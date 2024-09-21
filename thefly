@@ -30,6 +30,7 @@ _floaded=1
 : "${FLY_ETC_RC=true}"
 : "${_fuuid:=$(cat "$_fenvdir/.fly.d/.flyuuid" 2>/dev/null || uuidgen)}"
 : "${_ftmpdir:="/tmp/.fly.\$USER/$_fuuid"}"
+type gtar >/dev/null 2>&1 && _ftar=gtar || _ftar=tar
 
 function _fshell
 {
@@ -46,14 +47,15 @@ function _fshell
 
 function _fpackage
 {
-    tar czf - -C "$_fenvdir" --no-xattrs --exclude-vcs --exclude=README.md --exclude='*/*/.*' --exclude '*/*/tests' .fly.d
+    $_ftar czf - -C "$_fenvdir" --no-xattrs --exclude-vcs --exclude=README.md --exclude='plugins/*/.*' --exclude '*/*/tests' .fly.d
 }
 
 function _fxpackage
 {
+    printf '%s;' 'type gtar >/dev/null 2>&1 && _ftar=gtar || _ftar=tar'
     printf '%s;' 'umask 077' 'mkdir -p "'"$_ftmpdir"'"'
     #printf '%s;' '! chmod 700 "'"$_ftmpdir"'" && echo "Not owner of '"$_ftmpdir"'. Abort >&2" && exit 1'
-    printf '%s' 'tar xzf - -C "'"$_ftmpdir"'"'
+    printf '%s' 'gzip -dc |$_ftar xf - -C "'"$_ftmpdir"'"'
 }
 
 function _fzsh_glob
@@ -242,9 +244,9 @@ _fssh_ok
 [ "$1" = "--url" ] && {
     \cd "$_fenvdir"
     curl -o ./.fly.pak -L "$2"
-    tar tzvf .fly.pak |grep -qv ' .flyrc'
+    $_ftar tzvf .fly.pak |grep -qv ' .flyrc'
     [ $? = 0 ] && echo "not fly package" && return
-    tar xzf .fly.pak
+    $_ftar xzf .fly.pak
     _flogin_shell
 }
 
