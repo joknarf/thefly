@@ -31,8 +31,8 @@ Add in your rc file (.profile .bash_profile .bashrc .zshrc):
 ```
 fly add joknarf/redo
 ```
-will clone `https://github.com/joknarf/redo` in `~/.fly.d/redo`  
-all plugins in `~/fly.d/*/*.plugin.<shell>` will be sourced at login
+will clone `https://github.com/joknarf/redo` in `~/.fly.d/plugins/redo`  
+all plugins in `~/fly.d/plugins/*/*.plugin.<shell>` will be sourced at login
 
 ## Teleport plugins
 
