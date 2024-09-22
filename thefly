@@ -25,31 +25,33 @@ function _fgit_extract {
 }
 
 case "$1" in
-install)
-    unset _floaded
-    (umask 077;mkdir -p "$_fenvdir/.fly.d/plugins")
-    [ -f "$_fenvdir/.fly.d/.flyrc" ] || touch "$_fenvdir/.fly.d/.flyrc"
-    [ -f "$_fenvdir/.fly.d/.flyuuid" ] || uuidgen >"$_fenvdir/.fly.d/.flyuuid"
-    echo "TheFly: install in $_fenvdir/.fly.d/fly" >&2
-    echo "TheFly: Put in your shell profile to load thefly/plugins at login:" >&2
-    echo "TheFly:   source $_fenvdir/.fly.d/fly source" >&2
-    echo "TheFly: To add shell pluggins from github use:" >&2
-    echo "TheFly:   fly add <git owner>/<repo>" >&2
-    shift
-    ;;
-remote)
-    shift
-    (umask 077;mkdir -p "/tmp/.fly.$USER")
-    cd /tmp/.fly.$USER || return 1
-    case "$1" in
-    http*://*) _fhttp_extract "$1";;
-    */*) _fgit_extract "$1";;
-    esac
-    set -- loginshell
-    ;;
-*)  echo "usage: source thefly [install|remote]"
-    return 1
-    ;;
+    install)
+        unset _floaded
+        (umask 077;mkdir -p "$_fenvdir/.fly.d/plugins")
+        [ -d "$_fenvdir/.fly.d/.git" ] || (\cd "$_fenvdir/.fly.d" && git init)
+        [ -f "$_fenvdir/.fly.d/.flyrc" ] || touch "$_fenvdir/.fly.d/.flyrc"
+        [ -f "$_fenvdir/.fly.d/.flyuuid" ] || uuidgen >"$_fenvdir/.fly.d/.flyuuid"
+        echo "TheFly: install in $_fenvdir/.fly.d/fly" >&2
+        echo "TheFly: Put in your shell profile to load thefly/plugins at login:" >&2
+        echo "TheFly:   source $_fenvdir/.fly.d/fly source" >&2
+        echo "TheFly: To add shell pluggins from github use:" >&2
+        echo "TheFly:   fly add <git owner>/<repo>" >&2
+        shift
+        ;;
+    remote)
+        shift
+        (umask 077;mkdir -p "/tmp/.fly.$USER")
+        cd /tmp/.fly.$USER || return 1
+        case "$1" in
+            http*://*) _fhttp_extract "$1";;
+            */*)       _fgit_extract "$1";;
+            *)         (umask 077;mkdir -p "$_fenvdir/.fly.d");;
+        esac
+        set -- loginshell
+        ;;
+    *)  echo "usage: source thefly [install|remote]"
+        return 1
+        ;;
 esac
 
 cat - >"$_fenvdir/.fly.d/fly" <<'EOFLY' && . "$_fenvdir/.fly.d/fly"
@@ -240,9 +242,16 @@ function fly
     typeset plugin submodule
     case "$1" in
     add)
-        (umask 077;mkdir -p "$_fenvdir/.fly.d/plugins")
-        (\cd "$_fenvdir/.fly.d/plugins" && git clone "$_fgithub/$2")
+        [ -d "$_fenvdir/.fly.d/.git" ] && {
+            (\cd "$_fenvdir/.fly.d" && git submodule add "$_fgithub/$2" "plugins/${2##*/}")
+        } || (\cd "$_fenvdir/.fly.d/plugins" && git clone "$_fgithub/$2")
         _fsource_plugins "${2#*/}"
+    ;;
+    del)
+        [ -d "$_fenvdir/.fly.d/.git" ] && {
+            (\cd "$_fenvdir/.fly.d" && git submodule deinit -f "plugins/${2##*/}")
+        }
+        rm -rf "$_fenvdir/.fly.d/plugins/${2##*/}"
     ;;
     update)
         [ ! "$2" ] && echo "usage: fly update <plugin>" && return 1 

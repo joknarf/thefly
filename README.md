@@ -63,9 +63,21 @@ Putting additional env in `~/.fly.d/.flyrc.<shell>` will be automatically source
 
 ## Connect using thefly from http
 
+uses user ~.fly.d to load env/plugins
 ```
-$ ssh -t <user>@<host> '. <(curl https://raw.githubusercontent.com/joknarf/thefly/main/thefly) loginshell'  
+$ ssh -t <user>@<host> '. <(curl https://raw.githubusercontent.com/joknarf/thefly/main/thefly) remote'  
 ```
+
+get env/plugins from .fly.d tgz (contains .fly.d/*)
+```
+$ ssh -t <user>@<host> '. <(curl https://raw.githubusercontent.com/joknarf/thefly/main/thefly) remote <url .fly.d.tgz>'  
+```
+
+get env/plugins from github repository (repo contains .fly.d contents, cat contain plugins submodules)
+```
+$ ssh -t <user>@<host> '. <(curl https://raw.githubusercontent.com/joknarf/thefly/main/thefly) remote <git owner/repo .fly.d>'  
+```
+
 
 ## Don't transform your fly in a MONSTER !
 
