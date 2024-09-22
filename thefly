@@ -28,7 +28,7 @@ case "$1" in
     install)
         unset _floaded
         (umask 077;mkdir -p "$_fenvdir/.fly.d/plugins")
-        [ -d "$_fenvdir/.fly.d/.git" ] || (\cd "$_fenvdir/.fly.d" && git init && git -M main)
+        [ -d "$_fenvdir/.fly.d/.git" ] || (\cd "$_fenvdir/.fly.d" && git init 2>/dev/null && git -M main 2>/dev/null)
         [ -f "$_fenvdir/.fly.d/.flyrc" ] || touch "$_fenvdir/.fly.d/.flyrc"
         [ -f "$_fenvdir/.fly.d/.flyuuid" ] || uuidgen >"$_fenvdir/.fly.d/.flyuuid"
         echo "TheFly: install in $_fenvdir/.fly.d/fly" >&2
@@ -243,13 +243,13 @@ function fly
     case "$1" in
     add)
         [ -d "$_fenvdir/.fly.d/.git" ] && {
-            (\cd "$_fenvdir/.fly.d" && git submodule add "$_fgithub/$2" "plugins/${2##*/}")
+            (\cd "$_fenvdir/.fly.d" && git submodule add "$_fgithub/$2" "plugins/${2##*/}" 2>/dev/null)
         } || (\cd "$_fenvdir/.fly.d/plugins" && git clone "$_fgithub/$2")
         _fsource_plugins "${2#*/}"
     ;;
     del)
         [ -d "$_fenvdir/.fly.d/.git" ] && {
-            (\cd "$_fenvdir/.fly.d" && git submodule deinit -f "plugins/${2##*/}")
+            (\cd "$_fenvdir/.fly.d" && git submodule deinit -f "plugins/${2##*/}" 2>/dev/null)
         }
         rm -rf "$_fenvdir/.fly.d/plugins/${2##*/}"
     ;;
@@ -264,7 +264,7 @@ function fly
             [ -d "$plugin" ] && (\cd "$plugin/.." && git pull origin "$(sed -e 's#.*/##' .git/HEAD)")
             [ -s "$plugin" ] && submodule=1
         done
-        [ "$submodule" ] && (\cd $_fenvdir/.fly.d && git submodule update --remote --merge)
+        [ "$submodule" ] && (\cd $_fenvdir/.fly.d && git submodule update --remote --merge 2>/dev/null)
         _fzsh_glob reset
         _fsource_plugins
     ;;
