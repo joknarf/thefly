@@ -95,7 +95,7 @@ function _fxpackage
 
 function _fzsh_glob
 {
-    [ "$FLY_SHELL" = "zsh" ] || return
+    [ "$FLY_SHELL" = "zsh" ] || return 0
     case "$1" in
     fix)   [[ ! -o nonomatch ]] && _fzsh_nonomatch=1 && setopt nonomatch;;
     reset) [ "$_fzsh_nomatch" ] && unset _fzsh_nonomatch && unsetopt nonomatch;;
