@@ -21,7 +21,8 @@ function _fgit_extract {
     [ -d "$_fenvdir/.fly.d/.git" ] && return
     (umask 077;mkdir -p "$_fenvdir")
     \cd "$_fenvdir" || exit 1
-    git clone --recurse-submodules --remote-submodules -j8 "https://github.com/$1" .fly.d
+    git clone --recurse-submodules --remote-submodules -j8 "https://github.com/$1" .fly.d -q 2>/dev/null || \
+    git clone --recursive "https://github.com/$1" .fly.d
 }
 
 case "$1" in
@@ -244,7 +245,7 @@ function fly
     add)
         [ -d "$_fenvdir/.fly.d/.git" ] && {
             (\cd "$_fenvdir/.fly.d" && git submodule add "$_fgithub/$2" "plugins/${2##*/}" 2>/dev/null)
-        } || (\cd "$_fenvdir/.fly.d/plugins" && git clone "$_fgithub/$2")
+        } || (\cd "$_fenvdir/.fly.d/plugins" && git clone "$_fgithub/$2" -q)
         _fsource_plugins "${2#*/}"
     ;;
     del)
