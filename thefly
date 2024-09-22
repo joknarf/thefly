@@ -265,7 +265,10 @@ function fly
             [ -d "$plugin" ] && (\cd "$plugin/.." && git pull origin "$(sed -e 's#.*/##' .git/HEAD)")
             [ -s "$plugin" ] && submodule=1
         done
-        [ "$submodule" ] && (\cd $_fenvdir/.fly.d && git submodule update --remote --merge 2>/dev/null)
+        [ "$submodule" ] && (\cd $_fenvdir/.fly.d && { 
+            git submodule update --remote --merge 2>/dev/null
+            git submodule foreach git pull 2>/dev/null
+        })
         _fzsh_glob reset
         _fsource_plugins
     ;;
