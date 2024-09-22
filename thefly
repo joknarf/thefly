@@ -3,8 +3,29 @@
 type uuidgen >/dev/null 2>&1 || uuidgen() {
     tr -dc 'a-f0-9' </dev/urandom| head -c 16
 }
+
+function _fhttp_extract {
+    curl -s -o .fly.pak -L "$1"
+    _fuuid=$(tar xzf .fly.pak .fly.d/.flyuuid -O)
+    [ ! "$_fuuid" ] && echo "not fly package" && exit 1
+    _fenvdir="/tmp/.fly.$USER/$_fuuid"
+    (umask 077;mkdir -p "$_fenvdir")
+    tar xzf .fly.pak -C $_fenvdir
+    rm -f .fly.pak
+}
+
+function _fgit_extract {
+    _fuuid=$(curl -s "https://raw.githubusercontent.com/$1/refs/heads/main/.flyuuid") || exit 1
+    [ ! "$_fuuid" ] && echo "not fly repo" && exit 1
+    _fenvdir="/tmp/.fly.$USER/$_fuuid"
+    [ -d "$_fenvdir/.fly.d/.git" ] && return
+    (umask 077;mkdir -p "$_fenvdir")
+    \cd "$_fenvdir" || exit 1
+    git clone --recurse-submodules --remote-submodules -j8 "https://github.com/$1" .fly.d
+}
+
 case "$1" in
-install|loginshell)
+install)
     unset _floaded
     (umask 077;mkdir -p "$_fenvdir/.fly.d/plugins")
     [ -f "$_fenvdir/.fly.d/.flyrc" ] || touch "$_fenvdir/.fly.d/.flyrc"
@@ -14,6 +35,17 @@ install|loginshell)
     echo "TheFly:   source $_fenvdir/.fly.d/fly source" >&2
     echo "TheFly: To add shell pluggins from github use:" >&2
     echo "TheFly:   fly add <git owner>/<repo>" >&2
+    shift
+    ;;
+remote)
+    shift
+    (umask 077;mkdir -p "/tmp/.fly.$USER")
+    cd /tmp/.fly.$USER || return 1
+    case "$1" in
+    http*://*) _fhttp_extract "$1";;
+    */*) _fgit_extract "$1";;
+    esac
+    set -- loginshell
     ;;
 *)  echo "usage: source thefly [install|remote]"
     return 1
@@ -205,7 +237,7 @@ function fssh2
 
 function fly
 {
-    typeset plugin
+    typeset plugin submodule
     case "$1" in
     add)
         (umask 077;mkdir -p "$_fenvdir/.fly.d/plugins")
@@ -220,8 +252,10 @@ function fly
     updateall)
         _fzsh_glob fix
         for plugin in $(ls -d "$_fenvdir/.fly.d/plugins"/*/.git) ;do
-            (\cd "$plugin/.." && git pull origin "$(sed -e 's#.*/##' .git/HEAD)")
+            [ -d "$plugin" ] && (\cd "$plugin/.." && git pull origin "$(sed -e 's#.*/##' .git/HEAD)")
+            [ -s "$plugin" ] && submodule=1
         done
+        [ "$submodule" ] && (\cd $_fenvdir/.fly.d && git submodule update --remote --merge)
         _fzsh_glob reset
         _fsource_plugins
     ;;
@@ -240,27 +274,31 @@ function fly
 _fshell
 _fssh_ok
 
-# ssh -t xxx . <(curl -s http://xxx/thefly) --url http://xxx/thefly.tgz
+# ssh -t xxx _fenvdir=/tmp/.fly.\$USER/xxx . <(curl -s http://xxx/thefly) remote --url http://xxx/thefly.tgz
 [ "$1" = "--url" ] && {
-    \cd "$_fenvdir"
-    curl -o ./.fly.pak -L "$2"
-    $_ftar tzvf .fly.pak |grep -qv ' .flyrc'
-    [ $? = 0 ] && echo "not fly package" && return
+    \cd "$_fenvdir" || return 1
+    curl -s -o ./.fly.pak -L "$2"
+    _fuuid=$(tar xzf fly.pak .fly.d/.flyuuid -O)
+    [ ! "$_fuuid" ] && echo "not fly package" && return 1
     $_ftar xzf .fly.pak
+    rm -f .fly.pak
     _flogin_shell
 }
 
 [ "$1" = "--git" ] && {
-    \cd "$_fenvdir"
-    git clone "$_fgithub/$3" .fly.d
+    \cd "$_fenvdir" || return 1
+    [ -d .fly.d ] && {
+        [ -d .fly.d/.git ] && cd .fly.d && git pull origin "$(sed -e 's#.*/##' .git/HEAD)"
+    } || git clone "$_fgithub/$3" .fly.d
     _flogin_shell
 }
 
 case "$1" in
-    login) _fenvdir="${2:-$_fenvdir}";_fsource_profile;;
+    login)      _fenvdir="${2:-$_fenvdir}";_fsource_profile;;
     loginshell) _fenvdir="${2:-$_fenvdir}";_flogin_shell $_fdestshell;;
-    source) _fsource_plugins;;
+    source)     _fsource_plugins;;
 esac
+
 alias fbash='fly shell bash'
 alias fzsh='fly shell zsh'
 alias fksh='fly shell ksh'
