@@ -67,12 +67,6 @@ Putting additional env in `~/.fly.d/.flyrc.<shell>` will be automically sourced 
 $ ssh -t <user>@<host> '. <(curl https://raw.githubusercontent.com/joknarf/thefly/main/thefly) loginshell'  
 ```
 
-## Connect and download .fly.d plugins from a git repository
-
-```
-$ ssh -t <user>@<host> '. <(curl https://raw.githubusercontent.com/joknarf/thefly/main/thefly) --git joknarf/myflyrc'  
-```
-
 ## Don't transform your fly in a MONSTER !
 
 Remember that ~/.fly.d directory will be duplicated in /tmp, don't put huge data in your ~/.fly.d directory, the consequences could be huge ! (ask Jeff G. ;-)
