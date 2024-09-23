@@ -22,7 +22,7 @@ function _fgit_extract {
     (umask 077;mkdir -p "$_fenvdir")
     \cd "$_fenvdir" || exit 1
     git clone --recurse-submodules --remote-submodules -j8 "https://github.com/$2" .fly.d -q 2>/dev/null || \
-    git clone --recursive "https://github.com/$1" .fly.d -q >/dev/null
+    git clone --recursive "https://github.com/$2" .fly.d -q >/dev/null
 }
 
 case "$1" in
