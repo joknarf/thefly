@@ -249,13 +249,13 @@ function fly
     ;;
     update)
         [ ! "$2" ] && echo "usage: fly update <plugin>" && return 1 
-        (\cd "$_fenvdir/.fly.d/plugins/${2#*/}" && git pull origin "$(sed -e 's#.*/##' .git/HEAD)")
+        (\cd "$_fenvdir/.fly.d/plugins/${2#*/}" && git pull origin "$(git rev-parse --abbrev-ref HEAD)")
         _fsource_plugins "${2#*/}"
     ;;
     updateall)
         _fzsh_glob fix
         for plugin in $(ls -d "$_fenvdir/.fly.d/plugins"/*/.git) ;do
-            [ -d "$plugin" ] && (\cd "$plugin/.." && git pull origin "$(sed -e 's#.*/##' .git/HEAD)")
+            [ -d "$plugin" ] && (\cd "$plugin/.." && git pull origin "$(git rev-parse --abbrev-ref HEAD)")
             [ -s "$plugin" ] && submodule=1
         done
         [ "$submodule" ] && (\cd $_fenvdir/.fly.d && { 
