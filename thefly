@@ -5,49 +5,42 @@ type uuidgen >/dev/null 2>&1 || uuidgen() {
 }
 
 function _fhttp_extract {
-    curl -s -o .fly.pak -L "$1"
+    curl -s -o .fly.pak -L "$2" || exit 1
     _fuuid=$(tar xzf .fly.pak .fly.d/.flyuuid -O)
     [ ! "$_fuuid" ] && echo "not fly package" && exit 1
-    _fenvdir="/tmp/.fly.$USER/$_fuuid"
+    [ "$1" = "remote" ] && _fenvdir="/tmp/.fly.$USER/$_fuuid"
     (umask 077;mkdir -p "$_fenvdir")
     tar xzf .fly.pak -C $_fenvdir
     rm -f .fly.pak
 }
 
 function _fgit_extract {
-    _fuuid=$(curl -s "https://raw.githubusercontent.com/$1/refs/heads/main/.flyuuid") || exit 1
+    _fuuid=$(curl -s "https://raw.githubusercontent.com/$2/refs/heads/main/.flyuuid") || exit 1
     [ ! "$_fuuid" ] && echo "not fly repo" && exit 1
-    _fenvdir="/tmp/.fly.$USER/$_fuuid"
+    [ "$1" = "remote" ] && _fenvdir="/tmp/.fly.$USER/$_fuuid"
     [ -d "$_fenvdir/.fly.d/.git" ] && return
     (umask 077;mkdir -p "$_fenvdir")
     \cd "$_fenvdir" || exit 1
-    git clone --recurse-submodules --remote-submodules -j8 "https://github.com/$1" .fly.d -q 2>/dev/null || \
+    git clone --recurse-submodules --remote-submodules -j8 "https://github.com/$2" .fly.d -q 2>/dev/null || \
     git clone --recursive "https://github.com/$1" .fly.d -q >/dev/null
 }
 
 case "$1" in
     install)
         unset _floaded
-        (umask 077;mkdir -p "$_fenvdir/.fly.d/plugins")
+        [ "$1" =  "remote" ] && {
+            (umask 077;mkdir -p "/tmp/.fly.$USER")
+            \cd "/tmp/.fly.$USER" || return 1
+        } || \cd "$_fenvdir"
+        case "$2" in
+            http*://*) _fhttp_extract "$1" "$2";;
+            */*)       _fgit_extract "$1" "$2";;
+            *)         (umask 077;mkdir -p "$_fenvdir/.fly.d/plugins");;
+        esac
         [ -f "$_fenvdir/.fly.d/.flyrc" ] || touch "$_fenvdir/.fly.d/.flyrc" "$_fenvdir/.fly.d/.flyrc.bash" "$_fenvdir/.fly.d/.flyrc.zsh" "$_fenvdir/.fly.d/.flyrc.ksh"
         [ -f "$_fenvdir/.fly.d/.flyuuid" ] || uuidgen >"$_fenvdir/.fly.d/.flyuuid"
         [ -d "$_fenvdir/.fly.d/.git" ] || (\cd "$_fenvdir/.fly.d" && { git init;git -M main; git checkout -b main; }) >/dev/null 2>&1
-        echo "TheFly: install in $_fenvdir/.fly.d/fly" >&2
-        echo "TheFly: Put in your shell profile to load thefly/plugins at login:" >&2
-        echo "TheFly:   source $_fenvdir/.fly.d/fly source" >&2
-        echo "TheFly: To add shell pluggins from github use:" >&2
-        echo "TheFly:   fly add <git owner>/<repo>" >&2
         shift
-        ;;
-    remote)
-        shift
-        (umask 077;mkdir -p "/tmp/.fly.$USER")
-        cd /tmp/.fly.$USER || return 1
-        case "$1" in
-            http*://*) _fhttp_extract "$1";;
-            */*)       _fgit_extract "$1";;
-            *)         (umask 077;mkdir -p "$_fenvdir/.fly.d");;
-        esac
         set -- loginshell
         ;;
     *)  echo "usage: source thefly [install|remote]"

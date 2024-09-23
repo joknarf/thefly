@@ -61,7 +61,19 @@ When connected with a shell change shell and load your env/plugins:
 Putting your env in `~/.fly.d/.flyrc` will be automatically sourced (must be compatible with different shells)  
 Putting additional env in `~/.fly.d/.flyrc.<shell>` will be automatically sourced for shell
 
-## Connect using thefly from http
+## Download/activate your env/plugins from your fly git repo or web server
+
+put your .fly.d directory into a git repo and activate all your env/plugins in your current user
+```
+. <(curl https://raw.githubusercontent.com/joknarf/thefly/main/thefly) install joknarf/myfly
+```
+
+create a tgz file with your .fly.d exposed on web server and activate env/plugins in your current user
+```
+. <(curl https://raw.githubusercontent.com/joknarf/thefly/main/thefly) install https://myserver/myfly
+```
+
+## Connect using thefly env/plugins from http/git repo
 
 uses user ~.fly.d to load env/plugins
 ```
