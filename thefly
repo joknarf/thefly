@@ -34,7 +34,7 @@ function _finit
 }
 
 case "$1" in
-    install|remote)
+    install|remote|login)
         unset _floaded
         [ "$1" =  "remote" ] && {
             (umask 077;mkdir -p "/tmp/.fly.$USER")
@@ -43,7 +43,7 @@ case "$1" in
         case "$2" in
             http*://*) _fhttp_extract "$1" "$2"; set -- loginshell;;
             */*)       _fgit_extract "$1" "$2"; set -- loginshell;;
-            '')        _finit; set -- source;;
+            '')        _finit; [ "$1" = install ] && set -- source || set -- loginshell;;
         esac
         ;;
     *)  echo "usage: source thefly [install|remote] [<url .fly.tgz>|<git owner/<repo>]"
