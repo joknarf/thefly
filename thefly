@@ -33,15 +33,13 @@ case "$1" in
             \cd "/tmp/.fly.$USER" || return 1
         } || \cd "$_fenvdir"
         case "$2" in
-            http*://*) _fhttp_extract "$1" "$2";;
-            */*)       _fgit_extract "$1" "$2";;
-            *)         (umask 077;mkdir -p "$_fenvdir/.fly.d/plugins");;
+            http*://*) _fhttp_extract "$1" "$2";set -- loginshell;;
+            */*)       _fgit_extract "$1" "$2";set -- loginshell;;
+            *)         (umask 077;mkdir -p "$_fenvdir/.fly.d/plugins");set -- source;;
         esac
         [ -f "$_fenvdir/.fly.d/.flyrc" ] || touch "$_fenvdir/.fly.d/.flyrc" "$_fenvdir/.fly.d/.flyrc.bash" "$_fenvdir/.fly.d/.flyrc.zsh" "$_fenvdir/.fly.d/.flyrc.ksh"
         [ -f "$_fenvdir/.fly.d/.flyuuid" ] || uuidgen >"$_fenvdir/.fly.d/.flyuuid"
         [ -d "$_fenvdir/.fly.d/.git" ] || (\cd "$_fenvdir/.fly.d" && { git init;git -M main; git checkout -b main; }) >/dev/null 2>&1
-        shift
-        set -- loginshell
         ;;
     *)  echo "usage: source thefly [install|remote]"
         return 1
@@ -80,10 +78,10 @@ function _fpackage
 
 function _fxpackage
 {
-    printf '%s;' 'type gtar >/dev/null 2>&1 && _ftar=gtar || _ftar=tar'
-    printf '%s;' 'umask 077' 'mkdir -p "'"$_ftmpdir"'"'
-    #printf '%s;' '! chmod 700 "'"$_ftmpdir"'" && echo "Not owner of '"$_ftmpdir"'. Abort >&2" && exit 1'
-    printf '%s' 'gzip -dc |$_ftar xf - -C "'"$_ftmpdir"'"'
+    printf 'type gtar >/dev/null 2>&1 && _ftar=gtar || _ftar=tar;'
+    printf 'umask 077;mkdir -p "%s";' "$_ftmpdir"
+    #printf '! chmod 700 "%s" && echo "Not owner of %s. Abort >&2" && exit 1;' "$_ftmpdir" "$_ftmpdir"
+    printf 'gzip -dc |$_ftar xf - -C "%s"' "$_ftmpdir"
 }
 
 function _fzsh_glob
@@ -168,9 +166,9 @@ function _flogin_shell
 function _flogin_rc
 {
     typeset fenvd="${1:-$_fenvdir}"
-    printf '%s\n' "FLY_USER_RC=$FLY_USER_RC"
-    printf '%s\n' "FLY_ETC_RC=$FLY_ETC_RC"
-    printf '%s\n' ". $fenvd/.fly.d/fly login $fenvd"
+    printf 'FLY_USER_RC="%s"\n' "$FLY_USER_RC"
+    printf 'FLY_ETC_RC="%s"\n' "$FLY_ETC_RC"
+    printf '. "%s/.fly.d/fly" login "%s"\n' "$fenvd" "$fenvd"
 }
 
 function fsudo
