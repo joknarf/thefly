@@ -59,8 +59,8 @@ echo "Bzzz Bzzz !!!" >&2
 _floaded=1
 : "${FLY_HOME:=$HOME}"
 : "${_fgithub=https://github.com}"
-: "${FLY_USER_RC=true}"
-: "${FLY_ETC_RC=true}"
+: "${FLY_USER_RC:=true}"
+: "${FLY_ETC_RC:=true}"
 : "${_fuuid:=$(cat "$FLY_HOME/.fly.d/.flyuuid" 2>/dev/null || uuidgen)}"
 : "${_ftmpdir:="/tmp/.fly.\$USER/$_fuuid"}"
 type gtar >/dev/null 2>&1 && _ftar=gtar || _ftar=tar
@@ -156,7 +156,7 @@ function _fsource_profile_ksh
 function _fsource_profile
 {
     eval "_fsource_profile_$FLY_SHELL"
-    FLY_HOST_PROFILE=true FLY_USER_PROFILE=true
+    FLY_ETC_RC=true FLY_USER_RC=true
     _fsource_plugins
 }
 
@@ -172,17 +172,17 @@ function _flogin_shell
 
 function _flogin_rc
 {
-    typeset fenvd="${1:-$FLY_HOME}"
+    printf 'FLY_HOME="%s"\n' "$FLY_HOME"
     printf 'FLY_USER_RC="%s"\n' "$FLY_USER_RC"
     printf 'FLY_ETC_RC="%s"\n' "$FLY_ETC_RC"
-    printf '. "%s/.fly.d/fly" login "%s"\n' "$fenvd" "$fenvd"
+    printf '. "%s/.fly.d/fly" login\n' "$FLY_HOME"
 }
 
 function fsudo
 {
     typeset user=${1:-root} 
     _fpackage |sudo -H -u "$user" $FLY_SHELL -c "$(_fxpackage)" || return $?
-    sudo -H -u "$user" -i FLY_USER_RC="$FLY_USER_RC" FLY_ETC_RC="$FLY_ETC_RC" _fdestshell="$_fdestshell" "_fuuid=$_fuuid" . "$_ftmpdir/.fly.d/fly" loginshell "$_ftmpdir"
+    sudo -H -u "$user" -i FLY_USER_RC="$FLY_USER_RC" FLY_ETC_RC="$FLY_ETC_RC" _fdestshell="$_fdestshell" . "$_ftmpdir/.fly.d/fly" loginshell "$_ftmpdir"
 }
 
 function _fssh_cmd
@@ -285,27 +285,8 @@ function fly
 _fshell
 _fssh_ok
 
-# ssh -t xxx FLY_HOME=/tmp/.fly.\$USER/xxx . <(curl -s http://xxx/thefly) remote --url http://xxx/thefly.tgz
-[ "$1" = "--url" ] && {
-    \cd "$FLY_HOME" || return 1
-    curl -s -o ./.fly.pak -L "$2"
-    _fuuid=$(tar -xzf fly.pak .fly.d/.flyuuid -O)
-    [ ! "$_fuuid" ] && echo "not fly package" && return 1
-    $_ftar -xzf .fly.pak
-    rm -f .fly.pak
-    _flogin_shell
-}
-
-[ "$1" = "--git" ] && {
-    \cd "$FLY_HOME" || return 1
-    [ -d .fly.d ] && {
-        [ -d .fly.d/.git ] && cd .fly.d && git pull origin "$(sed -e 's#.*/##' .git/HEAD)"
-    } || git clone "$_fgithub/$3" .fly.d
-    _flogin_shell
-}
-
 case "$1" in
-    login)      FLY_HOME="${2:-$FLY_HOME}";_fsource_profile;;
+    login)      _fsource_profile;;
     loginshell) FLY_HOME="${2:-$FLY_HOME}";_flogin_shell $_fdestshell;;
     source)     _fsource_plugins;;
 esac
