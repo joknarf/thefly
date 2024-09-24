@@ -25,23 +25,28 @@ function _fgit_extract {
     git clone --recursive "https://github.com/$2" .fly.d -q >/dev/null
 }
 
+function _finit
+{
+        (umask 077;mkdir -p "$_fenvdir/.fly.d/plugins")
+        [ -f "$_fenvdir/.fly.d/.flyrc" ] || touch "$_fenvdir/.fly.d/.flyrc" "$_fenvdir/.fly.d/.flyrc.bash" "$_fenvdir/.fly.d/.flyrc.zsh" "$_fenvdir/.fly.d/.flyrc.ksh"
+        [ -f "$_fenvdir/.fly.d/.flyuuid" ] || uuidgen >"$_fenvdir/.fly.d/.flyuuid"
+        [ -d "$_fenvdir/.fly.d/.git" ] || (\cd "$_fenvdir/.fly.d" && { git init;git -M main; git checkout -b main; }) >/dev/null 2>&1
+}
+
 case "$1" in
-    install)
+    install|remote)
         unset _floaded
         [ "$1" =  "remote" ] && {
             (umask 077;mkdir -p "/tmp/.fly.$USER")
             \cd "/tmp/.fly.$USER" || return 1
-        } || \cd "$_fenvdir"
+        }
         case "$2" in
-            http*://*) _fhttp_extract "$1" "$2";set -- loginshell;;
-            */*)       _fgit_extract "$1" "$2";set -- loginshell;;
-            *)         (umask 077;mkdir -p "$_fenvdir/.fly.d/plugins");set -- source;;
+            http*://*) _fhttp_extract "$1" "$2"; set -- loginshell;;
+            */*)       _fgit_extract "$1" "$2"; set -- loginshell;;
+            '')        _finit; set -- source;;
         esac
-        [ -f "$_fenvdir/.fly.d/.flyrc" ] || touch "$_fenvdir/.fly.d/.flyrc" "$_fenvdir/.fly.d/.flyrc.bash" "$_fenvdir/.fly.d/.flyrc.zsh" "$_fenvdir/.fly.d/.flyrc.ksh"
-        [ -f "$_fenvdir/.fly.d/.flyuuid" ] || uuidgen >"$_fenvdir/.fly.d/.flyuuid"
-        [ -d "$_fenvdir/.fly.d/.git" ] || (\cd "$_fenvdir/.fly.d" && { git init;git -M main; git checkout -b main; }) >/dev/null 2>&1
         ;;
-    *)  echo "usage: source thefly [install|remote]"
+    *)  echo "usage: source thefly [install|remote] [<url .fly.tgz>|<git owner/<repo>]"
         return 1
         ;;
 esac
