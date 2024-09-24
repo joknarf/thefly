@@ -10,7 +10,8 @@ function _fhttp_extract {
     [ ! "$_fuuid" ] && echo "not fly package" && exit 1
     [ "$1" = "remote" ] && _fenvdir="/tmp/.fly.$USER/$_fuuid"
     (umask 077;mkdir -p "$_fenvdir")
-    tar -xzf .fly.pak -C $_fenvdir
+    type gtar >/dev/null 2>&1 && _ftar=gtar || _ftar=tar
+    $_ftar -xzf .fly.pak -C $_fenvdir
     rm -f .fly.pak
 }
 
