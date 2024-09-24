@@ -45,10 +45,10 @@ case "$1" in
             */*)       _fgit_extract "$1" "$2"; set -- loginshell;;
             '')        _finit; [ "$1" = install ] && set -- source || set -- loginshell;;
         esac
-        ;;
+    ;;
     *)  echo "usage: source thefly [install|remote] [<url .fly.tgz>|<git owner/<repo>]"
         return 1
-        ;;
+    ;;
 esac
 
 cat - >"$_fenvdir/.fly.d/fly" <<'EOFLY' && . "$_fenvdir/.fly.d/fly"
