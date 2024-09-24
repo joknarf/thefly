@@ -6,11 +6,11 @@ type uuidgen >/dev/null 2>&1 || uuidgen() {
 
 function _fhttp_extract {
     curl -s -o .fly.pak -L "$2" || exit 1
-    _fuuid=$(tar xzf .fly.pak .fly.d/.flyuuid -O)
+    _fuuid=$(tar -xzf .fly.pak .fly.d/.flyuuid -O)
     [ ! "$_fuuid" ] && echo "not fly package" && exit 1
     [ "$1" = "remote" ] && _fenvdir="/tmp/.fly.$USER/$_fuuid"
     (umask 077;mkdir -p "$_fenvdir")
-    tar xzf .fly.pak -C $_fenvdir
+    tar -xzf .fly.pak -C $_fenvdir
     rm -f .fly.pak
 }
 
@@ -78,15 +78,15 @@ function _fshell
 
 function _fpackage
 {
-    $_ftar czf - -C "$_fenvdir" --no-xattrs --exclude-vcs --exclude=README.md --exclude='plugins/*/.*' --exclude '*/*/tests' .fly.d
+    $_ftar -czf - -C "$_fenvdir" --no-xattrs --exclude-vcs --exclude=README.md --exclude='plugins/*/.*' --exclude '*/*/tests' .fly.d
 }
 
 function _fxpackage
 {
     printf 'type gtar >/dev/null 2>&1 && _ftar=gtar || _ftar=tar;'
     printf 'umask 077;mkdir -p "%s";' "$_ftmpdir"
-    #printf '! chmod 700 "%s" && echo "Not owner of %s. Abort >&2" && exit 1;' "$_ftmpdir" "$_ftmpdir"
-    printf 'gzip -dc |$_ftar xf - -C "%s"' "$_ftmpdir"
+    printf '! chmod 700 "%s" && echo "Not owner of %s. Abort >&2" && exit 1;' "${_ftmpdir%/*}" "${_ftmpdir%/*}"
+    printf '$_ftar -xzf - -C "%s" --no-same-owner' "$_ftmpdir"
 }
 
 function _fzsh_glob
@@ -287,9 +287,9 @@ _fssh_ok
 [ "$1" = "--url" ] && {
     \cd "$_fenvdir" || return 1
     curl -s -o ./.fly.pak -L "$2"
-    _fuuid=$(tar xzf fly.pak .fly.d/.flyuuid -O)
+    _fuuid=$(tar -xzf fly.pak .fly.d/.flyuuid -O)
     [ ! "$_fuuid" ] && echo "not fly package" && return 1
-    $_ftar xzf .fly.pak
+    $_ftar -xzf .fly.pak
     rm -f .fly.pak
     _flogin_shell
 }
