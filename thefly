@@ -34,7 +34,7 @@ function _finit
 }
 
 case "$1" in
-    install|remote|login)
+    install|remote)
         unset _floaded
         [ "$1" =  "remote" ] && {
             (umask 077;mkdir -p "/tmp/.fly.$USER")
