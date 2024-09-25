@@ -54,9 +54,11 @@ case "$1" in
 esac
 
 cat - >"$FLY_HOME/.fly.d/fly" <<'EOFLY' && . "$FLY_HOME/.fly.d/fly"
+[ "$1" != source ] && unset _floaded
 [ "$_floaded" ] && return
 echo "Bzzz Bzzz !!!" >&2
 _floaded=1
+[ "$1" = loginshell ] && FLY_HOME="$2"
 : "${FLY_HOME:=$HOME}"
 : "${_fgithub=https://github.com}"
 : "${FLY_USER_RC:=true}"
@@ -175,6 +177,7 @@ function _flogin_rc
     printf 'FLY_HOME="%s"\n' "$FLY_HOME"
     printf 'FLY_USER_RC="%s"\n' "$FLY_USER_RC"
     printf 'FLY_ETC_RC="%s"\n' "$FLY_ETC_RC"
+    printf 'unset _floaded\n'
     printf '. "%s/.fly.d/fly" login\n' "$FLY_HOME"
 }
 
@@ -287,7 +290,7 @@ _fssh_ok
 
 case "$1" in
     login)      _fsource_profile;;
-    loginshell) FLY_HOME="${2:-$FLY_HOME}";_flogin_shell $_fdestshell;;
+    loginshell) _flogin_shell $_fdestshell;;
     source)     _fsource_plugins;;
 esac
 
@@ -300,5 +303,5 @@ alias fsshk='_fdestshell=ksh fssh'
 alias fsudob='_fdestshell=bash fsudo'
 alias fsudoz='_fdestshell=zsh fsudo'
 alias fsudok='_fdestshell=ksh fsudo'
-
+set --
 EOFLY
