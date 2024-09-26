@@ -215,15 +215,16 @@ function _fssh_ok
 
 function fssh
 {
-    ! $_fssh_ok && { fssh2 "$@"; return; } 
+    ! $_fssh_ok && { fssh2 "$@"; return $?; } 
     typeset ssh_config cmd
+    cmd="$(_fssh_cmd)"
+    [[ ${#cmd} > 130000 ]] && { fssh2 "$@"; return $?; }
     for i in "$@";do
        [ "$i" = -F ] && shift && ssh_config="Include $1" && shift && continue
        shift
        set -- "$@" "$i"
     done
     [ ! "$ssh_config" ] && [ -f ~/.ssh/config ] && ssh_config="Include $HOME/.ssh/config"
-    cmd="$(_fssh_cmd)"
     cmd="${cmd//$'\n'/;}"
     cat - <<EOF >"$FLY_HOME/.fly_ssh"
 $ssh_config
