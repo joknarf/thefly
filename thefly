@@ -197,7 +197,7 @@ printf '$(_fpackage |base64 $b64opt)' |base64 -d |($(_fxpackage))
 _fdestshell="$_fdestshell"
 FLY_USER_RC="$FLY_USER_RC"
 FLY_ETC_RC="$FLY_ETC_RC"
-_fuuid="$_fuuid" . "$_ftmpdir/.fly.d/fly" loginshell "$_ftmpdir"
+. "$_ftmpdir/.fly.d/fly" loginshell "$_ftmpdir"
 EOF
 }
 
