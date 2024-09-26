@@ -304,5 +304,6 @@ alias fsshk='_fdestshell=ksh fssh'
 alias fsudob='_fdestshell=bash fsudo'
 alias fsudoz='_fdestshell=zsh fsudo'
 alias fsudok='_fdestshell=ksh fsudo'
+alias cdfly='cd $FLY_HOME/.fly.d'
 set --
 EOFLY
