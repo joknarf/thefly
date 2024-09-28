@@ -24,8 +24,8 @@ function _fgit_extract {
     [ -d "$FLY_HOME/.fly.d/.git" ] && return 0
     (umask 077;mkdir -p "$FLY_HOME")
     \cd "$FLY_HOME" || exit 1
-    git clone --recurse-submodules --remote-submodules -j8 "https://github.com/$2" .fly.d -q 2>/dev/null || \
-    git clone --recursive "https://github.com/$2" .fly.d -q >/dev/null
+    git clone --depth 1 --shallow-submodules --recurse-submodules --remote-submodules -j8 "https://github.com/$2" .fly.d -q 2>/dev/null || \
+    git clone --depth 1 --recursive "https://github.com/$2" .fly.d -q >/dev/null
     (umask 077;mkdir -p "$FLY_HOME/.fly.d/.fly.lib")
 }
 
@@ -263,6 +263,7 @@ function fly
         [ -d "$FLY_HOME/.fly.d/.git" ] && {
             (\cd "$FLY_HOME/.fly.d" && git submodule add "$_fgithub/$2" "plugins/${2##*/}" 2>/dev/null)
         } || (\cd "$FLY_HOME/.fly.d/plugins" && git clone "$_fgithub/$2" -q)
+        (\cd "$FLY_HOME/.fly.d" && git config -f ".gitmodules submodule.plugins/${2##*/}.shallow" true 2>/dev/null)
         _fsource_plugins "${2#*/}"
     ;;
     del)
