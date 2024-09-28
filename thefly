@@ -263,16 +263,19 @@ function fly
         [ -d "$FLY_HOME/.fly.d/.git" ] && {
             (\cd "$FLY_HOME/.fly.d" && git submodule add "$_fgithub/$2" "plugins/${2##*/}" 2>/dev/null)
         } || (\cd "$FLY_HOME/.fly.d/plugins" && git clone "$_fgithub/$2" -q)
-        (\cd "$FLY_HOME/.fly.d" && git config -f ".gitmodules submodule.plugins/${2##*/}.shallow" true 2>/dev/null)
+        (\cd "$FLY_HOME/.fly.d" && git config -f ".gitmodules submodule.plugins/${2##*/}.shallow" true >/dev/null 2>/dev/null)
         _fsource_plugins "${2#*/}"
     ;;
     del)
         [ ! "$2" ] && echo "usage: fly del <plugin>" >&2 && return 1
         [ ! -d "$FLY_HOME/.fly.d/plugins/${2##*/}" ] && echo "plugin ${2##*/} not found" >&2 && return 1
         [ -d "$FLY_HOME/.fly.d/.git" ] && {
-            (\cd "$FLY_HOME/.fly.d" && git submodule deinit -f "plugins/${2##*/}" 2>/dev/null)
-        }
-        rm -rf "$FLY_HOME/.fly.d/plugins/${2##*/}"
+            (\cd "$FLY_HOME/.fly.d" && git submodule deinit -f "plugins/${2##*/}" 2>/dev/null && \
+                git config -f .gitmodules --remove-section "submodule.plugins/${2##*/}" >/dev/null 2>/dev/null
+                git rm --cached "plugins/${2##*/}"
+            )
+        } 
+        rm -rf "$FLY_HOME/.fly.d/plugins/${2##*/}" "$FLY_HOME/.fly.d/.git/modules/plugins/${2##*/}"
     ;;
     update)
         [ ! "$2" ] && echo "usage: fly update <plugin>" >&2 && return 1 
