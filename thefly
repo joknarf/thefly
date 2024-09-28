@@ -26,6 +26,7 @@ function _fgit_extract {
     \cd "$FLY_HOME" || exit 1
     git clone --recurse-submodules --remote-submodules -j8 "https://github.com/$2" .fly.d -q 2>/dev/null || \
     git clone --recursive "https://github.com/$2" .fly.d -q >/dev/null
+    (umask 077;mkdir -p "$FLY_HOME/.fly.d/.fly.lib")
 }
 
 function _finit
@@ -102,7 +103,7 @@ cat - <<'EOF' >"$_flib/.fshell"
         "$KSH_VERSION") FLY_SHELL=ksh;;
         "$BASH")        FLY_SHELL=bash;;
         "$ZSH_VERSION") FLY_SHELL=zsh;;
-        *) echo unsupported;;
+        *)              FLY_SHELL=bash;;
     esac
 EOF
 
@@ -123,7 +124,6 @@ cat - >"$FLY_HOME/.fly.d/fly" <<'EOFLY' && . "$FLY_HOME/.fly.d/fly"
 [ "$_floaded" ] && echo skip && return
 echo "Bzzz Bzzz !!!" >&2
 _floaded=1
-[ "$1" = loginshell ] && FLY_HOME="$2"
 : "${FLY_HOME:=$HOME}"
 : "${_fgithub=https://github.com}"
 : "${FLY_USER_RC:=true}"
@@ -299,7 +299,7 @@ _fssh_ok
 
 case "$1" in
     login)      _fsource_profile;;
-    loginshell) _flogin_shell $_fdestshell;;
+    loginshell) _flogin_rc; . $FLY_HOME/.fly.d/.fly.lib/.loginshell "$FLY_HOME" $_fdestshell;;
     source)     _fsource_plugins;;
 esac
 
