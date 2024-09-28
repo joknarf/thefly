@@ -196,7 +196,11 @@ function fsudo
     typeset user=${1:-root}
     _flogin_rc "$_ftmpdir"
     _fpackage |sudo -H -u "$user" $FLY_SHELL -c "$(_fxpackage)" || return $?
-    sudo -H -u "$user" -i . "$_ftmpdir/.fly.d/.fly.lib/.loginshell" "$_ftmpdir" "$_fdestshell"
+    if [ "$_fdestshell" ];then
+        sudo -H -u "$user" "$_fdestshell" -- "${_ftmpdir/\$USER/$user}/.fly.d/.fly.lib/.loginshell" "${_ftmpdir/\$USER/$user}" "$_fdestshell"
+    else
+        sudo -H -u "$user" -i . "$_ftmpdir/.fly.d/.fly.lib/.loginshell" "$_ftmpdir"
+    fi
 }
 
 function _fssh_ok
@@ -215,6 +219,7 @@ function _fssh_cmd
 {
     typeset b64opt
     echo ok |base64 -w0 >/dev/null 2>&1 && b64opt='-w0'
+
     cat - <<EOF
 printf '$(_fpackage |base64 $b64opt)' |base64 -d |($(_fxpackage))
 . "$_ftmpdir/.fly.d/.fly.lib/.loginshell" "$_ftmpdir" "$_fdestshell"
