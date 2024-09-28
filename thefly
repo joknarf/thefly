@@ -228,9 +228,9 @@ EOF
 
 function fssh
 {
-    _flogin_rc "$_ftmpdir"
     ! $_fssh_ok && { fssh2 "$@"; return $?; } 
     typeset ssh_config cmd
+    _flogin_rc "$_ftmpdir"
     cmd="$(_fssh_cmd)"
     [ ${#cmd} -gt 130000 ] && { fssh2 "$@"; return $?; }
     for i in "$@";do
@@ -249,6 +249,7 @@ EOF
 
 function fssh2
 {
+    _flogin_rc "$_ftmpdir"
     _fpackage | ssh -o LogLevel=Error "$@" "$(_fxpackage)" || return $?
     ssh "$@" -t '. '"$_ftmpdir"'/.fly.d/.fly.lib/.loginshell '"$_ftmpdir"' '"$_fdestshell"''
 }
@@ -265,13 +266,15 @@ function fly
         _fsource_plugins "${2#*/}"
     ;;
     del)
+        [ ! "$2" ] && echo "usage: fly del <plugin>" >&2 && return 1
+        [ ! -d "$FLY_HOME/.fly.d/plugins/${2##*/}" ] && echo "plugin ${2##*/} not found" >&2 && return 1
         [ -d "$FLY_HOME/.fly.d/.git" ] && {
             (\cd "$FLY_HOME/.fly.d" && git submodule deinit -f "plugins/${2##*/}" 2>/dev/null)
         }
         rm -rf "$FLY_HOME/.fly.d/plugins/${2##*/}"
     ;;
     update)
-        [ ! "$2" ] && echo "usage: fly update <plugin>" && return 1 
+        [ ! "$2" ] && echo "usage: fly update <plugin>" >&2 && return 1 
         (\cd "$FLY_HOME/.fly.d/plugins/${2#*/}" && git pull origin "$(git rev-parse --abbrev-ref HEAD)")
         _fsource_plugins "${2#*/}"
     ;;
@@ -305,7 +308,7 @@ _fssh_ok
 case "$1" in
     login)      _fsource_profile;;
     loginshell) _flogin_rc; . $FLY_HOME/.fly.d/.fly.lib/.loginshell "$FLY_HOME" $_fdestshell;;
-    source)     _fsource_plugins;;
+    source)     _fsource_plugins "$2";;
 esac
 
 alias fbash='fly shell bash'
