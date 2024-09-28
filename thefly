@@ -30,12 +30,12 @@ function _fgit_extract {
 
 function _finit
 {
-    (umask 077;mkdir -p "$FLY_HOME/.fly.d/plugins" "$FLY_HOME/.fly.d/.fly.login")
+    (umask 077;mkdir -p "$FLY_HOME/.fly.d/plugins" "$FLY_HOME/.fly.d/.fly.lib")
     ! chmod 700 "$FLY_HOME/.fly.d" && echo "Not owner of /tmp/.fly.$USER. Abort" && return 1
     [ -f "$FLY_HOME/.fly.d/.flyrc" ] || touch "$FLY_HOME/.fly.d/.flyrc" "$FLY_HOME/.fly.d/.flyrc.bash" "$FLY_HOME/.fly.d/.flyrc.zsh" "$FLY_HOME/.fly.d/.flyrc.ksh"
     [ -s "$FLY_HOME/.fly.d/.flyuuid" ] || uuidgen >"$FLY_HOME/.fly.d/.flyuuid"
-    [ -d "$FLY_HOME/.fly.d/.git" ] || (\cd "$FLY_HOME/.fly.d" && { git init;git -M main; git checkout -b main; }) >/dev/null 2>&1
-    [ -L "$FLY_HOME/.fly.d/.fly.login/.zshrc" ] || ln -s .login "$FLY_HOME/.fly.d/.fly.login/.zshrc" 
+    [ -L "$FLY_HOME/.fly.d/.fly.lib/.zshrc" ] || ln -s .login "$FLY_HOME/.fly.d/.fly.lib/.zshrc"
+    [ -d "$FLY_HOME/.fly.d/.git" ] || (\cd "$FLY_HOME/.fly.d" && { git init;git -M main; git checkout -b main; printf '%s\n%s' fly .fly.lib >.gitignore; }) >/dev/null 2>&1
 }
 
 case "$1" in
@@ -56,10 +56,11 @@ case "$1" in
         return 1
     ;;
 esac
+unset -f _finit _fhttp_extract _fgit_extract
 
-_flogin="$FLY_HOME/.fly.d/.fly.login"
+_flib="$FLY_HOME/.fly.d/.fly.lib"
 
-cat - <<'EOF' >"$_flogin/.login.bash"
+cat - <<'EOF' >"$_flib/.login.bash"
     \cd /;\cd
     alias typeset="typeset +r"
     alias readonly=typeset
@@ -71,7 +72,7 @@ cat - <<'EOF' >"$_flogin/.login.bash"
     unalias readonly
 EOF
 
-cat - <<'EOF' >"$_flogin/.login.zsh"
+cat - <<'EOF' >"$_flib/.login.zsh"
     \cd /;\cd
     ZDOTDIR=~/
     for i in zshenv zprofile zshrc;do
@@ -81,20 +82,20 @@ cat - <<'EOF' >"$_flogin/.login.zsh"
     #typeset +r PS1
 EOF
 
-cat - <<'EOF' >"$_flogin/.login.ksh"
+cat - <<'EOF' >"$_flib/.login.ksh"
     \cd /;\cd
     typeset +x ENV
     ENV=~/.kshrc
     #alias typeset="typeset +r"
-    alias readonly=typeset
+    #alias readonly=typeset
     $FLY_ETC_RC && . /etc/profile
     [ -r .profile ] && $FLY_USER_RC && . ./.profile
     [ -r "$ENV" ] && $FLY_USER_RC && . $ENV
-    unalias typeset
-    unalias readonly
+    #unalias typeset
+    #unalias readonly
 EOF
 
-cat - <<'EOF' >"$_flogin/.fshell"
+cat - <<'EOF' >"$_flib/.fshell"
     : "${FLY_SHELL:=$_fdestshell}"
     [ "$FLY_SHELL" ] && return
     case "$KSH_VERSION$BASH$ZSH_VERSION" in
@@ -105,14 +106,14 @@ cat - <<'EOF' >"$_flogin/.fshell"
     esac
 EOF
 
-cat - <<'EOF' > "$_flogin/.loginshell"
+cat - <<'EOF' > "$_flib/.loginshell"
     FLY_HOME="${1:-$FLY_HOME}"
-    . $FLY_HOME/.fly.d/.fly.login/.fshell
+    . $FLY_HOME/.fly.d/.fly.lib/.fshell
     FLY_SHELL="${2:-$FLY_SHELL}"
     case "$FLY_SHELL" in 
-        bash) exec bash --noprofile --init-file "$FLY_HOME/.fly.d/.fly.login/.login";;
-        zsh)  ZDOTDIR=$FLY_HOME/.fly.d/.fly.login exec zsh -di;;
-        ksh)  ENV=$FLY_HOME/.fly.d/.fly.login/.login exec ksh -i;;
+        bash) exec bash --noprofile --init-file "$FLY_HOME/.fly.d/.fly.lib/.login";;
+        zsh)  ZDOTDIR=$FLY_HOME/.fly.d/.fly.lib exec zsh -di;;
+        ksh)  ENV=$FLY_HOME/.fly.d/.fly.lib/.login exec ksh -i;;
     esac
 EOF
 
@@ -130,7 +131,7 @@ _floaded=1
 : "${_fuuid:=$(cat "$FLY_HOME/.fly.d/.flyuuid" 2>/dev/null || uuidgen)}"
 : "${_ftmpdir:="/tmp/.fly.\$USER/$_fuuid"}"
 type gtar >/dev/null 2>&1 && _ftar=gtar || _ftar=tar
-. $FLY_HOME/.fly.d/.fly.login/.fshell
+. $FLY_HOME/.fly.d/.fly.lib/.fshell
 
 function _fpackage
 {
@@ -154,10 +155,10 @@ function _fzsh_glob
     esac
 }
 
-function _fsource_plugins
+_fsource_plugins()
 {
-    typeset p="$1" plugin plugindir="$FLY_HOME/.fly.d/plugins"
-
+    p="$1"
+    plugindir="$FLY_HOME/.fly.d/plugins"
     [ -r "$FLY_HOME/.fly.d/.flyrc" ] && . "$FLY_HOME/.fly.d/.flyrc"
     [ -r "$FLY_HOME/.fly.d/.flyrc.$FLY_SHELL" ] && . "$FLY_HOME/.fly.d/.flyrc.$FLY_SHELL"
     _fzsh_glob fix
@@ -166,25 +167,27 @@ function _fsource_plugins
     do
         \cd "${plugin%/*}" && { . "$plugin"; \cd "$OLDPWD"; }
     done
+    unset p plugin plugindir
     _fzsh_glob reset
 }
 
-function _fsource_profile
+_fsource_profile()
 {
-    . "$FLY_HOME/.fly.d/.fly.login/.login.$FLY_SHELL"
+    . "$FLY_HOME/.fly.d/.fly.lib/.login.$FLY_SHELL"
     FLY_ETC_RC=true FLY_USER_RC=true
     _fsource_plugins
 }
 
 function _flogin_rc
 {
-    cat - <<EOF >"$FLY_HOME/.fly.d/.fly.login/.login"
+    cat - <<EOF >"$FLY_HOME/.fly.d/.fly.lib/.login"
     FLY_HOME="${1:-$FLY_HOME}"
     FLY_USER_RC="$FLY_USER_RC"
     FLY_ETC_RC="$FLY_ETC_RC"
     FLY_SHELL="$_fdestshell"
     unset _floaded
     . "${1:-$FLY_HOME}/.fly.d/fly" login
+    #. "${1:-$FLY_HOME}/.fly.d/.fly.lib/.login.$_fdestshell"
 EOF
 }
 
@@ -193,7 +196,7 @@ function fsudo
     typeset user=${1:-root}
     _flogin_rc "$_ftmpdir"
     _fpackage |sudo -H -u "$user" $FLY_SHELL -c "$(_fxpackage)" || return $?
-    sudo -H -u "$user" -i . "$_ftmpdir/.fly.d/.fly.login/.loginshell" "$_ftmpdir" "$_fdestshell"
+    sudo -H -u "$user" -i . "$_ftmpdir/.fly.d/.fly.lib/.loginshell" "$_ftmpdir" "$_fdestshell"
 }
 
 function _fssh_ok
@@ -214,7 +217,7 @@ function _fssh_cmd
     echo ok |base64 -w0 >/dev/null 2>&1 && b64opt='-w0'
     cat - <<EOF
 printf '$(_fpackage |base64 $b64opt)' |base64 -d |($(_fxpackage))
-. "$_ftmpdir/.fly.d/.fly.login/.loginshell" "$_ftmpdir" "$_fdestshell"
+. "$_ftmpdir/.fly.d/.fly.lib/.loginshell" "$_ftmpdir" "$_fdestshell"
 EOF
 }
 
@@ -242,7 +245,7 @@ EOF
 function fssh2
 {
     _fpackage | ssh -o LogLevel=Error "$@" "$(_fxpackage)" || return $?
-    ssh "$@" -t '. '"$_ftmpdir"'/.fly.d/.fly.login/.loginshell '"$_ftmpdir"' '"$_fdestshell"''
+    ssh "$@" -t '. '"$_ftmpdir"'/.fly.d/.fly.lib/.loginshell '"$_ftmpdir"' '"$_fdestshell"''
 }
 
 
@@ -288,7 +291,7 @@ function fly
     source)
         _fsource_plugins
     ;;
-    shell) _fdestshell="${2:-$FLY_SHELL}"; _flogin_rc; . "$FLY_HOME/.fly.d/.fly.login/.loginshell" "$FLY_HOME" "$_fdestshell";;
+    shell) _fdestshell="${2:-$FLY_SHELL}"; _flogin_rc; . "$FLY_HOME/.fly.d/.fly.lib/.loginshell" "$FLY_HOME" "$_fdestshell";;
     esac
 }
 
