@@ -271,8 +271,9 @@ function fly
         [ ! -d "$FLY_HOME/.fly.d/plugins/${2##*/}" ] && echo "plugin ${2##*/} not found" >&2 && return 1
         [ -d "$FLY_HOME/.fly.d/.git" ] && {
             (\cd "$FLY_HOME/.fly.d" && git submodule deinit -f "plugins/${2##*/}" 2>/dev/null && \
-                git config -f .gitmodules --remove-section "submodule.plugins/${2##*/}" >/dev/null 2>/dev/null
+                git add .gitmodules
                 git rm --cached "plugins/${2##*/}"
+                git config -f .gitmodules --remove-section "submodule.plugins/${2##*/}" >/dev/null 2>/dev/null
             )
         } 
         rm -rf "$FLY_HOME/.fly.d/plugins/${2##*/}" "$FLY_HOME/.fly.d/.git/modules/plugins/${2##*/}"
