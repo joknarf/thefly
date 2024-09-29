@@ -245,6 +245,7 @@ function _fsudo
     [ ! "$_fdestshell" ] && _fdestshell="$(getent passwd "$user" 2>/dev/null)" && _fdestshell="${_fdestshell##*:}"
     [ ! "$_fdestshell" ] && _fdestshell="$(dscl . -read "Users/$user" UserShell 2>/dev/null)" && _fdestshell="${_fdestshell#*: }"
     [ ! "$_fdestshell" ] && _fdestshell="$(awk -F: '$1==user{print $NF}' user="$user" /etc/passwd)"
+    [[ "$_fdestshell" = */sh ]] && _fdestshell=$FLY_SHELL
     _flogin_rc "$_ftmpdir"
     _fpackage |sudo -H -u "$user" "${_fdestshell:-$FLY_SHELL}" -c "$(_fxpackage)" || return $?
     if [ "$_fdestshell" ];then
