@@ -32,7 +32,7 @@ function _fgit_extract {
 function _finit
 {
     (umask 077;mkdir -p "$FLY_HOME/.fly.d/plugins" "$FLY_HOME/.fly.d/.fly.lib")
-    ! chmod 700 "$FLY_HOME/.fly.d" && echo "Not owner of /tmp/.fly.$USER. Abort" && return 1
+    ! chmod 700 "$FLY_HOME/.fly.d" && echo "Not owner of /tmp/.fly.$USER. Abort" >&2 && return 1
     [ -f "$FLY_HOME/.fly.d/.flyrc" ] || touch "$FLY_HOME/.fly.d/.flyrc" "$FLY_HOME/.fly.d/.flyrc.bash" "$FLY_HOME/.fly.d/.flyrc.zsh" "$FLY_HOME/.fly.d/.flyrc.ksh"
     [ -s "$FLY_HOME/.fly.d/.flyuuid" ] || uuidgen >"$FLY_HOME/.fly.d/.flyuuid"
     [ -L "$FLY_HOME/.fly.d/.fly.lib/.zshrc" ] || ln -s .login "$FLY_HOME/.fly.d/.fly.lib/.zshrc"
@@ -44,7 +44,7 @@ case "$1" in
         unset _floaded
         [ "$1" =  "remote" ] && {
             (umask 077;mkdir -p "/tmp/.fly.$USER")
-            ! chmod 700 /tmp/.fly.$USER && echo "Not owner of /tmp/.fly.$USER. Abort" && return 1
+            ! chmod 700 /tmp/.fly.$USER && echo "Not owner of /tmp/.fly.$USER. Abort" >&2 && return 1
             \cd "/tmp/.fly.$USER" || return 1
         }
         case "$2" in
@@ -142,7 +142,7 @@ function _fxpackage
 {   
     printf 'type gtar >/dev/null 2>&1 && _ftar=gtar || _ftar=tar;'
     printf 'umask 077;mkdir -p "%s";' "$_ftmpdir"
-    printf '! chmod 700 "%s" && echo "Not owner of %s. Abort >&2" && exit 1;' "${_ftmpdir%/*}" "${_ftmpdir%/*}"
+    printf '! chmod 700 "%s" && echo "Not owner of %s. Abort" >&2 && exit 1;' "${_ftmpdir%/*}" "${_ftmpdir%/*}"
     printf '$_ftar -xmzf - -C "%s" --no-same-owner' "$_ftmpdir"
 }
 
@@ -193,13 +193,14 @@ EOF
 
 function fsudo
 {
-    typeset user=${1:-root}
+    typeset user=${1:-root} 
+    typeset destdir="/tmp/.fly.$user/$_fuuid"
     _flogin_rc "$_ftmpdir"
-    _fpackage |sudo -H -u "$user" $FLY_SHELL -c "$(_fxpackage)" || return $?
+    _fpackage |sudo -H -u "$user" "${_fdestshell:-$FLY_SHELL}" -c "$(_fxpackage)" || return $?
     if [ "$_fdestshell" ];then
-        sudo -H -u "$user" "$_fdestshell" -- "${_ftmpdir/\$USER/$user}/.fly.d/.fly.lib/.loginshell" "${_ftmpdir/\$USER/$user}" "$_fdestshell"
+        sudo -H -u "$user" "$_fdestshell" -- "$destdir/.fly.d/.fly.lib/.loginshell" "$destdir" "$_fdestshell"
     else
-        sudo -H -u "$user" -i . "$_ftmpdir/.fly.d/.fly.lib/.loginshell" "$_ftmpdir"
+        sudo -H -u "$user" -i . "$destdir/.fly.d/.fly.lib/.loginshell" "$destdir"
     fi
 }
 
