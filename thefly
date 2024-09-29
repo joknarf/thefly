@@ -193,7 +193,7 @@ function _flogin_rc
 EOF
 }
 
-function fsudo
+function _fsudo
 {
     typeset user="${1:-root}"
     typeset destdir="/tmp/.fly.$user/$_fuuid"
@@ -233,13 +233,13 @@ printf '$(_fpackage |base64 $b64opt)' |base64 -d |($(_fxpackage))
 EOF
 }
 
-function fssh
+function _fssh
 {
-    ! $_fssh_ok && { fssh2 "$@"; return $?; } 
+    ! $_fssh_ok && { _fssh2 "$@"; return $?; } 
     typeset ssh_config cmd
     _flogin_rc "$_ftmpdir"
     cmd="$(_fssh_cmd)"
-    [ ${#cmd} -gt 130000 ] && { fssh2 "$@"; return $?; }
+    [ ${#cmd} -gt 130000 ] && { _fssh2 "$@"; return $?; }
     for i in "$@";do
        [ "$i" = -F ] && shift && ssh_config="Include $1" && shift && continue
        shift
@@ -254,7 +254,7 @@ EOF
     ssh -t -F "$FLY_HOME/.fly_ssh" "$@"
 }
 
-function fssh2
+function _fssh2
 {
     _flogin_rc "$_ftmpdir"
     _fpackage | ssh -o LogLevel=Error "$@" "$(_fxpackage)" || return $?
@@ -314,7 +314,13 @@ function fly
     source)
         _fsource_plugins
     ;;
-    shell) _fdestshell="${2:-$FLY_SHELL}"; _flogin_rc; . "$FLY_HOME/.fly.d/.fly.lib/.loginshell" "$FLY_HOME" "$_fdestshell";;
+    shell)
+        _fdestshell="${2:-$FLY_SHELL}"; _flogin_rc; . "$FLY_HOME/.fly.d/.fly.lib/.loginshell" "$FLY_HOME" "$_fdestshell"
+    ;;
+    ssh) shift;_fssh "$@"
+    ;;
+    sudo) shift;_fsudo "$@"
+    ;;
     esac
 }
 
@@ -329,12 +335,14 @@ esac
 alias fbash='fly shell bash'
 alias fzsh='fly shell zsh'
 alias fksh='fly shell ksh'
-alias fsshb='_fdestshell=bash fssh'
-alias fsshz='_fdestshell=zsh fssh'
-alias fsshk='_fdestshell=ksh fssh'
-alias fsudob='_fdestshell=bash fsudo'
-alias fsudoz='_fdestshell=zsh fsudo'
-alias fsudok='_fdestshell=ksh fsudo'
+alias fssh='fly ssh'
+alias fsshb='_fdestshell=bash fly ssh'
+alias fsshz='_fdestshell=zsh fly ssh'
+alias fsshk='_fdestshell=ksh fly ssh'
+alias fsudo='fly sudo'
+alias fsudob='_fdestshell=bash fly sudo'
+alias fsudoz='_fdestshell=zsh fly sudo'
+alias fsudok='_fdestshell=ksh fly sudo'
 alias cdfly='cd $FLY_HOME/.fly.d'
 unset _fdestshell
 set --
