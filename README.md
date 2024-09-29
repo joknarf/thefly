@@ -101,6 +101,15 @@ get env/plugins from github repository (repo contains .fly.d contents, cat conta
 $ ssh -t <user>@<host> '. <(curl https://raw.githubusercontent.com/joknarf/thefly/main/thefly) remote <git owner/repo .fly.d>'  
 ```
 
+## Set your joknarf cool plugins env
+
+```
+$ fly add joknarf/nerdp        # bash/ksh/zsh nerd prompt
+$ fly add joknarf/seedee       # bash/ksh/zsh cd history
+$ fly add joknarf/redo         # bash/zsh     command history
+$ fly add joknarf/complete-ng  # bash         completion next-gen
+$ fly add joknarf/pgtree       # bash/ksh/zsh process hierarchy
+```
 
 ## Don't teleport your fly with a human !
 
