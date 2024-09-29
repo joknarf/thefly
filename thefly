@@ -351,7 +351,7 @@ function fly
         ;;
         upgrade)
             shift
-            . <(curl -s -L -H 'Pragma: no-cache' -H 'Cache-Control: no-cache' "$_fgithubraw/$_fgitrepo/main/thefly") install
+            . <(curl -s -L -H 'Pragma: no-cache' -H 'Cache-Control: no-cache' "$_fgithubraw/$_fgitrepo/main/thefly?token=$(date +s)") install
         ;;
         list)
             _fzsh_glob fix
