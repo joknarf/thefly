@@ -42,7 +42,7 @@ $ fly as <user>
 or
 $ fsudo <user>
 ```
-will duplicate `~/.fly.d` (without dot files/tests) in `/tmp/.fly.<user>/<flyid>/.fly.d` and source all plugins  
+will duplicate `~/.fly.d` (without cvs files/tests) in `/tmp/.fly.<user>/<flyid>/.fly.d` and source all plugins  
 by default uses `<user>` shell, to force your favorite shell:  
 `fsudob` (bash) - `fsudoz` (zsh) - `fsudok` (ksh)
 
@@ -52,12 +52,12 @@ $ fly to [<ssh opts>] <user>[<@host>]
 or
 $ fssh [<ssh opts>] <user>[<@host>]
 ```
-will duplicate `~/.fly.d` (without dot files/tests) in `<host>:/tmp/.fly.<user>/<flyid>/.fly.d` and source all plugins  
+will duplicate `~/.fly.d` (without cvs files/tests) in `<host>:/tmp/.fly.<user>/<flyid>/.fly.d` and source all plugins  
 by default uses `<user>` shell, to force your favorite shell:  
 `fsshb` (bash) - `fsshz` (zsh) - `fsshk` (ksh)
 
 * To another shell  
-When connected with a shell change shell and load your env/plugins:  
+Change current shell and load your env/plugins:  
 `$ fly shell <shell> # shell in bash ksh zsh`  
 or  
 `fbash` - `fzsh` - `fksh`  
@@ -97,8 +97,8 @@ $ ssh -t <user>@<host> '. <(curl https://raw.githubusercontent.com/joknarf/thefl
 ```
 
 
-## Don't transform your fly in a MONSTER !
+## Don't teleport your fly with a human !
 
-Remember that ~/.fly.d directory will be duplicated in /tmp, don't put huge data in your ~/.fly.d directory, the consequences could be huge ! (ask Jeff G. ;-)
+Remember that ~/.fly.d directory will be duplicated in /tmp when teleporting, don't put huge data in your ~/.fly.d directory, the consequences could be huge ! (ask Jeff G. ;-)
 
 Bzzz Bzzz
