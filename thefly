@@ -362,7 +362,7 @@ function fly
         ;;
         shell)
             shift
-            _fdestshell="${2:-$FLY_SHELL}"; _flogin_rc; . "$FLY_HOME/.fly.d/.fly.lib/.loginshell" "$FLY_HOME" "$_fdestshell"
+            _fdestshell="${1:-$FLY_SHELL}"; _flogin_rc; . "$FLY_HOME/.fly.d/.fly.lib/.loginshell" "$FLY_HOME" "$_fdestshell"
         ;;
         ssh|to) shift;_fssh "$@"
         ;;
