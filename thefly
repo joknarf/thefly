@@ -149,8 +149,8 @@ $ fly updateall                 # update all plugins from github
 $ fly upgrade                   # upgrade fly from github joknarf/thefly
 $ fly source                    # source the plugins for current shell (*.plugin.<shell>)
 $ fly shell <shell>             # change current shell with fly env
-$ fly sudo [<user>] [shell]     # change user with your fly env (default <user>: root,<shell>: <user> shell)
-$ fly ssh <ssh options>         # connect to server through ssh with your fly env
+$ fly as|sudo [<user>]          # change user with your fly env (default <user>: root,<shell>: <user> shell)
+$ fly to|ssh <ssh options>      # connect to server through ssh with your fly env
 
 aliases:
 $ fbash                         # fly shell bash
@@ -356,9 +356,9 @@ function fly
         shell)
             _fdestshell="${2:-$FLY_SHELL}"; _flogin_rc; . "$FLY_HOME/.fly.d/.fly.lib/.loginshell" "$FLY_HOME" "$_fdestshell"
         ;;
-        ssh) shift;_fssh "$@"
+        ssh|to) shift;_fssh "$@"
         ;;
-        sudo) shift;_fsudo "$@"
+        sudo|as) shift;_fsudo "$@"
         ;;
         *) usage;return 1;;
     esac

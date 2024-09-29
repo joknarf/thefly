@@ -38,6 +38,8 @@ all plugins in `~/fly.d/plugins/*/*.plugin.<shell>` will be sourced at login
 
 * To another user
 ```
+$ fly as <user>
+or
 $ fsudo <user>
 ```
 will duplicate `~/.fly.d` (without dot files/tests) in `/tmp/.fly.<user>/<flyid>/.fly.d` and source all plugins  
@@ -46,7 +48,9 @@ by default uses `<user>` shell, to force your favorite shell:
 
 * To another host/user
 ```
-$ fssh <user>@<host>
+$ fly to [<ssh opts>] <user>[<@host>]
+or
+$ fssh [<ssh opts>] <user>[<@host>]
 ```
 will duplicate `~/.fly.d` (without dot files/tests) in `<host>:/tmp/.fly.<user>/<flyid>/.fly.d` and source all plugins  
 by default uses `<user>` shell, to force your favorite shell:  
@@ -54,7 +58,9 @@ by default uses `<user>` shell, to force your favorite shell:
 
 * To another shell  
 When connected with a shell change shell and load your env/plugins:  
-`fbash` - `fzsh` - `fksh`
+`$ fly shell <shell> # shell in bash ksh zsh`  
+or  
+`fbash` - `fzsh` - `fksh`  
  
 ## Customize env
 
