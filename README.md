@@ -59,7 +59,7 @@ When connected with a shell change shell and load your env/plugins:
 ## Customize env
 
 Putting your env in `~/.fly.d/.flyrc` will be automatically sourced (must be compatible with different shells)  
-Putting additional env in `~/.fly.d/.flyrc.<shell>` will be automatically sourced for shell
+Putting additional env in `~/.fly.d/.<shell>rc` will be automatically sourced for shell
 
 ## Download/activate your env/plugins from your fly git repo or web server
 
