@@ -70,7 +70,7 @@ or
 ## Customize env
 
 Putting your env in `~/.fly.d/.flyrc` will be automatically sourced (must be compatible with different shells)  
-Putting additional env in `~/.fly.d/.<shell>rc` will be automatically sourced for shell
+Putting additional shell specific env in `~/.fly.d/.<shellname>rc` (.bashrc/.kshrc/.zshrc), will be automatically sourced for shell.
 
 ## Download/activate your env/plugins from your fly git repo or web server
 
@@ -111,7 +111,7 @@ $ fly add joknarf/complete-ng  # bash         completion next-gen
 $ fly add joknarf/pgtree       # bash/ksh/zsh process hierarchy
 ```
 
-## Don't teleport your fly with a human !
+## Don't teleport a human with your fly !
 
 Remember that ~/.fly.d directory will be duplicated in /tmp when teleporting, don't put huge data in your ~/.fly.d directory, the consequences could be huge ! (ask Jeff G. ;-)
 
