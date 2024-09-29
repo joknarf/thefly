@@ -125,7 +125,9 @@ cat - >"$FLY_HOME/.fly.d/fly" <<'EOFLY' && . "$FLY_HOME/.fly.d/fly"
 echo "Bzzz Bzzz !!!" >&2
 _floaded=1
 : "${FLY_HOME:=$HOME}"
-: "${_fgithub=https://github.com}"
+: "${_fgithub:=https://github.com}"
+: "${_fgithubraw:=https://raw.githubusercontent.com}"
+: "${_fgitrepo:=joknarf/thefly}"
 : "${FLY_USER_RC:=true}"
 : "${FLY_ETC_RC:=true}"
 : "${_fuuid:=$(cat "$FLY_HOME/.fly.d/.flyuuid" 2>/dev/null || uuidgen)}"
@@ -299,6 +301,9 @@ function fly
         })
         _fzsh_glob reset
         _fsource_plugins
+    ;;
+    upgrade)
+        . <(curl -s -L "$_fgithubraw/$_fgitrepo/main/thefly") install
     ;;
     list)
         _fzsh_glob fix
