@@ -304,7 +304,7 @@ function fly
         _fsource_plugins
     ;;
     upgrade)
-        . <(curl -s -L "$_fgithubraw/$_fgitrepo/main/thefly") install
+        . <(curl -s -L -H 'Pragma: no-cache' -H 'Cache-Control: no-cache' "$_fgithubraw/$_fgitrepo/main/thefly") install
     ;;
     list)
         _fzsh_glob fix
