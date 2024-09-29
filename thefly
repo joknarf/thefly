@@ -112,9 +112,9 @@ cat - <<'EOF' > "$_flib/.loginshell"
     . $FLY_HOME/.fly.d/.fly.lib/.fshell
     FLY_SHELL="${2:-$FLY_SHELL}"
     case "$FLY_SHELL" in 
-        bash) exec bash --noprofile --init-file "$FLY_HOME/.fly.d/.fly.lib/.login";;
-        zsh)  ZDOTDIR=$FLY_HOME/.fly.d/.fly.lib exec zsh -di;;
-        ksh)  ENV=$FLY_HOME/.fly.d/.fly.lib/.login exec ksh -i;;
+        *bash) exec bash --noprofile --init-file "$FLY_HOME/.fly.d/.fly.lib/.login";;
+        *zsh)  ZDOTDIR=$FLY_HOME/.fly.d/.fly.lib exec zsh -di;;
+        *ksh)  ENV=$FLY_HOME/.fly.d/.fly.lib/.login exec ksh -i;;
     esac
 EOF
 
@@ -157,23 +157,23 @@ function _fzsh_glob
 
 _fsource_plugins()
 {
-    p="$1"
+    p="$1" _fshell="${FLY_SHELL##*/}"
     plugindir="$FLY_HOME/.fly.d/plugins"
     [ -r "$FLY_HOME/.fly.d/.flyrc" ] && . "$FLY_HOME/.fly.d/.flyrc"
-    [ -r "$FLY_HOME/.fly.d/.flyrc.$FLY_SHELL" ] && . "$FLY_HOME/.fly.d/.flyrc.$FLY_SHELL"
+    [ -r "$FLY_HOME/.fly.d/.flyrc.$_fshell" ] && . "$FLY_HOME/.fly.d/.flyrc.$_fshell"
     _fzsh_glob fix
-    for plugin in $([ "$p" ] && ls -- "$plugindir/$p/"*.plugin."$FLY_SHELL" 2>/dev/null || \
-                                ls -- "$plugindir/"*/*.plugin."$FLY_SHELL" 2>/dev/null)
+    for plugin in $([ "$p" ] && ls -- "$plugindir/$p/"*.plugin."$_fshell" 2>/dev/null || \
+                                ls -- "$plugindir/"*/*.plugin."$_fshell" 2>/dev/null)
     do
         \cd "${plugin%/*}" && { . "$plugin"; \cd "$OLDPWD"; }
     done
-    unset p plugin plugindir
+    unset p plugin plugindir _fshell
     _fzsh_glob reset
 }
 
 _fsource_profile()
 {
-    . "$FLY_HOME/.fly.d/.fly.lib/.login.$FLY_SHELL"
+    . "$FLY_HOME/.fly.d/.fly.lib/.login.${FLY_SHELL##*/}"
     FLY_ETC_RC=true FLY_USER_RC=true
     _fsource_plugins
 }
@@ -187,14 +187,16 @@ function _flogin_rc
     FLY_SHELL="$_fdestshell"
     unset _floaded
     . "${1:-$FLY_HOME}/.fly.d/fly" login
-    #. "${1:-$FLY_HOME}/.fly.d/.fly.lib/.login.$_fdestshell"
 EOF
 }
 
 function fsudo
 {
-    typeset user=${1:-root} 
+    typeset user="${1:-root}"
     typeset destdir="/tmp/.fly.$user/$_fuuid"
+    [ ! "$_fdestshell" ] && _fdestshell="$(getent passwd "$user" 2>/dev/null)" && _fdestshell="${_fdestshell##*:}"
+    [ ! "$_fdestshell" ] && _fdestshell="$(dscl . -read "Users/$user" UserShell 2>/dev/null)" && _fdestshell="${_fdestshell#*: }"
+    [ ! "$_fdestshell" ] && _fdestshell="$(awk -F: '$1==user{print $NF}' user="$user" /etc/passwd)"
     _flogin_rc "$_ftmpdir"
     _fpackage |sudo -H -u "$user" "${_fdestshell:-$FLY_SHELL}" -c "$(_fxpackage)" || return $?
     if [ "$_fdestshell" ];then
@@ -202,6 +204,7 @@ function fsudo
     else
         sudo -H -u "$user" -i . "$destdir/.fly.d/.fly.lib/.loginshell" "$destdir"
     fi
+    unset _fdestshell
 }
 
 function _fssh_ok
