@@ -349,6 +349,7 @@ function fly
             _fsource_plugins
         ;;
         upgrade)
+            shift
             . <(curl -s -L -H 'Pragma: no-cache' -H 'Cache-Control: no-cache' "$_fgithubraw/$_fgitrepo/main/thefly") install
         ;;
         list)
@@ -360,6 +361,7 @@ function fly
             _fsource_plugins
         ;;
         shell)
+            shift
             _fdestshell="${2:-$FLY_SHELL}"; _flogin_rc; . "$FLY_HOME/.fly.d/.fly.lib/.loginshell" "$FLY_HOME" "$_fdestshell"
         ;;
         ssh|to) shift;_fssh "$@"
