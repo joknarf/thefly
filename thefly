@@ -34,7 +34,7 @@ function _finit
 {
     (umask 077;mkdir -p "$FLY_HOME/.fly.d/plugins" "$FLY_HOME/.fly.d/.fly.lib")
     ! chmod 700 "$FLY_HOME/.fly.d" && echo "Not owner of /tmp/.fly.$USER. Abort" >&2 && return 1
-    [ -f "$FLY_HOME/.fly.d/.flyrc" ] || touch "$FLY_HOME/.fly.d/.flyrc" "$FLY_HOME/.fly.d/.flyrc.bash" "$FLY_HOME/.fly.d/.flyrc.zsh" "$FLY_HOME/.fly.d/.flyrc.ksh"
+    [ -f "$FLY_HOME/.fly.d/.flyrc" ] || touch "$FLY_HOME/.fly.d/.flyrc" "$FLY_HOME/.fly.d/.bashrc" "$FLY_HOME/.fly.d/.zshrc" "$FLY_HOME/.fly.d/.kshrc"
     [ -s "$FLY_HOME/.fly.d/.flyuuid" ] || uuidgen >"$FLY_HOME/.fly.d/.flyuuid"
     [ -L "$FLY_HOME/.fly.d/.fly.lib/.zshrc" ] || ln -s .login "$FLY_HOME/.fly.d/.fly.lib/.zshrc"
     [ -d "$FLY_HOME/.fly.d/.git" ] || (\cd "$FLY_HOME/.fly.d" && { git init;git -M main; git checkout -b main; printf '%s\n%s' fly .fly.lib >.gitignore; }) >/dev/null 2>&1
@@ -136,6 +136,45 @@ _floaded=1
 type gtar >/dev/null 2>&1 && _ftar=gtar || _ftar=tar
 . $FLY_HOME/.fly.d/.fly.lib/.fshell
 
+
+function usage
+{
+    cat - <<'EOF'
+usage: fly <action> <options>
+$ fly add <gituser/reponame>    # add plugin from github repository
+$ fly del <plugin>              # remove plugin with name <plugin> (repo)
+$ fly list                      # list plugins for current shell
+$ fly update <plugin>           # update plugin from github
+$ fly updateall                 # update all plugins from github
+$ fly upgrade                   # upgrade fly from github joknarf/thefly
+$ fly source                    # source the plugins for current shell (*.plugin.<shell>)
+$ fly shell <shell>             # change current shell with fly env
+$ fly sudo [<user>] [shell]     # change user with your fly env (default <user>: root,<shell>: <user> shell)
+$ fly ssh <ssh options>         # connect to server through ssh with your fly env
+
+aliases:
+$ fbash                         # fly shell bash
+$ fksh                          # fly shell ksh
+$ fzsh                          # fly shell zsh
+
+$ fsudo                         # fly sudo
+$ fsudob                        # fly sudo with bash
+$ fsudok                        # fly sudo with ksh
+$ fusdoz                        # fly sudo with zsh
+
+$ fssh                          # fly ssh
+$ fsshb                         # fly ssh with bash
+$ fsshk                         # fly ssh with ksh
+$ fsshz                         # fly ssh with zsh
+
+# fly environment files:
+~/.fly.d/.flyrc                 # common environment
+~/.fly.d/.bashrc                # specific bash environment
+~/.fly.d/.kshrc                 # specific ksh environment
+~/.fly.d/.zshrc                 # specific zsh environment
+EOF
+}
+
 function _fpackage
 {
     $_ftar -czf - -C "$FLY_HOME" --no-xattrs --exclude-vcs --exclude=README.md --exclude='plugins/*/.*' --exclude '*/*/tests' .fly.d
@@ -163,7 +202,7 @@ _fsource_plugins()
     p="$1" _fshell="${FLY_SHELL##*/}"
     plugindir="$FLY_HOME/.fly.d/plugins"
     [ -r "$FLY_HOME/.fly.d/.flyrc" ] && . "$FLY_HOME/.fly.d/.flyrc"
-    [ -r "$FLY_HOME/.fly.d/.flyrc.$_fshell" ] && . "$FLY_HOME/.fly.d/.flyrc.$_fshell"
+    [ -r "$FLY_HOME/.fly.d/.${_fshell}rc" ] && . "$FLY_HOME/.fly.d/.${_fshell}rc"
     _fzsh_glob fix
     for plugin in $([ "$p" ] && ls -- "$plugindir/$p/"*.plugin."$_fshell" 2>/dev/null || \
                                 ls -- "$plugindir/"*/*.plugin."$_fshell" 2>/dev/null)
@@ -266,61 +305,62 @@ function fly
 {
     typeset plugin submodule
     case "$1" in
-    add)
-        [ -d "$FLY_HOME/.fly.d/.git" ] && {
-            (\cd "$FLY_HOME/.fly.d" && git submodule add "$_fgithub/$2" "plugins/${2##*/}" 2>/dev/null)
-        } || (\cd "$FLY_HOME/.fly.d/plugins" && git clone "$_fgithub/$2" -q >/dev/null)
-        (\cd "$FLY_HOME/.fly.d" && git config -f ".gitmodules submodule.plugins/${2##*/}.shallow" true >/dev/null 2>/dev/null)
-        _fsource_plugins "${2#*/}"
-    ;;
-    del)
-        [ ! "$2" ] && echo "usage: fly del <plugin>" >&2 && return 1
-        [ ! -d "$FLY_HOME/.fly.d/plugins/${2##*/}" ] && echo "plugin ${2##*/} not found" >&2 && return 1
-        [ -d "$FLY_HOME/.fly.d/.git" ] && {
-            (\cd "$FLY_HOME/.fly.d" && git submodule deinit -f "plugins/${2##*/}" && \
-                git add .gitmodules
-                git rm --cached "plugins/${2##*/}"
-                git config -f .gitmodules --remove-section "submodule.plugins/${2##*/}"
-            ) 2>/dev/null
-        } 
-        rm -rf "$FLY_HOME/.fly.d/plugins/${2##*/}" "$FLY_HOME/.fly.d/.git/modules/plugins/${2##*/}"
-    ;;
-    update)
-        [ ! "$2" ] && echo "usage: fly update <plugin>" >&2 && return 1 
-        (\cd "$FLY_HOME/.fly.d/plugins/${2#*/}" && git pull origin "$(git rev-parse --abbrev-ref HEAD)")
-        _fsource_plugins "${2#*/}"
-    ;;
-    updateall)
-        _fzsh_glob fix
-        for plugin in $(ls -d "$FLY_HOME/.fly.d/plugins"/*/.git) ;do
-            [ -d "$plugin" ] && (\cd "$plugin/.." && git pull origin "$(git rev-parse --abbrev-ref HEAD)")
-            [ -s "$plugin" ] && submodule=1
-        done
-        [ "$submodule" ] && (\cd $FLY_HOME/.fly.d && { 
-            git submodule update --remote --merge 2>/dev/null
-            git submodule foreach git pull 2>/dev/null
-        })
-        _fzsh_glob reset
-        _fsource_plugins
-    ;;
-    upgrade)
-        . <(curl -s -L -H 'Pragma: no-cache' -H 'Cache-Control: no-cache' "$_fgithubraw/$_fgitrepo/main/thefly") install
-    ;;
-    list)
-        _fzsh_glob fix
-        (\cd "$FLY_HOME/.fly.d/plugins" && ls -1 -- */*.plugin.$FLY_SHELL)
-        _fzsh_glob reset
-    ;;
-    source)
-        _fsource_plugins
-    ;;
-    shell)
-        _fdestshell="${2:-$FLY_SHELL}"; _flogin_rc; . "$FLY_HOME/.fly.d/.fly.lib/.loginshell" "$FLY_HOME" "$_fdestshell"
-    ;;
-    ssh) shift;_fssh "$@"
-    ;;
-    sudo) shift;_fsudo "$@"
-    ;;
+        add)
+            [ -d "$FLY_HOME/.fly.d/.git" ] && {
+                (\cd "$FLY_HOME/.fly.d" && git submodule add "$_fgithub/$2" "plugins/${2##*/}" 2>/dev/null)
+            } || (\cd "$FLY_HOME/.fly.d/plugins" && git clone "$_fgithub/$2" -q >/dev/null)
+            (\cd "$FLY_HOME/.fly.d" && git config -f ".gitmodules submodule.plugins/${2##*/}.shallow" true >/dev/null 2>/dev/null)
+            _fsource_plugins "${2#*/}"
+        ;;
+        del)
+            [ ! "$2" ] && echo "usage: fly del <plugin>" >&2 && return 1
+            [ ! -d "$FLY_HOME/.fly.d/plugins/${2##*/}" ] && echo "plugin ${2##*/} not found" >&2 && return 1
+            [ -d "$FLY_HOME/.fly.d/.git" ] && {
+                (\cd "$FLY_HOME/.fly.d" && git submodule deinit -f "plugins/${2##*/}" && \
+                    git add .gitmodules
+                    git rm --cached "plugins/${2##*/}"
+                    git config -f .gitmodules --remove-section "submodule.plugins/${2##*/}"
+                ) 2>/dev/null
+            } 
+            rm -rf "$FLY_HOME/.fly.d/plugins/${2##*/}" "$FLY_HOME/.fly.d/.git/modules/plugins/${2##*/}"
+        ;;
+        update)
+            [ ! "$2" ] && echo "usage: fly update <plugin>" >&2 && return 1 
+            (\cd "$FLY_HOME/.fly.d/plugins/${2#*/}" && git pull origin "$(git rev-parse --abbrev-ref HEAD)")
+            _fsource_plugins "${2#*/}"
+        ;;
+        updateall)
+            _fzsh_glob fix
+            for plugin in $(ls -d "$FLY_HOME/.fly.d/plugins"/*/.git) ;do
+                [ -d "$plugin" ] && (\cd "$plugin/.." && git pull origin "$(git rev-parse --abbrev-ref HEAD)")
+                [ -s "$plugin" ] && submodule=1
+            done
+            [ "$submodule" ] && (\cd $FLY_HOME/.fly.d && { 
+                git submodule update --remote --merge 2>/dev/null
+                git submodule foreach git pull 2>/dev/null
+            })
+            _fzsh_glob reset
+            _fsource_plugins
+        ;;
+        upgrade)
+            . <(curl -s -L -H 'Pragma: no-cache' -H 'Cache-Control: no-cache' "$_fgithubraw/$_fgitrepo/main/thefly") install
+        ;;
+        list)
+            _fzsh_glob fix
+            (\cd "$FLY_HOME/.fly.d/plugins" && ls -1 -- */*.plugin.$FLY_SHELL)
+            _fzsh_glob reset
+        ;;
+        source)
+            _fsource_plugins
+        ;;
+        shell)
+            _fdestshell="${2:-$FLY_SHELL}"; _flogin_rc; . "$FLY_HOME/.fly.d/.fly.lib/.loginshell" "$FLY_HOME" "$_fdestshell"
+        ;;
+        ssh) shift;_fssh "$@"
+        ;;
+        sudo) shift;_fsudo "$@"
+        ;;
+        *) usage;return 1;;
     esac
 }
 
