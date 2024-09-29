@@ -10,6 +10,11 @@ Your shell env and plugins are available everywhere (hosts/users)
 &nbsp;  
 bzzz bzzz !  
 <br/>  
+
+## Demo
+![thefly](https://github.com/user-attachments/assets/f0b9f8d6-eb31-4f16-bd20-8756b57f861b)
+
+
 ## Install
 ```
 . <(curl https://raw.githubusercontent.com/joknarf/thefly/main/thefly) install
