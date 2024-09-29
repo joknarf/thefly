@@ -375,8 +375,8 @@ function fly
 _fssh_ok
 
 case "$1" in
-    login)      _fsource_profile;;
-    loginshell) _flogin_rc; . $FLY_HOME/.fly.d/.fly.lib/.loginshell "$FLY_HOME" $_fdestshell;;
+    login)      shift;_fsource_profile;;
+    loginshell) shift;_flogin_rc; . $FLY_HOME/.fly.d/.fly.lib/.loginshell "$FLY_HOME" $_fdestshell;;
     source)     _fsource_plugins "$2";;
 esac
 
