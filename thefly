@@ -1,5 +1,6 @@
 
 : "${FLY_HOME:=$HOME}"
+: "${_fgithubraw:=https://raw.githubusercontent.com}"
 
 type uuidgen >/dev/null 2>&1 || uuidgen() {
     tr -dc 'a-f0-9' </dev/urandom| head -c 16
@@ -18,7 +19,7 @@ function _fhttp_extract {
 }
 
 function _fgit_extract {
-    _fuuid=$(curl -L -s "https://raw.githubusercontent.com/$2/main/.flyuuid") || return 1
+    _fuuid=$(curl -L -s "$_fgithubraw/$2/main/.flyuuid") || return 1
     [ ! "$_fuuid" ] && echo "not fly repo" && exit 1
     [ "$1" = "remote" ] && FLY_HOME="/tmp/.fly.$USER/$_fuuid"
     [ -d "$FLY_HOME/.fly.d/.git" ] && return 0
