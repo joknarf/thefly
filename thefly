@@ -1,3 +1,6 @@
+########## thefly #########
+# Author: Franck Jouvanceau
+###########################
 
 : "${FLY_HOME:=$HOME}"
 : "${_fgithubraw:=https://raw.githubusercontent.com}"
@@ -121,6 +124,9 @@ EOF
 
 
 cat - >"$FLY_HOME/.fly.d/fly" <<'EOFLY' && . "$FLY_HOME/.fly.d/fly"
+########## thefly #########
+# Author: Franck Jouvanceau
+###########################
 [ "$1" != source ] && unset _floaded
 [ "$_floaded" ] && echo skip && return
 echo "Bzzz Bzzz !!!" >&2
