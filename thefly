@@ -26,11 +26,14 @@ function _fgit_extract {
     [ ! "$_fuuid" ] && echo "not fly repo" && exit 1
     [ "$1" = "remote" ] && FLY_HOME="/tmp/.fly.$USER/$_fuuid"
     [ -d "$FLY_HOME/.fly.d/.git" ] && return 0
-    (umask 077;mkdir -p "$FLY_HOME")
-    \cd "$FLY_HOME" || exit 1
-    git clone --depth 1 --shallow-submodules --recurse-submodules --remote-submodules -j8 "https://github.com/$2" .fly.d -q 2>/dev/null || \
-    git clone --depth 1 --recursive "https://github.com/$2" .fly.d -q >/dev/null
-    (umask 077;mkdir -p "$FLY_HOME/.fly.d/.fly.lib")
+    (
+        umask 077
+        mkdir -p "$FLY_HOME"
+        \cd "$FLY_HOME" || exit 1
+        git clone --depth 1 --shallow-submodules --recurse-submodules --remote-submodules -j8 "https://github.com/$2" .fly.d -q 2>/dev/null || \
+        git clone --depth 1 --recursive "https://github.com/$2" .fly.d -q >/dev/null
+        mkdir -p "$FLY_HOME/.fly.d/.fly.lib"
+    )
 }
 
 function _finit
