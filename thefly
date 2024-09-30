@@ -122,6 +122,20 @@ cat - <<'EOF' > "$_flib/.loginshell"
     esac
 EOF
 
+cat - <<'EOF' > "$_flib/.source_plugins"
+    p="$1" _fshell="${FLY_SHELL##*/}"
+    plugindir="$FLY_HOME/.fly.d/plugins"
+    [ -r "$FLY_HOME/.fly.d/.flyrc" ] && . "$FLY_HOME/.fly.d/.flyrc"
+    [ -r "$FLY_HOME/.fly.d/.${_fshell}rc" ] && . "$FLY_HOME/.fly.d/.${_fshell}rc"
+    _fzsh_glob fix
+    for plugin in $([ "$p" ] && ls -- "$plugindir/$p/"*.plugin."$_fshell" 2>/dev/null || \
+                                ls -- "$plugindir/"*/*.plugin."$_fshell" 2>/dev/null)
+    do
+        \cd "${plugin%/*}" && { . "$plugin"; \cd "$OLDPWD"; }
+    done
+    unset p plugin plugindir _fshell
+    _fzsh_glob reset
+EOF
 
 cat - >"$FLY_HOME/.fly.d/fly" <<'EOFLY' && . "$FLY_HOME/.fly.d/fly"
 ########## thefly #########
@@ -203,29 +217,6 @@ function _fzsh_glob
     esac
 }
 
-_fsource_plugins()
-{
-    p="$1" _fshell="${FLY_SHELL##*/}"
-    plugindir="$FLY_HOME/.fly.d/plugins"
-    [ -r "$FLY_HOME/.fly.d/.flyrc" ] && . "$FLY_HOME/.fly.d/.flyrc"
-    [ -r "$FLY_HOME/.fly.d/.${_fshell}rc" ] && . "$FLY_HOME/.fly.d/.${_fshell}rc"
-    _fzsh_glob fix
-    for plugin in $([ "$p" ] && ls -- "$plugindir/$p/"*.plugin."$_fshell" 2>/dev/null || \
-                                ls -- "$plugindir/"*/*.plugin."$_fshell" 2>/dev/null)
-    do
-        \cd "${plugin%/*}" && { . "$plugin"; \cd "$OLDPWD"; }
-    done
-    unset p plugin plugindir _fshell
-    _fzsh_glob reset
-}
-
-_fsource_profile()
-{
-    . "$FLY_HOME/.fly.d/.fly.lib/.login.${FLY_SHELL##*/}"
-    FLY_ETC_RC=true FLY_USER_RC=true
-    _fsource_plugins
-}
-
 function _flogin_rc
 {
     cat - <<EOF >"$FLY_HOME/.fly.d/.fly.lib/.login"
@@ -235,6 +226,8 @@ function _flogin_rc
     FLY_SHELL="$_fdestshell"
     unset _floaded
     . "${1:-$FLY_HOME}/.fly.d/fly" login
+    FLY_USER_RC="true"
+    FLY_ETC_RC="true"
 EOF
 }
 
@@ -308,47 +301,10 @@ function _fssh2
 }
 
 
-function fly
+function _fly
 {
     typeset plugin submodule
     case "$1" in
-        add)
-            [ -d "$FLY_HOME/.fly.d/.git" ] && {
-                (\cd "$FLY_HOME/.fly.d" && git submodule add "$_fgithub/$2" "plugins/${2##*/}" 2>/dev/null)
-            } || (\cd "$FLY_HOME/.fly.d/plugins" && git clone "$_fgithub/$2" -q >/dev/null)
-            (\cd "$FLY_HOME/.fly.d" && git config -f ".gitmodules submodule.plugins/${2##*/}.shallow" true >/dev/null 2>/dev/null)
-            _fsource_plugins "${2#*/}"
-        ;;
-        del)
-            [ ! "$2" ] && echo "usage: fly del <plugin>" >&2 && return 1
-            [ ! -d "$FLY_HOME/.fly.d/plugins/${2##*/}" ] && echo "plugin ${2##*/} not found" >&2 && return 1
-            [ -d "$FLY_HOME/.fly.d/.git" ] && {
-                (\cd "$FLY_HOME/.fly.d" && git submodule deinit -f "plugins/${2##*/}" && \
-                    git add .gitmodules
-                    git rm --cached "plugins/${2##*/}"
-                    git config -f .gitmodules --remove-section "submodule.plugins/${2##*/}"
-                ) 2>/dev/null
-            } 
-            rm -rf "$FLY_HOME/.fly.d/plugins/${2##*/}" "$FLY_HOME/.fly.d/.git/modules/plugins/${2##*/}"
-        ;;
-        update)
-            [ ! "$2" ] && echo "usage: fly update <plugin>" >&2 && return 1 
-            (\cd "$FLY_HOME/.fly.d/plugins/${2#*/}" && git pull origin "$(git rev-parse --abbrev-ref HEAD)")
-            _fsource_plugins "${2#*/}"
-        ;;
-        updateall)
-            _fzsh_glob fix
-            for plugin in $(ls -d "$FLY_HOME/.fly.d/plugins"/*/.git) ;do
-                [ -d "$plugin" ] && (\cd "$plugin/.." && git pull origin "$(git rev-parse --abbrev-ref HEAD)")
-                [ -s "$plugin" ] && submodule=1
-            done
-            [ "$submodule" ] && (\cd $FLY_HOME/.fly.d && { 
-                git submodule update --remote --merge 2>/dev/null
-                git submodule foreach git pull 2>/dev/null
-            })
-            _fzsh_glob reset
-            _fsource_plugins
-        ;;
         upgrade)
             shift
             . <(curl -s -L -H 'Pragma: no-cache' -H 'Cache-Control: no-cache' "$_fgithubraw/$_fgitrepo/main/thefly?token=$(date +s)") install
@@ -357,9 +313,6 @@ function fly
             _fzsh_glob fix
             (\cd "$FLY_HOME/.fly.d/plugins" && ls -1 -- */*.plugin.$FLY_SHELL)
             _fzsh_glob reset
-        ;;
-        source)
-            _fsource_plugins
         ;;
         shell)
             shift
@@ -382,23 +335,79 @@ function fly
 
 _fssh_ok
 
+_flib="$FLY_HOME/.fly.d/.fly.lib"
 case "$1" in
-    login)      shift; _fsource_profile;;
-    loginshell) shift; _flogin_rc; . $FLY_HOME/.fly.d/.fly.lib/.loginshell "$FLY_HOME" "$_fdestshell";;
-    source)     _fsource_plugins "$2";;
+    login)      
+        shift 
+        . "$_flib/.login.${FLY_SHELL##*/}"
+        . "$_flib/.source_plugins"
+    ;;
+    loginshell) 
+        shift
+        _flogin_rc
+        . "$_flib/.loginshell" "$FLY_HOME" "$_fdestshell"
+    ;;
+    source)
+        shift
+        . "$_flib/.source_plugins" "$1"
+    ;;
+    add)
+        shift
+        [ -d "$FLY_HOME/.fly.d/.git" ] && {
+            (\cd "$FLY_HOME/.fly.d" && git submodule add "$_fgithub/$1" "plugins/${1##*/}" 2>/dev/null)
+        } || (\cd "$FLY_HOME/.fly.d/plugins" && git clone "$_fgithub/$1" -q >/dev/null)
+        (\cd "$FLY_HOME/.fly.d" && git config -f ".gitmodules submodule.plugins/${1##*/}.shallow" true >/dev/null 2>/dev/null)
+        . "$_flib/.source_plugins" "${1#*/}"
+    ;;
+    del)
+        shift
+        [ ! "$1" ] && echo "usage: fly del <plugin>" >&2 && return 1
+        [ ! -d "$FLY_HOME/.fly.d/plugins/${1##*/}" ] && echo "plugin ${1##*/} not found" >&2 && return 1
+        [ -d "$FLY_HOME/.fly.d/.git" ] && {
+            (\cd "$FLY_HOME/.fly.d" && git submodule deinit -f "plugins/${1##*/}" && \
+                git add .gitmodules
+                git rm --cached "plugins/${1##*/}"
+                git config -f .gitmodules --remove-section "submodule.plugins/${1##*/}"
+            ) 2>/dev/null
+        } 
+        rm -rf "$FLY_HOME/.fly.d/plugins/${1##*/}" "$FLY_HOME/.fly.d/.git/modules/plugins/${1##*/}"
+    ;;
+    update)
+        shift
+        [ ! "$1" ] && echo "usage: fly update <plugin>" >&2 && return 1 
+        (\cd "$FLY_HOME/.fly.d/plugins/${1#*/}" && git pull origin "$(git rev-parse --abbrev-ref HEAD)")
+        . "$_flib/.source_plugins" "${1#*/}"
+    ;;
+    updateall)
+        shift
+        _fzsh_glob fix
+        for plugin in $(ls -d "$FLY_HOME/.fly.d/plugins"/*/.git) ;do
+            [ -d "$plugin" ] && (\cd "$plugin/.." && git pull origin "$(git rev-parse --abbrev-ref HEAD)")
+            [ -s "$plugin" ] && submodule=1
+        done
+        [ "$submodule" ] && (\cd $FLY_HOME/.fly.d && { 
+            git submodule update --remote --merge 2>/dev/null
+            git submodule foreach git pull 2>/dev/null
+        })
+        _fzsh_glob reset
+        . "$_flib/.source_plugins"
+    ;;
 esac
 
-alias fbash='fly shell bash'
-alias fzsh='fly shell zsh'
-alias fksh='fly shell ksh'
-alias fssh='fly ssh'
-alias fsshb='_fdestshell=bash fly ssh'
-alias fsshz='_fdestshell=zsh fly ssh'
-alias fsshk='_fdestshell=ksh fly ssh'
-alias fsudo='fly sudo'
-alias fsudob='_fdestshell=bash fly sudo'
-alias fsudoz='_fdestshell=zsh fly sudo'
-alias fsudok='_fdestshell=ksh fly sudo'
+alias fly=". $FLY_HOME/.fly.d/fly"
+alias flyto="_fly ssh"
+alias fbash='_fly shell bash'
+alias fzsh='_fly shell zsh'
+alias fksh='_fly shell ksh'
+alias fssh='_fly ssh'
+alias fsshb='_fdestshell=bash _fly ssh'
+alias fsshz='_fdestshell=zsh _fly ssh'
+alias fsshk='_fdestshell=ksh _fly ssh'
+alias flyas='_fly sudo'
+alias fsudo='_fly sudo'
+alias fsudob='_fdestshell=bash _fly sudo'
+alias fsudoz='_fdestshell=zsh _fly sudo'
+alias fsudok='_fdestshell=ksh _fly sudo'
 alias cdfly='cd $FLY_HOME/.fly.d'
 unset _fdestshell
 set --
