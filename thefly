@@ -170,29 +170,29 @@ function usage
 usage: fly <action> <options>
 $ fly add <gituser/reponame>    # add plugin from github repository
 $ fly del <plugin>              # remove plugin with name <plugin> (repo)
-$ fly list                      # list plugins for current shell
 $ fly update <plugin>           # update plugin from github
 $ fly updateall                 # update all plugins from github
-$ fly upgrade                   # upgrade fly from github joknarf/thefly
 $ fly source                    # source the plugins for current shell (*.plugin.<shell>)
-$ fly shell <shell>             # change current shell with fly env
-$ fly as|sudo [<user>] [<shell>]# change user with your fly env (default <user>: root,<shell>: <user> shell)
-$ fly to|ssh <ssh options>      # connect to server through ssh with your fly env
+$ fly upgrade                   # upgrade fly from github joknarf/thefly
+$ flyls                         # list plugins for current shell
+$ flysh <shell>                 # change current shell with fly env
+$ flyas [<user>] [<shell>]      # change user with your fly env (default <user>: root,<shell>: <user> shell)
+$ flyto <ssh options>           # connect to server through ssh with your fly env
 
 aliases:
-$ fbash                         # fly shell bash
-$ fksh                          # fly shell ksh
-$ fzsh                          # fly shell zsh
+$ fbash                         # flysh bash
+$ fksh                          # flysh ksh
+$ fzsh                          # flysh zsh
 
-$ fsudo                         # fly sudo
-$ fsudob                        # fly sudo with bash
-$ fsudok                        # fly sudo with ksh
-$ fusdoz                        # fly sudo with zsh
+$ fsudo                         # flyas
+$ fsudob                        # flyas with bash
+$ fsudok                        # flyas with ksh
+$ fusdoz                        # flyas with zsh
 
-$ fssh                          # fly ssh
-$ fsshb                         # fly ssh with bash
-$ fsshk                         # fly ssh with ksh
-$ fsshz                         # fly ssh with zsh
+$ fssh                          # flyto
+$ fsshb                         # flyto with bash
+$ fsshk                         # flyto with ksh
+$ fsshz                         # flyto with zsh
 
 # fly environment files:
 ~/.fly.d/.flyrc                 # common environment
@@ -227,6 +227,9 @@ EOF
 
 _flib="$FLY_HOME/.fly.d/.fly.lib"
 case "$1" in
+    help)
+        usage
+    ;;
     login)      
         shift 
         . "$_flib/.login.${FLY_SHELL##*/}"
@@ -281,6 +284,10 @@ case "$1" in
         })
         _fzsh_glob reset
         . "$_flib/.source_plugins"
+    ;;
+    upgrade)
+        shift
+        . <(curl -s -L -H 'Pragma: no-cache' -H 'Cache-Control: no-cache' "$_fgithubraw/$_fgitrepo/main/thefly?token=$(date +s)") install
     ;;
 esac
 
@@ -371,10 +378,6 @@ function _fly
 {
     typeset plugin submodule
     case "$1" in
-        upgrade)
-            shift
-            . <(curl -s -L -H 'Pragma: no-cache' -H 'Cache-Control: no-cache' "$_fgithubraw/$_fgitrepo/main/thefly?token=$(date +s)") install
-        ;;
         list)
             _fzsh_glob fix
             (\cd "$FLY_HOME/.fly.d/plugins" && ls -1 -- */*.plugin.$FLY_SHELL)
@@ -421,6 +424,7 @@ alias fsudob='_fdestshell=bash _fly sudo'
 alias fsudoz='_fdestshell=zsh _fly sudo'
 alias fsudok='_fdestshell=ksh _fly sudo'
 
+alias flyls='_fly list'
 alias cdfly='cd $FLY_HOME/.fly.d'
 unset _fdestshell
 set --
