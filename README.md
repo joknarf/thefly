@@ -12,7 +12,7 @@ bzzz bzzz !
 <br/>  
 
 ## Demo
-![thefly](https://github.com/user-attachments/assets/f0b9f8d6-eb31-4f16-bd20-8756b57f861b)
+![thefly_bzz](https://github.com/user-attachments/assets/1617632b-db08-40d4-a845-841e8ee5c7c6)
 
 
 ## Install
