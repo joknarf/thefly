@@ -38,12 +38,16 @@ function _fgit_extract {
 
 function _finit
 {
-    (umask 077;mkdir -p "$FLY_HOME/.fly.d/plugins" "$FLY_HOME/.fly.d/.fly.lib")
-    ! chmod 700 "$FLY_HOME/.fly.d" && echo "Not owner of /tmp/.fly.$USER. Abort" >&2 && return 1
-    [ -f "$FLY_HOME/.fly.d/.flyrc" ] || touch "$FLY_HOME/.fly.d/.flyrc" "$FLY_HOME/.fly.d/.bashrc" "$FLY_HOME/.fly.d/.zshrc" "$FLY_HOME/.fly.d/.kshrc"
-    [ -s "$FLY_HOME/.fly.d/.flyuuid" ] || uuidgen >"$FLY_HOME/.fly.d/.flyuuid"
-    [ -L "$FLY_HOME/.fly.d/.fly.lib/.zshrc" ] || ln -s .login "$FLY_HOME/.fly.d/.fly.lib/.zshrc"
-    [ -d "$FLY_HOME/.fly.d/.git" ] || (\cd "$FLY_HOME/.fly.d" && { git init;git -M main; git checkout -b main; printf '%s\n%s' fly .fly.lib >.gitignore; }) >/dev/null 2>&1
+    (
+        umask 077
+        mkdir -p "$FLY_HOME/.fly.d/plugins" "$FLY_HOME/.fly.d/.fly.lib"
+        ! chmod 700 "$FLY_HOME/.fly.d" && echo "Not owner of $FLY_HOME/.fly.d. Abort" >&2 && return 1
+        [ -f "$FLY_HOME/.fly.d/.flyrc" ] || touch "$FLY_HOME/.fly.d/.flyrc" "$FLY_HOME/.fly.d/.bashrc" "$FLY_HOME/.fly.d/.zshrc" "$FLY_HOME/.fly.d/.kshrc"
+        [ -s "$FLY_HOME/.fly.d/.flyuuid" ] || uuidgen >"$FLY_HOME/.fly.d/.flyuuid"
+        touch $FLY_HOME/.fly.d/.fly.lib/.login
+        [ -L "$FLY_HOME/.fly.d/.fly.lib/.zshrc" ] || ln -s .login "$FLY_HOME/.fly.d/.fly.lib/.zshrc"
+        [ -d "$FLY_HOME/.fly.d/.git" ] || (\cd "$FLY_HOME/.fly.d" && { git init;git -M main; git checkout -b main; printf '%s\n%s' fly .fly.lib >.gitignore; }) >/dev/null 2>&1
+    )
 }
 
 case "$1" in
@@ -56,7 +60,7 @@ case "$1" in
         }
         case "$2" in
             http*://*) _fhttp_extract "$1" "$2" || return 1; set -- loginshell;;
-            */*)       _fgit_extract "$1" "$2" || return 1; set -- loginshell;;
+            */*)       _fgit_extract "$1" "$2" || return 1; _finit; set -- loginshell;;
             '')        _finit || return 1; [ "$1" = install ] && set -- source || set -- loginshell;;
         esac
     ;;
