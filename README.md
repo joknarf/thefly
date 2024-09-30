@@ -53,7 +53,7 @@ by default uses `<user>` shell, to force your favorite shell:
 
 * To another host/user
 ```
-$ fly to [<ssh opts>] <user>[<@host>]
+$ flyto [<ssh opts>] <user>[<@host>]
 or
 $ fssh [<ssh opts>] <user>[<@host>]
 ```
@@ -63,7 +63,7 @@ by default uses `<user>` shell, to force your favorite shell:
 
 * To another shell  
 Change current shell and load your env/plugins:  
-`$ fly shell <shell> # shell in bash ksh zsh`  
+`$ flysh <shell> # shell in bash ksh zsh`  
 or  
 `fbash` - `fzsh` - `fksh`  
  
