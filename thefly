@@ -145,7 +145,7 @@ cat - <<'EOF' > "$_flib/.source_plugins"
 EOF
 
 cat - >"$FLY_HOME/.fly.d/fly" <<'EOFLY' && . "$FLY_HOME/.fly.d/fly"
-########## thefly #########
+############ fly ##########
 # Author: Franck Jouvanceau
 ###########################
 [ "$1" != source ] && unset _floaded
@@ -202,19 +202,6 @@ $ fsshz                         # fly ssh with zsh
 EOF
 }
 
-function _fpackage
-{
-    $_ftar -czf - -C "$FLY_HOME" --no-xattrs --exclude-vcs --exclude=README.md --exclude='plugins/*/.*' --exclude '*/*/tests' .fly.d
-}
-
-function _fxpackage
-{   
-    printf 'type gtar >/dev/null 2>&1 && _ftar=gtar || _ftar=tar;'
-    printf 'umask 077;mkdir -p "%s";' "$_ftmpdir"
-    printf '! chmod 700 "%s" && echo "Not owner of %s. Abort" >&2 && exit 1;' "${_ftmpdir%/*}" "${_ftmpdir%/*}"
-    printf '$_ftar -xmzf - -C "%s" --no-same-owner' "$_ftmpdir"
-}
-
 function _fzsh_glob
 {
     [ "$FLY_SHELL" = "zsh" ] || return 0
@@ -236,6 +223,78 @@ function _flogin_rc
     FLY_USER_RC="true"
     FLY_ETC_RC="true"
 EOF
+}
+
+_flib="$FLY_HOME/.fly.d/.fly.lib"
+case "$1" in
+    login)      
+        shift 
+        . "$_flib/.login.${FLY_SHELL##*/}"
+        . "$_flib/.source_plugins"
+    ;;
+    loginshell) 
+        shift
+        _flogin_rc
+        . "$_flib/.loginshell" "$FLY_HOME" "$_fdestshell"
+    ;;
+    source)
+        shift
+        . "$_flib/.source_plugins" "$1"
+    ;;
+    add)
+        shift
+        [ -d "$FLY_HOME/.fly.d/.git" ] && {
+            (\cd "$FLY_HOME/.fly.d" && git submodule add "$_fgithub/$1" "plugins/${1##*/}" 2>/dev/null)
+        } || (\cd "$FLY_HOME/.fly.d/plugins" && git clone "$_fgithub/$1" -q >/dev/null)
+        (\cd "$FLY_HOME/.fly.d" && git config -f ".gitmodules submodule.plugins/${1##*/}.shallow" true >/dev/null 2>/dev/null)
+        . "$_flib/.source_plugins" "${1#*/}"
+    ;;
+    del)
+        shift
+        [ ! "$1" ] && echo "usage: fly del <plugin>" >&2 && return 1
+        [ ! -d "$FLY_HOME/.fly.d/plugins/${1##*/}" ] && echo "plugin ${1##*/} not found" >&2 && return 1
+        [ -d "$FLY_HOME/.fly.d/.git" ] && {
+            (\cd "$FLY_HOME/.fly.d" && git submodule deinit -f "plugins/${1##*/}" && \
+                git add .gitmodules
+                git rm --cached "plugins/${1##*/}"
+                git config -f .gitmodules --remove-section "submodule.plugins/${1##*/}"
+            ) 2>/dev/null
+        } 
+        rm -rf "$FLY_HOME/.fly.d/plugins/${1##*/}" "$FLY_HOME/.fly.d/.git/modules/plugins/${1##*/}"
+    ;;
+    update)
+        shift
+        [ ! "$1" ] && echo "usage: fly update <plugin>" >&2 && return 1 
+        (\cd "$FLY_HOME/.fly.d/plugins/${1#*/}" && git pull origin "$(git rev-parse --abbrev-ref HEAD)")
+        . "$_flib/.source_plugins" "${1#*/}"
+    ;;
+    updateall)
+        shift
+        _fzsh_glob fix
+        for plugin in $(ls -d "$FLY_HOME/.fly.d/plugins"/*/.git) ;do
+            [ -d "$plugin" ] && (\cd "$plugin/.." && git pull origin "$(git rev-parse --abbrev-ref HEAD)")
+            [ -s "$plugin" ] && submodule=1
+        done
+        [ "$submodule" ] && (\cd $FLY_HOME/.fly.d && { 
+            git submodule update --remote --merge 2>/dev/null
+            git submodule foreach git pull 2>/dev/null
+        })
+        _fzsh_glob reset
+        . "$_flib/.source_plugins"
+    ;;
+esac
+
+function _fpackage
+{
+    $_ftar -czf - -C "$FLY_HOME" --no-xattrs --exclude-vcs --exclude=README.md --exclude='plugins/*/.*' --exclude '*/*/tests' .fly.d
+}
+
+function _fxpackage
+{   
+    printf 'type gtar >/dev/null 2>&1 && _ftar=gtar || _ftar=tar;'
+    printf 'umask 077;mkdir -p "%s";' "$_ftmpdir"
+    printf '! chmod 700 "%s" && echo "Not owner of %s. Abort" >&2 && exit 1;' "${_ftmpdir%/*}" "${_ftmpdir%/*}"
+    printf '$_ftar -xmzf - -C "%s" --no-same-owner' "$_ftmpdir"
 }
 
 function _fsudo
@@ -342,64 +401,6 @@ function _fly
 
 _fssh_ok
 
-_flib="$FLY_HOME/.fly.d/.fly.lib"
-case "$1" in
-    login)      
-        shift 
-        . "$_flib/.login.${FLY_SHELL##*/}"
-        . "$_flib/.source_plugins"
-    ;;
-    loginshell) 
-        shift
-        _flogin_rc
-        . "$_flib/.loginshell" "$FLY_HOME" "$_fdestshell"
-    ;;
-    source)
-        shift
-        . "$_flib/.source_plugins" "$1"
-    ;;
-    add)
-        shift
-        [ -d "$FLY_HOME/.fly.d/.git" ] && {
-            (\cd "$FLY_HOME/.fly.d" && git submodule add "$_fgithub/$1" "plugins/${1##*/}" 2>/dev/null)
-        } || (\cd "$FLY_HOME/.fly.d/plugins" && git clone "$_fgithub/$1" -q >/dev/null)
-        (\cd "$FLY_HOME/.fly.d" && git config -f ".gitmodules submodule.plugins/${1##*/}.shallow" true >/dev/null 2>/dev/null)
-        . "$_flib/.source_plugins" "${1#*/}"
-    ;;
-    del)
-        shift
-        [ ! "$1" ] && echo "usage: fly del <plugin>" >&2 && return 1
-        [ ! -d "$FLY_HOME/.fly.d/plugins/${1##*/}" ] && echo "plugin ${1##*/} not found" >&2 && return 1
-        [ -d "$FLY_HOME/.fly.d/.git" ] && {
-            (\cd "$FLY_HOME/.fly.d" && git submodule deinit -f "plugins/${1##*/}" && \
-                git add .gitmodules
-                git rm --cached "plugins/${1##*/}"
-                git config -f .gitmodules --remove-section "submodule.plugins/${1##*/}"
-            ) 2>/dev/null
-        } 
-        rm -rf "$FLY_HOME/.fly.d/plugins/${1##*/}" "$FLY_HOME/.fly.d/.git/modules/plugins/${1##*/}"
-    ;;
-    update)
-        shift
-        [ ! "$1" ] && echo "usage: fly update <plugin>" >&2 && return 1 
-        (\cd "$FLY_HOME/.fly.d/plugins/${1#*/}" && git pull origin "$(git rev-parse --abbrev-ref HEAD)")
-        . "$_flib/.source_plugins" "${1#*/}"
-    ;;
-    updateall)
-        shift
-        _fzsh_glob fix
-        for plugin in $(ls -d "$FLY_HOME/.fly.d/plugins"/*/.git) ;do
-            [ -d "$plugin" ] && (\cd "$plugin/.." && git pull origin "$(git rev-parse --abbrev-ref HEAD)")
-            [ -s "$plugin" ] && submodule=1
-        done
-        [ "$submodule" ] && (\cd $FLY_HOME/.fly.d && { 
-            git submodule update --remote --merge 2>/dev/null
-            git submodule foreach git pull 2>/dev/null
-        })
-        _fzsh_glob reset
-        . "$_flib/.source_plugins"
-    ;;
-esac
 
 alias fly=". $FLY_HOME/.fly.d/fly"
 
