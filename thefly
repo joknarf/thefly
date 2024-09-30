@@ -160,8 +160,8 @@ _floaded=1
 : "${FLY_ETC_RC:=true}"
 : "${_fuuid:=$(cat "$FLY_HOME/.fly.d/.flyuuid" 2>/dev/null || uuidgen)}"
 : "${_ftmpdir:="/tmp/.fly.\$USER/$_fuuid"}"
+: "${_ftar_rm:=false}"
 type gtar >/dev/null 2>&1 && _ftar=gtar || _ftar=tar
-. $FLY_HOME/.fly.d/.fly.lib/.fshell
 
 
 function usage
@@ -226,6 +226,8 @@ EOF
 }
 
 _flib="$FLY_HOME/.fly.d/.fly.lib"
+. "$_flib/.fshell"
+
 case "$1" in
     help)
         usage
