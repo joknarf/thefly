@@ -395,19 +395,24 @@ case "$1" in
 esac
 
 alias fly=". $FLY_HOME/.fly.d/fly"
-alias flyto="_fly ssh"
+
+alias flysh='_fly shell'
 alias fbash='_fly shell bash'
 alias fzsh='_fly shell zsh'
 alias fksh='_fly shell ksh'
+
+alias flyto='_fly ssh'
 alias fssh='_fly ssh'
 alias fsshb='_fdestshell=bash _fly ssh'
 alias fsshz='_fdestshell=zsh _fly ssh'
 alias fsshk='_fdestshell=ksh _fly ssh'
+
 alias flyas='_fly sudo'
 alias fsudo='_fly sudo'
 alias fsudob='_fdestshell=bash _fly sudo'
 alias fsudoz='_fdestshell=zsh _fly sudo'
 alias fsudok='_fdestshell=ksh _fly sudo'
+
 alias cdfly='cd $FLY_HOME/.fly.d'
 unset _fdestshell
 set --
