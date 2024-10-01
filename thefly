@@ -397,7 +397,7 @@ function _fly
         sudo|as) 
             shift;
             [ "$2" ] && ! type "$2" >/dev/null 2>&1 && echo "Cannot find shell $2" >&2 && return 1
-            _fdestshell="$2"
+            _fdestshell="${2:-$_fdestshell}"
             _fsudo "$1"
         ;;
         *) usage;return 1;;
