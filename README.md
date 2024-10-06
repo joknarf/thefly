@@ -43,7 +43,7 @@ clones `https://github.com/joknarf/redo` in `~/.fly.d/plugins/redo` and sources 
 
 * To another user
 ```
-$ fly as <user>
+$ flyas <user>
 or
 $ fsudo <user>
 ```
