@@ -134,6 +134,8 @@ cat - <<'EOF' > "$_flib/.source_plugins"
     plugindir="$FLY_HOME/.fly.d/plugins"
     [ -r "$FLY_HOME/.fly.d/.flyrc" ] && . "$FLY_HOME/.fly.d/.flyrc"
     [ -r "$FLY_HOME/.fly.d/.${_fshell}rc" ] && . "$FLY_HOME/.fly.d/.${_fshell}rc"
+    [ "$FLY_RC" ] && [ -r "$FLY_RC" ] && cp "$FLY_RC" "$FLY_HOME/.fly.d/.fly.lib"
+    [ "$FLY_RC" ] && [ -r "$FLY_HOME/.fly.d/.fly.lib/${FLY_RC##*/}" ] && . "$FLY_HOME/.fly.d/.fly.lib/${FLY_RC##*/}"
     _fzsh_glob fix
     for plugin in $([ "$p" ] && ls -- "$plugindir/$p/"*.plugin."$_fshell" 2>/dev/null || \
                                 ls -- "$plugindir/"*/*.plugin."$_fshell" 2>/dev/null)
@@ -153,6 +155,7 @@ cat - >"$FLY_HOME/.fly.d/fly" <<'EOFLY' && . "$FLY_HOME/.fly.d/fly"
 echo "Bzzz Bzzz !!!" >&2
 _floaded=1
 : "${FLY_HOME:=$HOME}"
+: "${FLY_RC:=$HOME/.flyrc}"
 : "${_fgithub:=https://github.com}"
 : "${_fgithubraw:=https://raw.githubusercontent.com}"
 : "${_fgitrepo:=joknarf/thefly}"
@@ -295,6 +298,7 @@ esac
 
 function _fpackage
 {
+    [ "$FLY_RC" ] && [ -r "$FLY_RC" ] && cp "$FLY_RC" "$FLY_HOME/.fly.d/.fly.lib"
     $_ftar -czf - -C "$FLY_HOME" --no-xattrs --exclude-vcs --exclude=README.md --exclude='plugins/*/.*' --exclude '*/*/tests' .fly.d
 }
 
