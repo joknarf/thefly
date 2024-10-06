@@ -407,7 +407,7 @@ function _fly
             cat - <<_EOPACK_ |base64 -d |($(_fxpackage))
 $(_fpackage |base64)
 _EOPACK_
-            . \$FLY_HOME/.fly.d/fly loginshell \$FLY_HOME
+            _fdestshell="\$1" . \$FLY_HOME/.fly.d//fly loginshell \$FLY_HOME
 _EOF_
         ;;
         *) usage;return 1;;
