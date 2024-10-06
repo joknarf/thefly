@@ -101,7 +101,7 @@ get env/plugins from github repository (repo contains .fly.d contents, cat conta
 $ ssh -t <user>@<host> '. <(curl https://raw.githubusercontent.com/joknarf/thefly/main/thefly) remote <git owner/repo .fly.d>'  
 ```
 
-## connect with full env from fly pack
+## connect with full env from fly package
 
 save/restore your whole environment everywhere
 ```
