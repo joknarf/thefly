@@ -124,6 +124,6 @@ $ fly add joknarf/pgtree       # bash/ksh/zsh process hierarchy
 
 ## Don't teleport a human with your fly !
 
-Remember that ~/.fly.d directory will be duplicated in /tmp when teleporting, don't put huge data in your ~/.fly.d directory, the consequences could be huge ! (ask Jeff G. ;-)
+Remember that ~/.fly.d directory will be duplicated in /tmp when teleporting, don't put huge data in your ~/.fly.d directory, the consequences could be dramatic ! (ask Jeff G. ;-)
 
 Bzzz Bzzz
