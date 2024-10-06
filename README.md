@@ -103,18 +103,21 @@ $ ssh -t <user>@<host> '. <(curl https://raw.githubusercontent.com/joknarf/thefl
 
 ## activate/connect with full env/plugins from fly package
 
-save/restore your whole environment everywhere
+save/activate your whole shell environment everywhere with standalone fly package.
 ```
 $ flypack >fly.pak
 ```
 make your fly.pak available through url, then use for example:
 ```
-$ ssh -t <host> '. <(curl -s -L https://raw.githubusercontent.com/joknarf/flypack/main/fly.pak) [bash|ksh|zsh]'
+$ ssh -t <host> '. <(curl -s -L https://raw.githubusercontent.com/joknarf/flypack/main/fly.pak) [install] [bash|ksh|zsh]'
 ```
 load your env in current user:
 ```
-$ . <(curl -s -L https://raw.githubusercontent.com/joknarf/flypack/main/fly.pak) [bash|ksh|zsh]
+$ . <(curl -s -L https://raw.githubusercontent.com/joknarf/flypack/main/fly.pak) [install] [bash|ksh|zsh]
 ```
+
+`install` option to install in user home dir `~/.fly.d`, default in `/tmp/.fly.$USER`
+
 
 ## Set your joknarf cool plugins env
 
