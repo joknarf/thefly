@@ -255,6 +255,7 @@ case "$1" in
             (\cd "$FLY_HOME/.fly.d" && git submodule add "$_fgithub/$1" "plugins/${1##*/}" 2>/dev/null)
         } || (\cd "$FLY_HOME/.fly.d/plugins" && git clone "$_fgithub/$1" -q >/dev/null)
         (\cd "$FLY_HOME/.fly.d" && git config -f ".gitmodules submodule.plugins/${1##*/}.shallow" true >/dev/null 2>/dev/null)
+        set --
         . "$_flib/.source_plugins" "${1#*/}"
     ;;
     del)
@@ -304,7 +305,7 @@ function _fpackage
 
 function _fxpackage
 {   
-    printf 'FLY_HOME="%s";' "$_ftmpdir"
+    printf '[ "$1" = install ] && FLY_HOME="$HOME" || FLY_HOME="%s";' "$_ftmpdir"
     printf 'type gtar >/dev/null 2>&1 && _ftar=gtar || _ftar=tar;'
     printf 'umask 077;mkdir -p "$FLY_HOME";'
     printf '! chmod 700 "$FLY_HOME" && echo "Not owner of $FLY_HOME. Abort" >&2 && exit 1;'
@@ -407,10 +408,10 @@ function _fly
         ;;
         pack)
             cat - <<_EOF_
-            FLY_HOME="$_ftmpdir"
             cat - <<_EOPACK_ |base64 -d |($(_fxpackage))
 $(_fpackage |base64)
 _EOPACK_
+           [ "\$1" = install ] && FLY_HOME="\$HOME" && shift || FLY_HOME="$_ftmpdir"
             _fdestshell="\$1" . \$FLY_HOME/.fly.d//fly loginshell \$FLY_HOME
 _EOF_
         ;;
