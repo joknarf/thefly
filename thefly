@@ -300,10 +300,11 @@ function _fpackage
 
 function _fxpackage
 {   
+    printf 'FLY_HOME="%s";' "$_ftmpdir"
     printf 'type gtar >/dev/null 2>&1 && _ftar=gtar || _ftar=tar;'
-    printf 'umask 077;mkdir -p "%s";' "$_ftmpdir"
-    printf '! chmod 700 "%s" && echo "Not owner of %s. Abort" >&2 && exit 1;' "${_ftmpdir%/*}" "${_ftmpdir%/*}"
-    printf '$_ftar -xmzf - -C "%s" --no-same-owner' "$_ftmpdir"
+    printf 'umask 077;mkdir -p "$FLY_HOME";'
+    printf '! chmod 700 "$FLY_HOME" && echo "Not owner of $FLY_HOME. Abort" >&2 && exit 1;'
+    printf '$_ftar -xmzf - -C "$FLY_HOME" --no-same-owner'
 }
 
 function _fsudo
@@ -402,9 +403,8 @@ function _fly
         ;;
         pack)
             cat - <<_EOF_
-            : "\${FLY_HOME:=/tmp/.fly.\$USER/$_fuuid}"
-            (umask 077;mkdir -p \$FLY_HOME)
-            cat - <<_EOPACK_ |base64 -d |tar -C \$FLY_HOME -xzf -
+            FLY_HOME="$_ftmpdir"
+            cat - <<_EOPACK_ |base64 -d |($(_fxpackage))
 $(_fpackage |base64)
 _EOPACK_
             . \$FLY_HOME/.fly.d/fly loginshell \$FLY_HOME
