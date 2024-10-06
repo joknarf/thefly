@@ -361,10 +361,10 @@ function _fssh
     done
     [ ! "$ssh_config" ] && [ -f ~/.ssh/config ] && ssh_config="Include $HOME/.ssh/config"
     cmd="${cmd//$'\n'/;}"
-    cat - <<EOF >"$FLY_HOME/.fly_ssh"
+    cat - <<_EOF_ >"$FLY_HOME/.fly_ssh"
 $ssh_config
 RemoteCommand $cmd
-EOF
+_EOF_
     ssh -t -F "$FLY_HOME/.fly_ssh" "$@"
 }
 
@@ -401,12 +401,14 @@ function _fly
             _fsudo "$1"
         ;;
         pack)
-            cat - <<EOF
+            cat - <<_EOF_
             : "\${FLY_HOME:=/tmp/.fly.\$USER/$_fuuid}"
             (umask 077;mkdir -p \$FLY_HOME)
-            printf '%s' '$(_fpackage |base64)' |base64 -d |tar -C \$FLY_HOME -xzf -
+            cat - <<_EOPACK_ |base64 -d |tar -C \$FLY_HOME -xzf -
+$(_fpackage |base64)
+_EOPACK_
             . \$FLY_HOME/.fly.d/fly loginshell \$FLY_HOME
-EOF
+_EOF_
         ;;
         *) usage;return 1;;
     esac
