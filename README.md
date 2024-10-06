@@ -101,7 +101,7 @@ get env/plugins from github repository (repo contains .fly.d contents, cat conta
 $ ssh -t <user>@<host> '. <(curl https://raw.githubusercontent.com/joknarf/thefly/main/thefly) remote <git owner/repo .fly.d>'  
 ```
 
-## connect with full env from fly package
+## install/connect with full env from fly package
 
 save/restore your whole environment everywhere
 ```
@@ -109,7 +109,11 @@ $ flypack >fly.pak
 ```
 make your fly.pak available through url, then use for example:
 ```
-ssh -t <host> '. <(curl -s -L https://raw.githubusercontent.com/joknarf/flypack/main/fly.pak)'
+$ ssh -t <host> '. <(curl -s -L https://raw.githubusercontent.com/joknarf/flypack/main/fly.pak)'
+```
+install your fly package in current user:
+```
+$ FLY_HOME=$HOME;. <(curl -s -L https://raw.githubusercontent.com/joknarf/flypack/main/fly.pak)
 ```
 
 ## Set your joknarf cool plugins env
