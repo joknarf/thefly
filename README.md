@@ -105,8 +105,7 @@ $ ssh -t <user>@<host> '. <(curl https://raw.githubusercontent.com/joknarf/thefl
 
 save/restore your whole environment everywhere
 ```
-$ flypack
-flypack created: /home/joknarf/fly.pak
+$ flypack >fly.pak
 ```
 make your fly.pak available through url, then use for example:
 ```
