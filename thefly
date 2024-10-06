@@ -401,13 +401,12 @@ function _fly
             _fsudo "$1"
         ;;
         pack)
-            cat - <<EOF >$FLY_HOME/fly.pak
+            cat - <<EOF
             : "\${FLY_HOME:=/tmp/.fly.\$USER/$_fuuid}"
             (umask 077;mkdir -p \$FLY_HOME)
             printf '%s' '$(_fpackage |base64)' |base64 -d |tar -C \$FLY_HOME -xzf -
             . \$FLY_HOME/.fly.d/fly loginshell \$FLY_HOME
 EOF
-            echo "flypack created: $FLY_HOME/fly.pak"
         ;;
         *) usage;return 1;;
     esac
