@@ -125,7 +125,7 @@ cat - <<'EOF' > "$_flib/.loginshell"
     case "$FLY_SHELL" in 
         *bash) exec bash --noprofile --init-file "$FLY_HOME/.fly.d/.fly.lib/.login";;
         *zsh)  ZDOTDIR=$FLY_HOME/.fly.d/.fly.lib exec zsh -di;;
-        *ksh)  ENV=$FLY_HOME/.fly.d/.fly.lib/.login exec ksh -i;;
+        *ksh)  export ENV=$FLY_HOME/.fly.d/.fly.lib/.login;exec ksh -i;;
     esac
 EOF
 
