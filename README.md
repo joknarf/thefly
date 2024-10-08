@@ -41,15 +41,15 @@ clones `https://github.com/joknarf/redo` in `~/.fly.d/plugins/redo` and sources 
 
 ## Teleport plugins
 
-* To another user
+* To another user on current host
 ```
 $ flyas <user>
 or
-$ fsudo <user>
+$ fsu <user>
 ```
 will duplicate `~/.fly.d` (without cvs files/tests) in `/tmp/.fly.<user>/<flyid>/.fly.d` and source all plugins  
 by default uses `<user>` shell, to force your favorite shell:  
-`fsudob` (bash) - `fsudoz` (zsh) - `fsudok` (ksh)
+`fsub` or `bsu` (bash) - `fsuz` or `zsu` (zsh) - `fsuk` or `ksu` (ksh)
 
 * To another host/user
 ```
@@ -59,13 +59,13 @@ $ fssh [<ssh opts>] <user>[<@host>]
 ```
 will duplicate `~/.fly.d` (without cvs files/tests) in `<host>:/tmp/.fly.<user>/<flyid>/.fly.d` and source all plugins  
 by default uses `<user>` shell, to force your favorite shell:  
-`fsshb` (bash) - `fsshz` (zsh) - `fsshk` (ksh)
-
+`fsshb` or `bto` (bash) - `fsshz` or `zto` (zsh) - `fsshk` or `kto` (ksh)  
+ 
 * To another shell  
 Change current shell and load your env/plugins:  
 `$ flysh <shell> # shell in bash ksh zsh`  
-or  
-`fbash` - `fzsh` - `fksh`  
+or `fbash` - `fzsh` - `fksh`  
+
  
 ## Customize env
 
@@ -104,6 +104,7 @@ $ ssh -t <user>@<host> '. <(curl https://raw.githubusercontent.com/joknarf/thefl
 ## activate/connect with full env/plugins from fly package
 
 save/activate your whole shell environment everywhere with standalone fly package.
+All your ~/.fly.d environment saved in autoextractable file.
 ```
 $ flypack >fly.pak
 ```
