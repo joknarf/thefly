@@ -351,7 +351,7 @@ function _fpackage_zfx
     typeset b64opt
     echo ok |base64 -w0 >/dev/null 2>&1 && b64opt='-w0'
     cat - <<EOF
-$(_fxpretar) base64 -d <<<$(_fpackage |base64 $b64opt) |$(_fxpackage)
+$(_fxpretar) base64 -d <<<'$(_fpackage |base64 $b64opt)' |$(_fxpackage)
 EOF
 
 }
