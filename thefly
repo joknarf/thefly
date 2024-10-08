@@ -123,7 +123,7 @@ cat - <<'EOF' > "$_flib/.loginshell"
     . $FLY_HOME/.fly.d/.fly.lib/.fshell
     FLY_SHELL="${2:-$FLY_SHELL}"
     case "$FLY_SHELL" in 
-        *bash) exec bash --noprofile --init-file "$FLY_HOME/.fly.d/.fly.lib/.login";;
+        *bash) exec bash  --init-file "$FLY_HOME/.fly.d/.fly.lib/.login";; # --noprofile
         *zsh)  ZDOTDIR=$FLY_HOME/.fly.d/.fly.lib exec zsh -di;;
         *ksh)  export ENV=$FLY_HOME/.fly.d/.fly.lib/.login;exec ksh -i;;
     esac
@@ -303,12 +303,16 @@ function _fpackage
     $_ftar -czf - -C "$FLY_HOME" --no-xattrs --exclude-vcs --exclude=README.md --exclude='plugins/*/.*' --exclude '*/*/tests' .fly.d
 }
 
-function _fxpackage
-{   
-    printf '[ "$1" = install ] && FLY_HOME="$HOME" || FLY_HOME="%s";' "$_ftmpdir"
+function _fxpretar
+{
+    printf '[ "$1" = install ] && FLY_HOME="$HOME" && shift || FLY_HOME="%s";' "$_ftmpdir"
     printf 'type gtar >/dev/null 2>&1 && _ftar=gtar || _ftar=tar;'
     printf 'umask 077;mkdir -p "$FLY_HOME";'
     printf '! chmod 700 "$FLY_HOME" && echo "Not owner of $FLY_HOME. Abort" >&2 && exit 1;'
+}
+
+function _fxpackage
+{   
     printf '$_ftar -xmzf - -C "$FLY_HOME" --no-same-owner'
 }
 
@@ -321,7 +325,7 @@ function _fsudo
     [ ! "$_fdestshell" ] && _fdestshell="$(awk -F: '$1==user{print $NF}' user="$user" /etc/passwd)"
     [[ "$_fdestshell" = */sh ]] && _fdestshell="$FLY_SHELL"
     _flogin_rc "$_ftmpdir"
-    _fpackage |sudo -H -u "$user" "${_fdestshell:-$FLY_SHELL}" -c "$(_fxpackage)" || return $?
+    _fpackage |sudo -H -u "$user" "${_fdestshell:-$FLY_SHELL}" -c "$(_fxpretar) $(_fxpackage)" || return $?
     if [ "$_fdestshell" ];then
         sudo -H -u "$user" "$_fdestshell" -- "$destdir/.fly.d/.fly.lib/.loginshell" "$destdir" "$_fdestshell"
     else
@@ -342,13 +346,28 @@ function _fssh_ok
     [[ "$ssh_maj" > 8 ]] && _fssh_ok=true 
 }
 
-function _fssh_cmd
+function _fpackage_zfx
 {
     typeset b64opt
     echo ok |base64 -w0 >/dev/null 2>&1 && b64opt='-w0'
-
     cat - <<EOF
-printf '$(_fpackage |base64 $b64opt)' |base64 -d |($(_fxpackage))
+$(_fxpretar) base64 -d <<<$(_fpackage |base64 $b64opt) |$(_fxpackage)
+EOF
+
+}
+
+function _fpack
+{
+     cat - <<EOF
+$(_fpackage_zfx)
+_fdestshell="\$1" . "\$FLY_HOME/.fly.d/fly" loginshell "\$FLY_HOME"
+EOF
+}
+
+function _fssh_cmd
+{
+    cat - <<EOF
+$(_fpackage_zfx)
 . "$_ftmpdir/.fly.d/.fly.lib/.loginshell" "$_ftmpdir" "$_fdestshell"
 EOF
 }
@@ -377,7 +396,7 @@ _EOF_
 function _fssh2
 {
     _flogin_rc "$_ftmpdir"
-    _fpackage | ssh -o LogLevel=Error "$@" "$(_fxpackage)" || return $?
+    _fpackage | ssh -o LogLevel=Error "$@" "$(_fxpretar) $(_fxpackage)" || return $?
     ssh "$@" -t '. '"$_ftmpdir"'/.fly.d/.fly.lib/.loginshell '"$_ftmpdir"' '"$_fdestshell"''
 }
 
@@ -407,13 +426,8 @@ function _fly
             _fsudo "$1"
         ;;
         pack)
-            cat - <<_EOF_
-            cat - <<_EOPACK_ |base64 -d |($(_fxpackage))
-$(_fpackage |base64)
-_EOPACK_
-           [ "\$1" = install ] && FLY_HOME="\$HOME" && shift || FLY_HOME="$_ftmpdir"
-            _fdestshell="\$1" . \$FLY_HOME/.fly.d//fly loginshell \$FLY_HOME
-_EOF_
+            shift
+            _fpack
         ;;
         *) usage;return 1;;
     esac
