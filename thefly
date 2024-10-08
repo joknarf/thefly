@@ -305,7 +305,7 @@ function _fpackage
 
 function _fxpretar
 {
-    printf '[ "$1" = install ] && FLY_HOME="$HOME" && shift || FLY_HOME="%s";' "$_ftmpdir"
+    printf 'FLY_HOME="%s";' "$_ftmpdir"
     printf 'type gtar >/dev/null 2>&1 && _ftar=gtar || _ftar=tar;'
     printf 'umask 077;mkdir -p "$FLY_HOME";'
     printf '! chmod 700 "$FLY_HOME" && echo "Not owner of $FLY_HOME. Abort" >&2 && exit 1;'
@@ -359,7 +359,7 @@ EOF
 function _fpack
 {
      cat - <<EOF
-$(_fpackage_zfx)
+[ "\$1" = install ] && FLY_HOME="\$HOME" && shift || $(_fpackage_zfx)
 _fdestshell="\$1" . "\$FLY_HOME/.fly.d/fly" loginshell "\$FLY_HOME"
 EOF
 }
