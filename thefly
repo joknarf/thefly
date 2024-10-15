@@ -123,7 +123,7 @@ cat - <<'EOF' > "$_flib/.loginshell"
     . $FLY_HOME/.fly.d/.fly.lib/.fshell
     FLY_SHELL="${2:-$FLY_SHELL}"
     case "$FLY_SHELL" in 
-        *bash) exec bash  --init-file "$FLY_HOME/.fly.d/.fly.lib/.login";; # --noprofile
+        *bash) exec bash --noprofile --init-file "$FLY_HOME/.fly.d/.fly.lib/.login";;
         *zsh)  ZDOTDIR=$FLY_HOME/.fly.d/.fly.lib exec zsh -di;;
         *ksh)  export ENV=$FLY_HOME/.fly.d/.fly.lib/.login;exec ksh -i;;
     esac
