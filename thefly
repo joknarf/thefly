@@ -417,6 +417,7 @@ function _fly
         ;;
         ssh|to) 
             shift
+            [ ! "$1" ] && echo "fly: error: missing destination/ssh params" && return 1
             _fssh "$@"
         ;;
         sudo|as) 
