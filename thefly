@@ -40,7 +40,7 @@ function _finit
 {
     (
         umask 077
-        mkdir -p "$FLY_HOME/.fly.d/plugins" "$FLY_HOME/.fly.d/.fly.lib"
+        mkdir -p "$FLY_HOME/.fly.d/plugins" "$FLY_HOME/.fly.d/plugins.d/"{00-pre,99-post} "$FLY_HOME/.fly.d/.fly.lib"
         ! chmod 700 "$FLY_HOME/.fly.d" && echo "Not owner of $FLY_HOME/.fly.d. Abort" >&2 && return 1
         [ -f "$FLY_HOME/.fly.d/.flyrc" ] || touch "$FLY_HOME/.fly.d/.flyrc" "$FLY_HOME/.fly.d/.bashrc" "$FLY_HOME/.fly.d/.zshrc" "$FLY_HOME/.fly.d/.kshrc"
         [ -s "$FLY_HOME/.fly.d/.flyuuid" ] || uuidgen >"$FLY_HOME/.fly.d/.flyuuid"
@@ -131,7 +131,7 @@ EOF
 
 cat - <<'EOF' > "$_flib/.source_plugins"
     p="$1" _fshell="${FLY_SHELL##*/}"
-    plugindir="$FLY_HOME/.fly.d/plugins"
+    plugindir="$FLY_HOME/.fly.d/plugins.d"
     [ -r "$FLY_HOME/.fly.d/.flyrc" ] && . "$FLY_HOME/.fly.d/.flyrc"
     [ -r "$FLY_HOME/.fly.d/.${_fshell}rc" ] && . "$FLY_HOME/.fly.d/.${_fshell}rc"
     [ "$FLY_RC" ] && [ -r "$FLY_RC" ] && cp "$FLY_RC" "$FLY_HOME/.fly.d/.fly.lib"
@@ -255,6 +255,7 @@ case "$1" in
             (\cd "$FLY_HOME/.fly.d" && git submodule add "$_fgithub/$1" "plugins/${1##*/}" 2>/dev/null)
         } || (\cd "$FLY_HOME/.fly.d/plugins" && git clone "$_fgithub/$1" -q >/dev/null)
         (\cd "$FLY_HOME/.fly.d" && git config -f ".gitmodules submodule.plugins/${1##*/}.shallow" true >/dev/null 2>/dev/null)
+        ln -s ../plugins/${1##*/} $FLY_HOME/.fly.d/plugins.d/50-${1##*/}
         set --
         . "$_flib/.source_plugins" "${1#*/}"
     ;;
@@ -269,7 +270,7 @@ case "$1" in
                 git config -f .gitmodules --remove-section "submodule.plugins/${1##*/}"
             ) 2>/dev/null
         } 
-        rm -rf "$FLY_HOME/.fly.d/plugins/${1##*/}" "$FLY_HOME/.fly.d/.git/modules/plugins/${1##*/}"
+        rm -rf "$FLY_HOME/.fly.d/plugins/${1##*/}" "$FLY_HOME/.fly.d/.git/modules/plugins/${1##*/}" "$FLY_HOME/.fly.d/plugins.d/"??-"${1##*/}"
     ;;
     update)
         shift
