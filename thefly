@@ -131,14 +131,15 @@ EOF
 
 cat - <<'EOF' > "$_flib/.source_plugins"
     p="$1" _fshell="${FLY_SHELL##*/}"
-    plugindir="$FLY_HOME/.fly.d/plugins.d"
+    set --
+    [ "$p" ] && plugindir="$FLY_HOME/.fly.d/plugins" || plugindir="$FLY_HOME/.fly.d/plugins.d"
     [ -r "$FLY_HOME/.fly.d/.flyrc" ] && . "$FLY_HOME/.fly.d/.flyrc"
     [ -r "$FLY_HOME/.fly.d/.${_fshell}rc" ] && . "$FLY_HOME/.fly.d/.${_fshell}rc"
     [ "$FLY_RC" ] && [ -r "$FLY_RC" ] && cp "$FLY_RC" "$FLY_HOME/.fly.d/.fly.lib"
     [ "$FLY_RC" ] && [ -r "$FLY_HOME/.fly.d/.fly.lib/${FLY_RC##*/}" ] && . "$FLY_HOME/.fly.d/.fly.lib/${FLY_RC##*/}"
     _fzsh_glob fix
-    for plugin in $([ "$p" ] && ls -- "$plugindir/$p/"*.plugin."$_fshell" 2>/dev/null || \
-                                ls -- "$plugindir/"*/*.plugin."$_fshell" 2>/dev/null)
+    for plugin in $([ "$p" ] && \ls -- "$plugindir/$p/"*.plugin."$_fshell" 2>/dev/null || \
+                                \ls -- "$plugindir/"*/*.plugin."$_fshell" 2>/dev/null)
     do
         \cd "${plugin%/*}" && { . "$plugin"; \cd "$OLDPWD"; }
     done
