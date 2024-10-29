@@ -39,7 +39,7 @@ fly add joknarf/redo
 clones `https://github.com/joknarf/redo` in `~/.fly.d/plugins/redo` and sources the `plugin.<shell>`
 (all plugins in `~/fly.d/plugins/*/*.plugin.<shell>` will be sourced at login with `fly source` in your shell rc file)
 
-## Teleport plugins
+## Teleport plugins/shell env
 
 * To another user on current host
 ```
@@ -72,6 +72,26 @@ or `fbash` - `fzsh` - `fksh`
 Putting your env in `~/.fly.d/.flyrc` will be automatically sourced (must be compatible with different shells)  
 Putting additional shell specific env in `~/.fly.d/.<shellname>rc` (.bashrc/.kshrc/.zshrc), will be automatically sourced for shell.
 
+
+## Create your standalone fly package with your full shell env/plugins
+
+save your whole shell environment to use everywhere with standalone fly package.  
+All your ~/.fly.d environment saved in autoextractable file. The fly package enables your env when sourced.
+```
+$ flypack >fly.pak
+```
+make your fly.pak available through url, to connect to a server with your env, use for example:
+```
+$ ssh -t <host> '. <(curl -s -L https://raw.githubusercontent.com/joknarf/flypack/main/fly.pak) [install] [bash|ksh|zsh]'
+```
+load your env in current user:
+```
+$ . <(curl -s -L https://raw.githubusercontent.com/joknarf/flypack/main/fly.pak) [install] [bash|ksh|zsh]
+```
+
+`install` option to install in user home dir `~/.fly.d`, default in `/tmp/.fly.$USER`
+
+
 ## Download/activate your env/plugins from your fly git repo or web server
 
 put your .fly.d directory into a git repo and activate all your env/plugins in your current user
@@ -101,23 +121,6 @@ get env/plugins from github repository (repo contains .fly.d contents, cat conta
 $ ssh -t <user>@<host> '. <(curl https://raw.githubusercontent.com/joknarf/thefly/main/thefly) remote <git owner/repo .fly.d>'  
 ```
 
-## activate/connect with full env/plugins from fly package
-
-save/activate your whole shell environment everywhere with standalone fly package.
-All your ~/.fly.d environment saved in autoextractable file.
-```
-$ flypack >fly.pak
-```
-make your fly.pak available through url, then use for example:
-```
-$ ssh -t <host> '. <(curl -s -L https://raw.githubusercontent.com/joknarf/flypack/main/fly.pak) [install] [bash|ksh|zsh]'
-```
-load your env in current user:
-```
-$ . <(curl -s -L https://raw.githubusercontent.com/joknarf/flypack/main/fly.pak) [install] [bash|ksh|zsh]
-```
-
-`install` option to install in user home dir `~/.fly.d`, default in `/tmp/.fly.$USER`
 
 
 ## Set your joknarf cool plugins env
