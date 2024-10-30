@@ -132,6 +132,13 @@ $ fly add joknarf/redo         # bash/zsh     command history
 $ fly add joknarf/complete-ng  # bash         completion next-gen
 $ fly add joknarf/pgtree       # bash/ksh/zsh process hierarchy
 ```
+|link                                                 |description                                                             |
+|-----------------------------------------------------|------------------------------------------------------------------------|
+|[nerdp](https://github.com/joknarf/nerdp)            |nerd dynamic customizable nice prompt                                   |
+|[seedee](https://github.com/joknarf/seedee)          |access/search dir history with ctrl or shift down arrow, and many more  |
+|[redo](https://github.com/joknarf/redo)              |access/search shell history command menu with shift-tab, and many more  |
+|[complete-ng](https://github.com/joknarf/complete-ng)|autocompletion with interactive menu                                    |
+|[pgtree](https://github.com/joknarf/pgtree)          |process search / tree / kill command line                               | 
 
 ## Don't teleport a human with your fly !
 
