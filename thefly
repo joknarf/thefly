@@ -135,7 +135,7 @@ cat - <<'EOF' > "$_fly_lib/.source_plugins"
     [ "$p" ] && plugindir="$FLY_HOME/.fly.d/plugins" || plugindir="$FLY_HOME/.fly.d/plugins.d"
     [ -r "$FLY_HOME/.fly.d/.flyrc" ] && . "$FLY_HOME/.fly.d/.flyrc"
     [ -r "$FLY_HOME/.fly.d/.${_fly_shell}rc" ] && . "$FLY_HOME/.fly.d/.${_fly_shell}rc"
-    [ "$FLY_RC" ] && [ -r "$FLY_RC" ] && cp "$FLY_RC" "$FLY_HOME/.fly.d/.fly.lib"
+    $FLY_USER_RC && [ "$FLY_RC" ] && [ -r "$FLY_RC" ] && cp "$FLY_RC" "$FLY_HOME/.fly.d/.fly.lib"
     [ "$FLY_RC" ] && [ -r "$FLY_HOME/.fly.d/.fly.lib/${FLY_RC##*/}" ] && . "$FLY_HOME/.fly.d/.fly.lib/${FLY_RC##*/}"
     _fly_zsh_glob fix
     for plugin in $([ "$p" ] && \ls -- "$plugindir/$p/"*.plugin."$_fly_shell" 2>/dev/null || \
@@ -338,14 +338,17 @@ function _fly_sudo
 
 function _fly_ssh_ok
 {
-    typeset ssh_ver
+    typeset ssh_ver ssh_maj ssh_min
     _fly_ssh_ok=false
     type ssh >/dev/null 2>&1 || return
     typeset ssh_ver="$(ssh -V 2>&1)"
     ssh_ver="${ssh_ver%% *}";ssh_ver="${ssh_ver#*_}";ssh_ver="${ssh_ver%p*}"
     [[ "$ssh_ver" = *.*.* ]] && ssh_ver="${ssh_ver%.*}"
+    ssh_min=${ssh_ver#*.}
     ssh_maj=${ssh_ver%.*}
-    [[ "$ssh_maj" > 8 ]] && _fly_ssh_ok=true 
+    [[ "$ssh_maj" > 8 ]] && _fly_ssh_ok=true
+    # ssh 8.0 RemoteCommand buffer too short
+    [[ "$ssh_maj" = 8 ]] && [[ "$ssh_min" > 5 ]] && _fly_ssh_ok=true
 }
 
 function _fly_package_zfx
@@ -377,12 +380,13 @@ EOF
 function _fly_ssh
 {
     ! $_fly_ssh_ok && { _fly_ssh2 "$@"; return $?; } 
-    typeset ssh_config cmd
+    typeset ssh_config cmd c
     _fly_login_rc "$_fly_tmpdir"
     cmd="$(_fly_ssh_cmd)"
     [ ${#cmd} -gt 130000 ] && { _fly_ssh2 "$@"; return $?; }
     for i in "$@";do
-       [ "$i" = -F ] && shift && ssh_config="Include $1" && shift && continue
+       [ "$i" = -F ] && shift && c=1 && continue
+       [ "$c" ] && unset c && ssh_config="Include $i" && shift && continue
        shift
        set -- "$@" "$i"
     done
