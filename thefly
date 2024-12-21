@@ -232,6 +232,39 @@ EOF
 _fly_lib="$FLY_HOME/.fly.d/.fly.lib"
 . "$_fly_lib/.fshell"
 
+alias fly=". $FLY_HOME/.fly.d/fly"
+
+alias flysh='_fly shell'
+alias fbash='_fly shell bash'
+alias fzsh='_fly shell zsh'
+alias fksh='_fly shell ksh'
+
+alias flyto='_fly ssh'
+alias fssh='_fly ssh'
+alias fsshb='_fly_destshell=bash _fly ssh'
+alias fsshz='_fly_destshell=zsh _fly ssh'
+alias fsshk='_fly_destshell=ksh _fly ssh'
+
+alias fto='_fly ssh'
+alias bto='_fly_destshell=bash _fly ssh'
+alias zto='_fly_destshell=zsh _fly ssh'
+alias kto='_fly_destshell=ksh _fly ssh'
+
+alias flyas='_fly sudo'
+alias fsudo='_fly sudo'
+alias fsub='_fly_destshell=bash _fly sudo'
+alias fsuz='_fly_destshell=zsh _fly sudo'
+alias fsuk='_fly_destshell=ksh _fly sudo'
+
+alias fsu='_fly sudo'
+alias bsu='_fly_destshell=bash _fly sudo'
+alias ksu='_fly_destshell=ksh _fly sudo'
+alias zsu='_fly_destshell=zsh _fly sudo'
+
+alias flyls='_fly list'
+alias flypack='_fly pack'
+alias cdfly='cd $FLY_HOME/.fly.d'
+
 case "$1" in
     help)
         usage
@@ -443,38 +476,6 @@ function _fly
 _fly_ssh_ok
 
 
-alias fly=". $FLY_HOME/.fly.d/fly"
-
-alias flysh='_fly shell'
-alias fbash='_fly shell bash'
-alias fzsh='_fly shell zsh'
-alias fksh='_fly shell ksh'
-
-alias flyto='_fly ssh'
-alias fssh='_fly ssh'
-alias fsshb='_fly_destshell=bash _fly ssh'
-alias fsshz='_fly_destshell=zsh _fly ssh'
-alias fsshk='_fly_destshell=ksh _fly ssh'
-
-alias fto='_fly ssh'
-alias bto='_fly_destshell=bash _fly ssh'
-alias zto='_fly_destshell=zsh _fly ssh'
-alias kto='_fly_destshell=ksh _fly ssh'
-
-alias flyas='_fly sudo'
-alias fsudo='_fly sudo'
-alias fsub='_fly_destshell=bash _fly sudo'
-alias fsuz='_fly_destshell=zsh _fly sudo'
-alias fsuk='_fly_destshell=ksh _fly sudo'
-
-alias fsu='_fly sudo'
-alias bsu='_fly_destshell=bash _fly sudo'
-alias ksu='_fly_destshell=ksh _fly sudo'
-alias zsu='_fly_destshell=zsh _fly sudo'
-
-alias flyls='_fly list'
-alias flypack='_fly pack'
-alias cdfly='cd $FLY_HOME/.fly.d'
 unset _fly_destshell
 set --
 EOFLY
