@@ -120,10 +120,12 @@ EOF
 
 cat - <<'EOF' > "$_fly_lib/.loginshell"
     FLY_HOME="${1:-$FLY_HOME}"
+    \cd "$FLY_HOME"
+    FLY_HOME="$PWD"
     . $FLY_HOME/.fly.d/.fly.lib/.fshell
     FLY_SHELL="${2:-$FLY_SHELL}"
     case "$FLY_SHELL" in 
-        *bash) exec bash --noprofile --init-file "$FLY_HOME/.fly.d/.fly.lib/.login";;
+        *bash) exec bash --noprofile --init-file ".fly.d/.fly.lib/.login";;
         *zsh)  ZDOTDIR=$FLY_HOME/.fly.d/.fly.lib exec zsh -di;;
         *ksh)  export ENV=$FLY_HOME/.fly.d/.fly.lib/.login;exec ksh -i;;
     esac
@@ -361,11 +363,7 @@ function _fly_sudo
     [[ "$_fly_destshell" = */sh ]] && _fly_destshell="$FLY_SHELL"
     _fly_login_rc "$_fly_tmpdir"
     _fly_package |sudo -H -u "$user" "${_fly_destshell:-$FLY_SHELL}" -c "$(_fly_xpretar) $(_fly_xpackage)" || return $?
-    if [ "$_fly_destshell" ];then
-        sudo -H -u "$user" "$_fly_destshell" -- "$destdir/.fly.d/.fly.lib/.loginshell" "$destdir" "$_fly_destshell"
-    else
-        sudo -H -u "$user" -i . "$destdir/.fly.d/.fly.lib/.loginshell" "$destdir"
-    fi
+    SHELL="$_fly_destshell" sudo -H -s -u "$user" . "$destdir/.fly.d/.fly.lib/.loginshell" "$destdir"
     unset _fly_destshell
 }
 
