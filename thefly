@@ -141,7 +141,7 @@ cat - <<'EOF' > "$_fly_lib/.source_plugins"
     for plugin in $([ "$p" ] && \ls -- "$plugindir/$p/"*.plugin."$_fly_shell" 2>/dev/null || \
                                 \ls -- "$plugindir/"*/*.plugin."$_fly_shell" 2>/dev/null)
     do
-        \cd "${plugin%/*}" && { . "$plugin"; \cd "$OLDPWD"; }
+        . "$plugin"
     done
     unset p plugin plugindir _fly_shell
     _fly_zsh_glob reset
