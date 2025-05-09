@@ -344,8 +344,8 @@ function _fly_xpretar
 {
     printf 'FLY_HOME="%s";' "$_fly_tmpdir"
     printf 'type gtar >/dev/null 2>&1 && _fly_tar=gtar || _fly_tar=tar;'
-    printf 'umask 077;mkdir -p "$FLY_HOME";'
-    printf '! chmod 700 "$FLY_HOME" && echo "Not owner of $FLY_HOME. Abort" >&2 && exit 1;'
+    printf 'umask 066;mkdir -p "$FLY_HOME";'
+    printf '! chmod 711 "$FLY_HOME" && echo "Not owner of $FLY_HOME. Abort" >&2 && exit 1;'
 }
 
 function _fly_xpackage
@@ -363,7 +363,7 @@ function _fly_sudo
     [[ "$_fly_destshell" = */sh ]] && _fly_destshell="$FLY_SHELL"
     _fly_login_rc "$_fly_tmpdir"
     _fly_package |sudo -H -u "$user" "${_fly_destshell:-$FLY_SHELL}" -c "$(_fly_xpretar) $(_fly_xpackage)" || return $?
-    SHELL="$_fly_destshell" sudo -H -s -u "$user" . "$destdir/.fly.d/.fly.lib/.loginshell" "$destdir"
+    (\cd "$destdir";SHELL="$_fly_destshell" sudo -H -s -u "$user" . ".fly.d/.fly.lib/.loginshell" ".")
     unset _fly_destshell
 }
 
