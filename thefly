@@ -344,7 +344,7 @@ function _fly_xpretar
 {
     printf 'FLY_HOME="%s";' "$_fly_tmpdir"
     printf 'type gtar >/dev/null 2>&1 && _fly_tar=gtar || _fly_tar=tar;'
-    printf 'umask 066;mkdir -p "$FLY_HOME";'
+    printf 'umask 066;mkdir -p "$FLY_HOME";rm -rf "$FLY_HOME/.fly.d";'
     printf '! chmod 711 "$FLY_HOME" && echo "Not owner of $FLY_HOME. Abort" >&2 && exit 1;'
 }
 
