@@ -355,7 +355,7 @@ function _fly_xpackage
 
 function _fly_sudo
 {
-    typeset user="${1:-root}"
+    typeset user="${1:-root}" _fly_pwd="$PWD"
     typeset destdir="/tmp/.fly.$user/$_fly_uuid"
     [ ! "$_fly_destshell" ] && _fly_destshell="$(getent passwd "$user" 2>/dev/null)" && _fly_destshell="${_fly_destshell##*:}"
     [ ! "$_fly_destshell" ] && _fly_destshell="$(dscl . -read "Users/$user" UserShell 2>/dev/null)" && _fly_destshell="${_fly_destshell#*: }"
@@ -363,7 +363,9 @@ function _fly_sudo
     [[ "$_fly_destshell" = */sh ]] && _fly_destshell="$FLY_SHELL"
     _fly_login_rc "$_fly_tmpdir"
     _fly_package |sudo -H -u "$user" "${_fly_destshell:-$FLY_SHELL}" -c "$(_fly_xpretar) $(_fly_xpackage)" || return $?
-    (\cd "$destdir";SHELL="$_fly_destshell" sudo -H -s -u "$user" . ".fly.d/.fly.lib/.loginshell" ".")
+    \cd "$destdir"
+    SHELL="$_fly_destshell" sudo -H -s -u "$user" . ".fly.d/.fly.lib/.loginshell" "."
+    \cd "$_fly_pwd"
     unset _fly_destshell
 }
 
