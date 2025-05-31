@@ -124,6 +124,11 @@ cat - <<'EOF' > "$_fly_lib/.loginshell"
     FLY_HOME="$PWD"
     . $FLY_HOME/.fly.d/.fly.lib/.fshell
     FLY_SHELL="${2:-$FLY_SHELL}"
+    [ -t 0 ] || {
+      exec </dev/tty
+      #exec >/dev/tty
+      #exec 2>/dev/tty    
+    }
     case "$FLY_SHELL" in 
         *bash) exec bash --noprofile --init-file ".fly.d/.fly.lib/.login";;
         *zsh)  ZDOTDIR=$FLY_HOME/.fly.d/.fly.lib exec zsh -di;;
@@ -362,10 +367,7 @@ function _fly_sudo
     [ ! "$_fly_destshell" ] && _fly_destshell="$(awk -F: '$1==user{print $NF}' user="$user" /etc/passwd)"
     [[ "$_fly_destshell" = */sh ]] && _fly_destshell="$FLY_SHELL"
     _fly_login_rc "$_fly_tmpdir"
-    _fly_package |sudo -H -u "$user" "${_fly_destshell:-$FLY_SHELL}" -c "$(_fly_xpretar) $(_fly_xpackage)" || return $?
-    \cd "$destdir"
-    SHELL="$_fly_destshell" sudo -H -s -u "$user" . ".fly.d/.fly.lib/.loginshell" "."
-    \cd "$_fly_pwd"
+    SHELL="$_fly_destshell" sudo -H -u "$user" -s <<<'. <(cat -)' < <(flypack)
     unset _fly_destshell
 }
 
