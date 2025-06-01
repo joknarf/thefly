@@ -173,7 +173,9 @@ _fly_loaded=1
 : "${_fly_uuid:=$(cat "$FLY_HOME/.fly.d/.flyuuid" 2>/dev/null || uuidgen)}"
 : "${_fly_tmpdir:="/tmp/.fly.\$USER/$_fly_uuid"}"
 type gtar >/dev/null 2>&1 && _fly_tar=gtar || _fly_tar=tar
-[[ "$($_fly_tar --version 2>/dev/null)" = *busybox* ]] && _fly_taropts=() || _fly_taropts=( --no-xattrs --exclude-vcs )
+[[ "$($_fly_tar --version 2>/dev/null)" = *busybox* ]] && {
+    _fly_taropts=( --exclude=.git --exclude=.github --exclude=.gitignore )
+} || _fly_taropts=( --no-xattrs --exclude-vcs )
 
 function usage
 {
