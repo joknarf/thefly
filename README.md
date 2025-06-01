@@ -129,7 +129,10 @@ $ ssh -t <user>@<host> '. <(curl https://raw.githubusercontent.com/joknarf/thefl
 $ fly add joknarf/nerdp        # bash/ksh/zsh nerd prompt
 $ fly add joknarf/seedee       # bash/ksh/zsh cd history
 $ fly add joknarf/redo         # bash/zsh     command history
-$ fly add joknarf/complete-ng  # bash         completion next-gen
+$ fly add joknarf/complete-ng  # bash/zsh     completion next-gen
+or just add the optimized compilation of these shell plugins using just:
+$ fly add joknarf/shell-ng
+
 $ fly add joknarf/pgtree       # bash/ksh/zsh process hierarchy
 ```
 |link                                                 |description                                                             |
@@ -138,6 +141,7 @@ $ fly add joknarf/pgtree       # bash/ksh/zsh process hierarchy
 |[seedee](https://github.com/joknarf/seedee)          |access/search dir history with ctrl or shift down arrow, and many more  |
 |[redo](https://github.com/joknarf/redo)              |access/search shell history command menu with shift-tab, and many more  |
 |[complete-ng](https://github.com/joknarf/complete-ng)|autocompletion with interactive menu                                    |
+|__[shell-ng](https://github.com/joknarf/shell-ng)__  |__optimized joknarf compilation of the above plugins__                  |
 |[pgtree](https://github.com/joknarf/pgtree)          |process search / tree / kill command line                               | 
 
 ## Don't teleport a human with your fly !
