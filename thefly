@@ -361,8 +361,7 @@ function _fly_xpackage
 
 function _fly_sudo
 {
-    typeset user="${1:-root}" _fly_pwd="$PWD"
-    typeset destdir="/tmp/.fly.$user/$_fly_uuid"
+    typeset user="${1:-root}"
     [ ! "$_fly_destshell" ] && _fly_destshell="$(getent passwd "$user" 2>/dev/null)" && _fly_destshell="${_fly_destshell##*:}"
     [ ! "$_fly_destshell" ] && _fly_destshell="$(dscl . -read "Users/$user" UserShell 2>/dev/null)" && _fly_destshell="${_fly_destshell#*: }"
     [ ! "$_fly_destshell" ] && _fly_destshell="$(awk -F: '$1==user{print $NF}' user="$user" /etc/passwd)"
