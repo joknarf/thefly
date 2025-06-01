@@ -172,9 +172,8 @@ _fly_loaded=1
 : "${FLY_ETC_RC:=true}"
 : "${_fly_uuid:=$(cat "$FLY_HOME/.fly.d/.flyuuid" 2>/dev/null || uuidgen)}"
 : "${_fly_tmpdir:="/tmp/.fly.\$USER/$_fly_uuid"}"
-: "${_fly_tar_rm:=false}"
 type gtar >/dev/null 2>&1 && _fly_tar=gtar || _fly_tar=tar
-
+[[ "$($_fly_tar --version 2>/dev/null)" = *busybox* ]] && _fly_taropts=() || _fly_taropts=( --no-xattrs --exclude-vcs )
 
 function usage
 {
@@ -343,7 +342,7 @@ esac
 function _fly_package
 {
     [ "$FLY_RC" ] && [ -r "$FLY_RC" ] && cp "$FLY_RC" "$FLY_HOME/.fly.d/.fly.lib"
-    $_fly_tar -czf - -C "$FLY_HOME" --no-xattrs --exclude-vcs --exclude=README.md --exclude='plugins/*/.*' --exclude '*/*/tests' .fly.d
+    $_fly_tar -czf - -C "$FLY_HOME" "${_fly_taropts[@]}" --exclude=README.md --exclude='plugins/*/.*' --exclude '*/*/tests' .fly.d
 }
 
 function _fly_xpretar
