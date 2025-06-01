@@ -367,10 +367,8 @@ function _fly_sudo
     [ ! "$_fly_destshell" ] && _fly_destshell="$(dscl . -read "Users/$user" UserShell 2>/dev/null)" && _fly_destshell="${_fly_destshell#*: }"
     [ ! "$_fly_destshell" ] && _fly_destshell="$(awk -F: '$1==user{print $NF}' user="$user" /etc/passwd)"
     [[ "$_fly_destshell" = */sh ]] && _fly_destshell="$FLY_SHELL"
-    SHELL="$_fly_destshell" sudo -H -u "$user" -s < <(
-        printf '%s\n' "FLY_USER_RC=$FLY_USER_RC" "FLY_ETC_RC=$FLY_ETC_RC"
-        flypack
-    )
+    _fly_login_rc "$_fly_tmpdir"
+    SHELL="$_fly_destshell" sudo -H -u "$user" -s < <(_fly_pkg_warp)
     unset _fly_destshell
 }
 
@@ -407,7 +405,7 @@ _fly_destshell="\$1" . "\$FLY_HOME/.fly.d/fly" loginshell "\$FLY_HOME"
 EOF
 }
 
-function _fly_ssh_cmd
+function _fly_pkg_warp
 {
     cat - <<EOF
 $(_fly_package_zfx)
@@ -420,7 +418,7 @@ function _fly_ssh
     ! $_fly_ssh_ok && { _fly_ssh2 "$@"; return $?; } 
     typeset ssh_config cmd c
     _fly_login_rc "$_fly_tmpdir"
-    cmd="$(_fly_ssh_cmd)"
+    cmd="$(_fly_pkg_warp)"
     [ ${#cmd} -gt 130000 ] && { _fly_ssh2 "$@"; return $?; }
     for i in "$@";do
        [ "$i" = -F ] && shift && c=1 && continue
