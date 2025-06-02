@@ -368,7 +368,7 @@ function _fly_sudo
     [ ! "$_fly_destshell" ] && _fly_destshell="$(awk -F: '$1==user{print $NF}' user="$user" /etc/passwd)"
     [[ "$_fly_destshell" = */sh ]] && _fly_destshell="$FLY_SHELL"
     _fly_login_rc "$_fly_tmpdir"
-    SHELL="$_fly_destshell" sudo -H -u "$user" -s < <(_fly_pkg_warp)
+    _fly_pkg_warp |SHELL="$_fly_destshell" sudo -H -u "$user" -s
     unset _fly_destshell
 }
 
