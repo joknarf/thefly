@@ -125,11 +125,8 @@ cat - <<'EOF' > "$_fly_lib/.loginshell"
     \cd "$FLY_HOME/.fly.d/.fly.lib"
     . $FLY_HOME/.fly.d/.fly.lib/.fshell
     FLY_SHELL="${2:-$FLY_SHELL}"
-    [ -t 0 ] || {
-      exec </dev/tty
-      #exec >/dev/tty
-      #exec 2>/dev/tty    
-    }
+    [ ! -t 0 ] && [ -t 1 ] && exec <&1
+    #[ ! -t 0 ] && exec </dev/tty
     case "$FLY_SHELL" in
         *bash) exec $FLY_SHELL --noprofile --rcfile ".bashrc";;
         *zsh)  ZDOTDIR=$FLY_HOME/.fly.d/.fly.lib exec $FLY_SHELL -di;;
