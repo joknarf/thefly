@@ -447,7 +447,7 @@ function _fly
     case "$1" in
         list)
             _fly_zsh_glob fix
-            (\cd "$FLY_HOME/.fly.d/plugins" && ls -1 -- */*.plugin.$FLY_SHELL)
+            (\cd "$FLY_HOME/.fly.d/plugins" && ls -1 -- */*.plugin.${FLY_SHELL##*/})
             _fly_zsh_glob reset
         ;;
         shell)
