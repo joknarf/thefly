@@ -135,20 +135,19 @@ cat - <<'EOF' > "$_fly_lib/.loginshell"
 EOF
 
 cat - <<'EOF' > "$_fly_lib/.source_plugins"
-    p="$1" _fly_shell="${FLY_SHELL##*/}"
+    [ "$1" ] && _fly_p="/$1" || _fly_p=""
+    _fly_shell="${FLY_SHELL##*/}"
     set --
-    [ "$p" ] && plugindir="$FLY_HOME/.fly.d/plugins" || plugindir="$FLY_HOME/.fly.d/plugins.d"
     [ -r "$FLY_HOME/.fly.d/.flyrc" ] && . "$FLY_HOME/.fly.d/.flyrc"
     [ -r "$FLY_HOME/.fly.d/.${_fly_shell}rc" ] && . "$FLY_HOME/.fly.d/.${_fly_shell}rc"
     $FLY_USER_RC && [ "$FLY_RC" ] && [ -r "$FLY_RC" ] && cp "$FLY_RC" "$FLY_HOME/.fly.d/.fly.lib"
     [ "$FLY_RC" ] && [ -r "$FLY_HOME/.fly.d/.fly.lib/${FLY_RC##*/}" ] && . "$FLY_HOME/.fly.d/.fly.lib/${FLY_RC##*/}"
     _fly_zsh_glob fix
-    for plugin in $([ "$p" ] && \ls -- "$plugindir/$p/"*.plugin."$_fly_shell" 2>/dev/null || \
-                                \ls -- "$plugindir/"*/*.plugin."$_fly_shell" 2>/dev/null)
+    for _fly_plugin in $(\ls -- "$FLY_HOME/.fly.d/plugins"${_fly_p:-.d/*}/*.plugin."$_fly_shell" 2>/dev/null)
     do
-        . "$plugin"
+        . "$_fly_plugin"
     done
-    unset p plugin plugindir _fly_shell
+    unset _fly_p _fly_plugin _fly_shell
     _fly_zsh_glob reset
 EOF
 
@@ -214,7 +213,7 @@ EOF
 
 function _fly_zsh_glob
 {
-    [ "$FLY_SHELL" = "zsh" ] || return 0
+    [ "${FLY_SHELL##*/}" = "zsh" ] || return 0
     case "$1" in
     fix)   [[ ! -o nonomatch ]] && _fly_zsh_nonomatch=1 && setopt nonomatch;;
     reset) [ "$_fly_zsh_nomatch" ] && unset _fly_zsh_nonomatch && unsetopt nonomatch;;
