@@ -31,7 +31,10 @@ Add in your rc file (.profile .bash_profile .bashrc .zshrc):
 ```
 . ~/.fly.d/fly source
 ```
-
+Get some help
+```
+fly help
+```
 ## Add plugins
 
 ```
