@@ -111,7 +111,7 @@ EOF
 cat - <<'EOF' >"$_fly_lib/.fshell"
     : "${FLY_SHELL:=$_fly_destshell}"
     [ "$FLY_SHELL" ] && return
-    [ -x "$SHELL" ] && FLY_SHELL="$SHELL" && return
+    [ -x "$SHELL" ] && [[ "$SHELL" =~ */(bash|zsh|ksh)$ ]] && FLY_SHELL=$SHELL && return
     case "$KSH_VERSION$BASH$ZSH_VERSION" in
         "$KSH_VERSION") FLY_SHELL=ksh;;
         "$BASH")        FLY_SHELL=bash;;
