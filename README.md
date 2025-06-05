@@ -1,3 +1,4 @@
+[![bash](https://img.shields.io/badge/shell-bash%20|%20zsh%20|%20ksh-blue.svg)]()
 
 # thefly
 
