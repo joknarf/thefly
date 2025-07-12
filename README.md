@@ -77,6 +77,16 @@ or `fbash` - `fzsh` - `fksh`
 Putting your env in `~/.fly.d/.flyrc` will be automatically sourced (must be compatible with different shells)  
 Putting additional shell specific env in `~/.fly.d/.<shellname>rc` (.bashrc/.kshrc/.zshrc), will be automatically sourced for shell.
 
+anything in `~.fly.d` will be available through ssh/sudo (flyto/flyas) in `$FLY_HOME/.fly.d`
+For example, just put your `.vimrc` in `~/.fly.d` and add in `~/.fly.d/.flyrc`:
+```
+export VIMINIT="source $FLY_HOME/.fly.d/.vimrc"
+```
+same for `.inputrc`, put it in `~/.fly.d` and add in `~/.fly.d/.flyrc`:
+```
+export INPUTRC="$FLY_HOME/.fly.d/.inputrc"
+```
+
 
 ## Create your standalone fly package with your full shell env/plugins
 
