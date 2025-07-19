@@ -86,7 +86,10 @@ same for `.inputrc`, put it in `~/.fly.d` and add in `~/.fly.d/.flyrc`:
 ```
 export INPUTRC="$FLY_HOME/.fly.d/.inputrc"
 ```
-
+You can crate a `.fly.d/bin` directory and put scripts you want to teleport and add in your `.fly.d/.flyrc`:
+```
+export PATH="$PATH:$FLY_HOME/.fly.d/bin"
+```
 
 ## Create your standalone fly package with your full shell env/plugins
 
