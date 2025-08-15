@@ -336,7 +336,7 @@ case "$1" in
         . <(curl -s -L -H 'Pragma: no-cache' -H 'Cache-Control: no-cache' "$_fly_githubraw/$_fly_gitrepo/main/thefly?token=$(date +s)") install
     ;;
 esac
-
+[ "$_fly_lock" ] && pkill -P $$ -x flock
 function _fly_package
 {
     [ "$FLY_RC" ] && [ -r "$FLY_RC" ] && cp "$FLY_RC" "$FLY_HOME/.fly.d/.fly.lib"
@@ -347,7 +347,8 @@ function _fly_xpretar
 {
     printf 'FLY_HOME="%s";' "$_fly_tmpdir"
     printf 'type gtar >/dev/null 2>&1 && _fly_tar=gtar || _fly_tar=tar;'
-    printf 'umask 077;mkdir -p "$FLY_HOME";rm -rf "$FLY_HOME/.fly.d";'
+    printf 'umask 077;mkdir -p "$FLY_HOME";flock -w 10 "$FLY_HOME/.fly.lock" rm -rf "$FLY_HOME/.fly.d";'
+    printf 'flock -w 10 $FLY_HOME/.fly.lock sleep 10 & _fly_lock=$!;'
     printf '! chmod 700 "$FLY_HOME" && echo "Not owner of $FLY_HOME. Abort" >&2 && exit 1;'
 }
 
