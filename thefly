@@ -187,6 +187,7 @@ $ flyls                         # list plugins for current shell
 $ flysh <shell>                 # change current shell with fly env
 $ flyas [<user>] [<shell>]      # change user with your fly env (default <user>: root,<shell>: <user> shell)
 $ flyto <ssh options>           # connect to server through ssh with your fly env
+$ flysuto <user> <ssh options>  # use sudo <user> to connect to server through ssh with your fly env
 
 aliases:
 $ fbash                         # flysh bash
@@ -202,6 +203,9 @@ $ fssh                          # flyto
 $ fsshb                         # flyto with bash
 $ fsshk                         # flyto with ksh
 $ fsshz                         # flyto with zsh
+
+$ fsuto                        # flysuto
+$ fsussh                       # flysuto
 
 # fly environment files:
 ~/.fly.d/.flyrc                 # common environment
@@ -269,6 +273,14 @@ alias zsu='_fly_destshell=zsh _fly sudo'
 alias flyls='_fly list'
 alias flypack='_fly pack'
 alias cdfly='cd $FLY_HOME/.fly.d'
+
+alias flysudossh='_fly sudossh'
+alias flysuto='_fly sudossh'
+alias fsuto='_fly sudossh'
+alias fsussh='_fly sudossh'
+alias fsutob=' _fly_destshell=bash _fly sudossh'
+alias fsutok=' _fly_destshell=ksh _fly sudossh'
+alias fsutoz=' _fly_destshell=zsh _fly sudossh'
 
 case "$1" in
     help)
@@ -411,6 +423,13 @@ $(_fly_package_zfx)
 EOF
 }
 
+function _fly_sudo_ssh
+{
+    typeset user="$1"
+    shift
+    sudo -iu "$user" $FLY_SHELL <<<"$(_fly_package_zfx);exec <&1;. \$FLY_HOME/.fly.d/fly;_fly_destshell=$_fly_destshell _fly_ssh $@;exit"
+}
+
 function _fly_ssh
 {
     ! $_fly_ssh_ok && { _fly_ssh2 "$@"; return $?; } 
@@ -465,6 +484,12 @@ function _fly
             [ "$2" ] && ! type "$2" >/dev/null 2>&1 && echo "Cannot find shell $2" >&2 && return 1
             _fly_destshell="${2:-$_fly_destshell}"
             _fly_sudo "$1"
+        ;;
+        sudossh|suto)
+            shift
+            [ ! "$1" ] && echo "fly: error: missing user" && return 1
+            [ ! "$2" ] && echo "fly: error: missing destination/ssh params" && return 1
+            _fly_sudo_ssh "$@"
         ;;
         pack)
             shift
