@@ -419,8 +419,8 @@ EOF
 function _fly_pkg_warp
 {
     # Old sudo keeps USER=root when sudo from root
+    [ "$1" ] && echo "USER=$1"
     cat - <<EOF
-USER="${1:-\$USER}"
 $(_fly_package_zfx)
 . "$_fly_tmpdir/.fly.d/.fly.lib/.loginshell" "$_fly_tmpdir" "$_fly_destshell"
 EOF
