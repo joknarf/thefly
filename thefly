@@ -430,7 +430,7 @@ function _fly_sudo_ssh
 {
     typeset user="$1"
     shift
-    sudo -iu "$user" $FLY_SHELL <<<"$(_fly_package_zfx);exec <&1;. \$FLY_HOME/.fly.d/fly;_fly_destshell=$_fly_destshell _fly_ssh $@;exit"
+    sudo -iu "$user" <<<"$(_fly_package_zfx);exec <&1;. \$FLY_HOME/.fly.d/fly;_fly_destshell=$_fly_destshell _fly_ssh $@;exit"
 }
 
 function _fly_ssh
