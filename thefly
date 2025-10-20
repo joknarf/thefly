@@ -377,7 +377,7 @@ function _fly_sudo
     [[ "$_fly_destshell" = */sh ]] && _fly_destshell="$FLY_SHELL"
     _fly_login_rc "$_fly_tmpdir"
     \cd /
-    _fly_pkg_warp |SHELL="$_fly_destshell" sudo -H -u "$user" -s
+    _fly_pkg_warp "$user" |SHELL="$_fly_destshell" sudo -H -u "$user" -s
     \cd "$OLDPWD"
     unset _fly_destshell
 }
@@ -417,7 +417,9 @@ EOF
 
 function _fly_pkg_warp
 {
+    # Old sudo keeps USER=root when sudo from root
     cat - <<EOF
+USER="${1:-\$USER}"
 $(_fly_package_zfx)
 . "$_fly_tmpdir/.fly.d/.fly.lib/.loginshell" "$_fly_tmpdir" "$_fly_destshell"
 EOF
