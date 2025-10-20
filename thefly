@@ -128,7 +128,7 @@ cat - <<'EOF' > "$_fly_lib/.loginshell"
     [ ! -t 0 ] && [ -t 1 ] && exec <&1
     #[ ! -t 0 ] && exec </dev/tty
     case "$FLY_SHELL" in
-        *bash) exec $FLY_SHELL --noprofile --rcfile ".bashrc";;
+        *bash) exec $FLY_SHELL --rcfile ".bashrc";;
         *zsh)  ZDOTDIR=$FLY_HOME/.fly.d/.fly.lib exec $FLY_SHELL -di;;
         *ksh)  export ENV=$FLY_HOME/.fly.d/.fly.lib/.login;exec $FLY_SHELL -i;;
     esac
@@ -377,7 +377,7 @@ function _fly_sudo
     [[ "$_fly_destshell" = */sh ]] && _fly_destshell="$FLY_SHELL"
     _fly_login_rc "$_fly_tmpdir"
     \cd /
-    _fly_pkg_warp "$user" |SHELL="$_fly_destshell" sudo -H -u "$user" -s
+    _fly_pkg_warp "$user" |SHELL="$_fly_destshell" sudo -Hsu "$user"
     \cd "$OLDPWD"
     unset _fly_destshell
 }
