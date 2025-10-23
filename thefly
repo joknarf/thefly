@@ -401,9 +401,9 @@ function _fly_ssh_ok
     [[ "$ssh_ver" = *.*.* ]] && ssh_ver="${ssh_ver%.*}"
     ssh_min=${ssh_ver#*.}
     ssh_maj=${ssh_ver%.*}
-    [[ "$ssh_maj" > 8 ]] && _fly_ssh_ok=true
+    [ "$ssh_maj" -gt 8 ] && _fly_ssh_ok=true
     # ssh 8.0 RemoteCommand buffer too short
-    [[ "$ssh_maj" = 8 ]] && [[ "$ssh_min" > 5 ]] && _fly_ssh_ok=true
+    [ "$ssh_maj" = 8 ] && [ "$ssh_min" -gt 5 ] && _fly_ssh_ok=true
 }
 
 function _fly_package_zfx
