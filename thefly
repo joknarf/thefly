@@ -79,6 +79,7 @@ cat - <<'EOF' >"$_fly_lib/.login.bash"
     alias readonly=typeset
     shopt() { [ "$2" = login_shell ] && return 0; builtin shopt "$@"; }
     $FLY_ETC_RC && . /etc/profile
+    \cd
     $FLY_USER_RC && for i in .bash_profile .bash_login .profile;do
         [ -r "$i" ] && . "./$i" && break
     done
