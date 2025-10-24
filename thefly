@@ -78,6 +78,7 @@ cat - <<'EOF' >"$_fly_lib/.login.bash"
     alias typeset="typeset +r"
     alias readonly=typeset
     shopt() { [ "$2" = login_shell ] && return 0; builtin shopt "$@"; }
+    PS1='$ '
     $FLY_ETC_RC && . /etc/profile
     \cd
     $FLY_USER_RC && for i in .bash_profile .bash_login .profile;do
@@ -130,7 +131,7 @@ cat - <<'EOF' > "$_fly_lib/.loginshell"
     [ ! -t 0 ] && [ -t 1 ] && exec <&1
     #[ ! -t 0 ] && exec </dev/tty
     case "$FLY_SHELL" in
-        *bash) exec $FLY_SHELL --rcfile ".bashrc";;
+        *bash) PS1="" exec $FLY_SHELL --rcfile ".bashrc";;
         *zsh)  ZDOTDIR=$FLY_HOME/.fly.d/.fly.lib exec $FLY_SHELL -di;;
         *ksh)  export ENV=$FLY_HOME/.fly.d/.fly.lib/.login;exec $FLY_SHELL -i;;
     esac
