@@ -78,6 +78,7 @@ cat - <<'EOF' >"$_fly_lib/.login.bash"
     alias typeset="typeset +r"
     alias readonly=typeset
     shopt() { [ "$2" = login_shell ] && return 0; builtin shopt "$@"; }
+    typeset +x PS1
     PS1='$ '
     $FLY_ETC_RC && . /etc/profile
     \cd
@@ -458,10 +459,11 @@ function _fly_ssh
     [ ! "$ssh_config" ] && [ -f ~/.ssh/config ] && ssh_config="Include $HOME/.ssh/config"
     cmd="${cmd//$'\n'/;}"
     cat - <<_EOF_ >"$FLY_HOME/.fly_ssh"
-$ssh_config
+RequestTTY yes
 RemoteCommand $cmd
+$ssh_config
 _EOF_
-    ssh -t -F "$FLY_HOME/.fly_ssh" "$@"
+    ssh -F "$FLY_HOME/.fly_ssh" "$@"
 }
 
 function _fly_ssh2
