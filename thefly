@@ -295,7 +295,7 @@ case "$1" in
         . "$_fly_lib/.login.${FLY_SHELL##*/}"
         . "$_fly_lib/.source_plugins"
     ;;
-    loginshell) 
+    loginshell|install)
         shift
         _fly_login_rc
         . "$_fly_lib/.loginshell" "$FLY_HOME" "$_fly_destshell"
@@ -420,9 +420,10 @@ EOF
 
 function _fly_pack
 {
-     cat - <<EOF
-[ "\$1" = install ] && FLY_HOME="\$HOME" && shift || $(_fly_package_zfx)
-_fly_destshell="\$1" . "\$FLY_HOME/.fly.d/fly" loginshell "\$FLY_HOME"
+    cat - <<EOF
+[ "\$1" = install ] && FLY_HOME="\$HOME" || $(_fly_package_zfx)
+[[ "\$1" = *sh ]] && _fly_destshell="\$1" && shift
+. "\$FLY_HOME/.fly.d/fly" \${1:-loginshell}
 EOF
 }
 
