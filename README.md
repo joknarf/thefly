@@ -94,22 +94,31 @@ export PATH="$PATH:$FLY_HOME/.fly.d/bin"
 
 ## Create your standalone fly package with your full shell env/plugins
 
-save your whole shell environment to use everywhere with standalone fly package.  
+Save your whole shell environment to use everywhere with standalone fly package.  
 All your ~/.fly.d environment saved in autoextractable file. The fly package enables your env when sourced.
+Build your fly package (you can copy and use it directly to get your env or make it available on web server to remote download)
 ```
 $ flypack >fly.pak
+$ scp fly.pak myhost:
+$ . ./fly.pak source
 ```
-make your fly.pak available through url, to connect to a server with your env, use for example:
+load your env in current user (can be put in your .bashrc/.zshrc/.kshrc):
 ```
-$ ssh -t <host> '. <(curl -s -L https://raw.githubusercontent.com/joknarf/flypack/main/fly.pak) [install] [bash|ksh|zsh]'
+$ . <(curl -sL https://raw.githubusercontent.com/joknarf/flypack/main/fly.pak) source
 ```
-load your env in current user:
+install on current user in `~/.fly.d`:
 ```
-$ . <(curl -s -L https://raw.githubusercontent.com/joknarf/flypack/main/fly.pak) [install] [bash|ksh|zsh]
+$ . <(curl -sL https://raw.githubusercontent.com/joknarf/flypack/main/fly.pak) install
 ```
-
-`install` option to install in user home dir `~/.fly.d`, default in `/tmp/.fly.$USER`
-
+to connect to a server with your env in `/tmp/.fly.$USER`, use for example:
+```
+$ ssh -t <host> '. <(curl -sL https://raw.githubusercontent.com/joknarf/flypack/main/fly.pak) [bash|ksh|zsh]'
+```
+Connect to all servers with your fly pak with ssh config:
+```
+RequestTTY yes
+RemoteCommand . <(curl -sL https://raw.githubusercontent.com/joknarf/flypack/main/fly.pak)
+```
 
 ## Download/activate your env/plugins from your fly git repo or web server
 
