@@ -162,6 +162,8 @@ or just add the optimized compilation of these shell plugins using just:
 $ fly add joknarf/shell-ng
 
 $ fly add joknarf/pgtree       # bash/ksh/zsh process hierarchy
+$ fly add joknarf/lsicon       # ls enhancer (colors/icons)
+$ fly add joknarf/dfbar        # df enhancer (colors/usage bar)
 ```
 |link                                                 |description                                                             |
 |-----------------------------------------------------|------------------------------------------------------------------------|
@@ -171,6 +173,8 @@ $ fly add joknarf/pgtree       # bash/ksh/zsh process hierarchy
 |[complete-ng](https://github.com/joknarf/complete-ng)|autocompletion with interactive menu                                    |
 |__[shell-ng](https://github.com/joknarf/shell-ng)__  |__optimized joknarf compilation of the above plugins__                  |
 |[pgtree](https://github.com/joknarf/pgtree)          |process search / tree / kill command line                               | 
+|[lsicon](https://github.com/joknarf/lsicon)          |ls command enhancer (colors/icons)                                      | 
+|[dfbar](https://github.com/joknarf/dfbar)            |df command enhancer (colors/usage bar)                                  | 
 
 ## Don't teleport a human with your fly !
 
