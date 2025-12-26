@@ -28,7 +28,7 @@ or
 $ git clone https://github.com/joknarf/thefly
 $ . thefly/thefly install
 ```
-Creates ~/.fly.d/fly
+Creates ~/.fly.d/fly and activate thefly manager for current user
 
 
 or use your prefered method according to your OS:
