@@ -34,21 +34,21 @@ jobs:
 
       - name: Build DEB
         run: |
-          fpm -a all -s dir -t deb --license=MIT --maintainer=joknarf --prefix=/usr -m joknarf@free.fr --description="$DESC" -n $TOOL -v $VERSION --url=https://github.com/joknarf/$TOOL $TOOL_PATH=/bin/$TOOL
+          fpm -a all -s dir -t deb --license=MIT --maintainer=joknarf --vendor='Joknarf Tools' --prefix=/usr -m joknarf@free.fr --description="$DESC" -n $TOOL -v $VERSION --url=https://github.com/joknarf/$TOOL $TOOL_PATH=/bin/$TOOL
           ln -s ${TOOL}_${VERSION}_all.deb $TOOL.deb
 
       - name: Build RPM
         run: |
-          fpm -a all -s dir -t rpm --license=MIT --maintainer=joknarf --prefix=/usr -m joknarf@free.fr --description="$DESC" -n $TOOL -v $VERSION --url=https://github.com/joknarf/$TOOL $TOOL_PATH=/bin/$TOOL
+          fpm -a all -s dir -t rpm --license=MIT --maintainer=joknarf --vendor='Joknarf Tools' --prefix=/usr -m joknarf@free.fr --description="$DESC" -n $TOOL -v $VERSION --url=https://github.com/joknarf/$TOOL $TOOL_PATH=/bin/$TOOL
           ln -s $TOOL-$VERSION-1.noarch.rpm $TOOL.rpm
 
       - name: Build TAR
         run: |
-          fpm -a all -s dir -t tar --license=MIT --maintainer=joknarf --prefix=$TOOL-$VERSION -m joknarf@free.fr --description="$DESC" -n $TOOL -v $VERSION --url=https://github.com/joknarf/$TOOL $TOOL_PATH=/bin/$TOOL && gzip *.tar
+          fpm -a all -s dir -t tar --license=MIT --maintainer=joknarf --vendor='Joknarf Tools' --prefix=$TOOL-$VERSION -m joknarf@free.fr --description="$DESC" -n $TOOL -v $VERSION --url=https://github.com/joknarf/$TOOL $TOOL_PATH=/bin/$TOOL && gzip *.tar
 
       - name: Build ZIP
         run: |
-          fpm -a all -s dir -t zip --license=MIT --maintainer=joknarf --prefix=.local -m joknarf@free.fr --description="$DESC" -n $TOOL -v $VERSION --url=https://github.com/joknarf/$TOOL $TOOL_PATH=/bin/$TOOL
+          fpm -a all -s dir -t zip --license=MIT --maintainer=joknarf --vendor='Joknarf Tools' --prefix=.local -m joknarf@free.fr --description="$DESC" -n $TOOL -v $VERSION --url=https://github.com/joknarf/$TOOL $TOOL_PATH=/bin/$TOOL
 
       - name: URL and SHA256
         run: |
@@ -127,7 +127,7 @@ jobs:
 
       - name: Build APK
         run: |
-          fpm -a all -s dir  -t apk  --license=MIT --maintainer=joknarf --prefix=/usr -m joknarf@free.fr --description="$DESC" -n $TOOL  -v $VERSION --url=https://github.com/joknarf/$TOOL $TOOL_PATH=/bin/$TOOL
+          fpm -a all -s dir  -t apk  --license=MIT --maintainer=joknarf --vendor='Joknarf Tools' --prefix=/usr -m joknarf@free.fr --description="$DESC" -n $TOOL  -v $VERSION --url=https://github.com/joknarf/$TOOL $TOOL_PATH=/bin/$TOOL
           ln -s ${TOOL}_${VERSION}_all.apk $TOOL.apk
 
       - name: Upload to GitHub Release
@@ -161,7 +161,7 @@ jobs:
 
       - name: Build PKG
         run: |
-          fpm -a all -s dir  -t osxpkg  --license=MIT --maintainer=joknarf --prefix=/ -m joknarf@free.fr --description="$DESC" -n $TOOL  -v $VERSION  $TOOL_PATH=usr/local/bin/$TOOL
+          fpm -a all -s dir  -t osxpkg  --license=MIT --maintainer=joknarf --vendor='Joknarf Tools' --prefix=/ -m joknarf@free.fr --description="$DESC" -n $TOOL  -v $VERSION  $TOOL_PATH=usr/local/bin/$TOOL
           ln -s $TOOL-$VERSION.pkg $TOOL.pkg
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v2
