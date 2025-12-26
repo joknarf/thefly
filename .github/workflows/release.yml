@@ -1,0 +1,171 @@
+name: Build and Release Packages
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y ruby ruby-dev build-essential rpm
+          sudo gem install --no-document fpm
+
+      - name: Set version
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "VERSION=${{ github.event.release.tag_name }}" >> $GITHUB_ENV
+          else
+            echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+          fi
+          echo "TOOL=thefly" >> $GITHUB_ENV
+          echo "TOOL_PATH=thefly" >>$GITHUB_ENV
+          echo "DESC=shell plugin manager teleporter" >> $GITHUB_ENV
+
+      - name: Build DEB
+        run: |
+          fpm -a all -s dir -t deb --license=MIT --maintainer=joknarf --prefix=/usr -m joknarf@free.fr --description="$DESC" -n $TOOL -v $VERSION --url=https://github.com/joknarf/$TOOL $TOOL_PATH=/bin/$TOOL
+          ln -s ${TOOL}_${VERSION}_all.deb $TOOL.deb
+
+      - name: Build RPM
+        run: |
+          fpm -a all -s dir -t rpm --license=MIT --maintainer=joknarf --prefix=/usr -m joknarf@free.fr --description="$DESC" -n $TOOL -v $VERSION --url=https://github.com/joknarf/$TOOL $TOOL_PATH=/bin/$TOOL
+          ln -s $TOOL-$VERSION-1.noarch.rpm $TOOL.rpm
+
+      - name: Build TAR
+        run: |
+          fpm -a all -s dir -t tar --license=MIT --maintainer=joknarf --prefix=$TOOL-$VERSION -m joknarf@free.fr --description="$DESC" -n $TOOL -v $VERSION --url=https://github.com/joknarf/$TOOL $TOOL_PATH=/bin/$TOOL && gzip *.tar
+
+      - name: Build ZIP
+        run: |
+          fpm -a all -s dir -t zip --license=MIT --maintainer=joknarf --prefix=.local -m joknarf@free.fr --description="$DESC" -n $TOOL -v $VERSION --url=https://github.com/joknarf/$TOOL $TOOL_PATH=/bin/$TOOL
+
+      - name: URL and SHA256
+        run: |
+          URL="https://github.com/joknarf/$TOOL/releases/download/${VERSION}/$TOOL.tar.gz"
+          echo "URL=$URL" >>$GITHUB_ENV
+          SHA256=$(shasum -a 256 $TOOL.tar.gz | awk '{print $1}')
+          echo "SHA256=$SHA256" >> $GITHUB_ENV
+
+      - name: Version URL SHA
+        run: |
+          echo "VERSION=$VERSION"
+          echo "URL=$URL"
+          echo "SHA256=$SHA256"
+
+      - name: Set up Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Checkout Homebrew tap
+        uses: actions/checkout@v3
+        with:
+          repository: joknarf/homebrew-tools
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: homebrew-tap
+
+      - name: Update formula
+        run: |
+          FORMULA_FILE=homebrew-tap/Formula/$TOOL.rb
+          sed -i "s|url \".*\"|url \"${URL}\"|" $FORMULA_FILE
+          sed -i "s|sha256 \".*\"|sha256 \"${SHA256}\"|" $FORMULA_FILE
+          sed -i "s|version \".*\"|version \"${VERSION}\"|" $FORMULA_FILE
+
+      - name: Commit & Push
+        run: |
+          cd homebrew-tap
+          git add Formula/$TOOL.rb
+          git commit -m "Update $TOOL formula to $VERSION" || echo "No changes to commit"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            *.deb
+            *.rpm
+            *.tar.gz
+            *.zip
+
+  alpine:
+    name: Alpine (apk)
+    runs-on: ubuntu-latest
+    container:
+      image: alpine:latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          apk add --no-cache ruby ruby-dev build-base apk-tools tar
+          gem install --no-document fpm
+
+      - name: Set version
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "VERSION=${{ github.event.release.tag_name }}" >> $GITHUB_ENV
+          else
+            echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+          fi
+          echo "TOOL=thefly" >> $GITHUB_ENV
+          echo "TOOL_PATH=thefly" >>$GITHUB_ENV
+          echo "DESC=shell plugin manager teleporter" >> $GITHUB_ENV
+
+      - name: Build APK
+        run: |
+          fpm -a all -s dir  -t apk  --license=MIT --maintainer=joknarf --prefix=/usr -m joknarf@free.fr --description="$DESC" -n $TOOL  -v $VERSION --url=https://github.com/joknarf/$TOOL $TOOL_PATH=/bin/$TOOL
+          ln -s ${TOOL}_${VERSION}_all.apk $TOOL.apk
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            *.apk
+
+  macos:
+    name: macOS (pkg)
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          brew install ruby
+          sudo gem install --no-document fpm
+
+      - name: Set version
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "VERSION=${{ github.event.release.tag_name }}" >> $GITHUB_ENV
+          else
+            echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+          fi
+          echo "TOOL=thefly" >> $GITHUB_ENV
+          echo "TOOL_PATH=thefly" >>$GITHUB_ENV
+          echo "DESC=shell plugin manager teleporter" >> $GITHUB_ENV
+
+      - name: Build PKG
+        run: |
+          fpm -a all -s dir  -t osxpkg  --license=MIT --maintainer=joknarf --prefix=/ -m joknarf@free.fr --description="$DESC" -n $TOOL  -v $VERSION  $TOOL_PATH=usr/local/bin/$TOOL
+          ln -s $TOOL-$VERSION.pkg $TOOL.pkg
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            *.pkg
+
