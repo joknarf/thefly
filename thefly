@@ -1,7 +1,19 @@
+#!/usr/bin/env sh
 ########## thefly #########
 # Author: Franck Jouvanceau
 ###########################
+# 
+_fly_sourced=false
+[ "$BASH_VERSION" ] && [[ ${BASH_SOURCE[0]} != "$0" ]] && _fly_sourced=true
+[ "$ZSH_VERSION" ] && [[ $ZSH_EVAL_CONTEXT == *:file ]] && _fly_sourced=true
+[ "$KSH_VERSION" ] && [[ ${.sh.file} != "$0" ]] && _fly_sourced=true
+$_fly_sourced && _ret=return || _ret=exit
 
+! $_fly_sourced && [ ! "$SHELLOK" ] && {
+  export SHELLOK=1
+  [ -x "$SHELL" ] && exec $SHELL $0 "$@"
+  exec /usr/bin/env bash $0 "$@"
+}
 : "${FLY_HOME:=$HOME}"
 : "${_fly_githubraw:=https://raw.githubusercontent.com}"
 
@@ -57,16 +69,16 @@ case "$1" in
         [ "$1" =  "remote" ] && {
             (umask 077;mkdir -p "/tmp/.fly.$USER")
             ! chmod 700 /tmp/.fly.$USER && echo "Not owner of /tmp/.fly.$USER. Abort" >&2 && return 1
-            \cd "/tmp/.fly.$USER" || return 1
+            \cd "/tmp/.fly.$USER" || $_ret 1
         }
         case "$2" in
-            http*://*) _fly_http_extract "$1" "$2" || return 1; set -- loginshell;;
-            */*)       _fly_git_extract "$1" "$2" || return 1; _fly_init; set -- loginshell;;
-            '')        _fly_init || return 1; [ "$1" = install ] && set -- source || set -- loginshell;;
+            http*://*) _fly_http_extract "$1" "$2" || $_ret 1; set -- loginshell;;
+            */*)       _fly_git_extract "$1" "$2" || $_ret 1; _fly_init; set -- loginshell;;
+            '')        _fly_init || $_ret 1; [ "$1" = install ] && set -- source || set -- loginshell;;
         esac
     ;;
-    *)  echo "usage: source thefly [install|remote] [<url .fly.tgz>|<git owner/<repo>]"
-        return 1
+    *)  echo "usage: thefly [install|remote] [<url .fly.tgz>|<git owner/<repo>]"
+        $_ret 1
     ;;
 esac
 unset -f _fly_init _fly_http_extract _fly_git_extract
@@ -155,7 +167,7 @@ cat - <<'EOF' > "$_fly_lib/.source_plugins"
     _fly_zsh_glob reset
 EOF
 
-cat - >"$FLY_HOME/.fly.d/fly" <<'EOFLY' && . "$FLY_HOME/.fly.d/fly"
+cat - >"$FLY_HOME/.fly.d/fly" <<'EOFLY' && $_fly_sourced && . "$FLY_HOME/.fly.d/fly"
 ############ fly ##########
 # Author: Franck Jouvanceau
 ###########################
@@ -349,7 +361,7 @@ case "$1" in
     ;;
     upgrade)
         shift
-        . <(curl -s -L -H 'Pragma: no-cache' -H 'Cache-Control: no-cache' "$_fly_githubraw/$_fly_gitrepo/main/thefly?token=$(date +s)") install
+        . <(curl -s -L -H 'Pragma: no-cache' -H 'Cache-Control: no-cache' "$_fly_githubraw/$_fly_gitrepo/main/thefly") install
     ;;
 esac
 
