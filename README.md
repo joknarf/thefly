@@ -30,6 +30,38 @@ $ . thefly/thefly install
 ```
 Creates ~/.fly.d/fly
 
+
+or use your prefered method according to your OS:
+
+```
+brew install joknarf/tools/pgtree
+```
+
+```
+sudo dnf install https://github.com/joknarf/pgtree/releases/latest/download/pgtree.rpm
+```
+
+```
+curl -OL https://github.com/joknarf/pgtree/releases/latest/download/pgtree.deb
+sudo dpkg -i pgtree.deb
+```
+
+```
+curl -OL https://github.com/joknarf/pgtree/releases/latest/download/pgtree.apk
+sudo apk add --allow-untrusted pgtree.apk
+```
+
+```
+curl -OL https://github.com/joknarf/pgtree/releases/latest/download/pgtree.pkg
+sudo installer -pkg pgtree.pkg -target /
+```
+
+then run:
+```
+thefly install
+. ~/.fly.d/activate
+```
+
 Add in your rc file (.profile .bash_profile .bashrc .zshrc):
 ```
 . ~/.fly.d/fly source
