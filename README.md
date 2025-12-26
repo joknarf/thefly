@@ -34,26 +34,26 @@ Creates ~/.fly.d/fly
 or use your prefered method according to your OS:
 
 ```
-brew install joknarf/tools/pgtree
+brew install joknarf/tools/thefly
 ```
 
 ```
-sudo dnf install https://github.com/joknarf/pgtree/releases/latest/download/pgtree.rpm
+sudo dnf install https://github.com/joknarf/thefly/releases/latest/download/thefly.rpm
 ```
 
 ```
-curl -OL https://github.com/joknarf/pgtree/releases/latest/download/pgtree.deb
-sudo dpkg -i pgtree.deb
+curl -OL https://github.com/joknarf/thefly/releases/latest/download/thefly.deb
+sudo dpkg -i thefly.deb
 ```
 
 ```
-curl -OL https://github.com/joknarf/pgtree/releases/latest/download/pgtree.apk
-sudo apk add --allow-untrusted pgtree.apk
+curl -OL https://github.com/joknarf/thefly/releases/latest/download/thefly.apk
+sudo apk add --allow-untrusted thefly.apk
 ```
 
 ```
-curl -OL https://github.com/joknarf/pgtree/releases/latest/download/pgtree.pkg
-sudo installer -pkg pgtree.pkg -target /
+curl -OL https://github.com/joknarf/thefly/releases/latest/download/thefly.pkg
+sudo installer -pkg thefly.pkg -target /
 ```
 
 then run:
