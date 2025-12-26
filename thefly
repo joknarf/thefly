@@ -312,7 +312,7 @@ case "$1" in
         _fly_login_rc
         . "$_fly_lib/.loginshell" "$FLY_HOME" "$_fly_destshell"
     ;;
-    source)
+    source|activate)
         shift
         . "$_fly_lib/.source_plugins" "$1"
     ;;
