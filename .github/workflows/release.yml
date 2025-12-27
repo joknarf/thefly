@@ -17,7 +17,7 @@ env:
     --license=MIT
     --maintainer=${{ github.repository_owner }}
     -m joknarf@free.fr
-    --vendor=Joknarf.Tools
+    --vendor=https://joknarf.github.io/joknarf-tools
     -n ${{ github.event.repository.name }}
     --url=https://github.com/${{ github.repository }}
     -v ${{ github.event.release.tag_name }}
