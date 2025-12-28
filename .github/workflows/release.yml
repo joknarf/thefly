@@ -20,6 +20,7 @@ env:
     --vendor=https://joknarf.github.io/joknarf-tools
     -n ${{ github.event.repository.name }}
     --url=https://github.com/${{ github.repository }}
+    --vendor=https://joknarf.github.io/joknarf-tools
     -v ${{ github.event.release.tag_name }}
 
 jobs:
@@ -36,15 +37,55 @@ jobs:
           sudo apt install -y ruby ruby-dev build-essential rpm
           sudo gem install --no-document fpm
 
+      - name: Set up Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
       - name: Build DEB
         run: |
-          fpm $FPM_BASE -t deb --prefix=/usr --description="$DESC" $TOOL_PATH=/bin/$TOOL
+          BUILD_EPOCH=$(date +%s)
+          fpm $FPM_BASE -t deb --prefix=/usr --description="$DESC" --deb-field "Build-Date:$BUILD_EPOCH" $TOOL_PATH=/bin/$TOOL
           ln -s ${TOOL}_${VERSION}_all.deb $TOOL.deb
+
+      - name: Checkout deb
+        uses: actions/checkout@v3
+        with:
+          repository: joknarf/deb
+          token: ${{ secrets.JOKNARF_YUM_TOKEN }}
+          path: deb
+
+      - name: update deb repo
+        run: |
+          cp $TOOL.deb deb/pool/main
+          cd deb
+          git add pool/main/$TOOL.deb
+          git commit -m "Update $TOOL.deb to $VERSION" || echo "No changes to commit"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.JOKNARF_YUM_TOKEN }}
 
       - name: Build RPM
         run: |
           fpm $FPM_BASE -t rpm --prefix=/usr --description="$DESC" $TOOL_PATH=/bin/$TOOL
           ln -s $TOOL-$VERSION-1.noarch.rpm $TOOL.rpm
+
+      - name: Checkout yum
+        uses: actions/checkout@v3
+        with:
+          repository: joknarf/yum
+          token: ${{ secrets.JOKNARF_YUM_TOKEN }}
+          path: yum
+
+      - name: update yum repo
+        run: |
+          cp $TOOL.rpm yum/
+          cd yum
+          git add $TOOL.rpm
+          git commit -m "Update $TOOL.rpm to $VERSION" || echo "No changes to commit"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.JOKNARF_YUM_TOKEN }}
 
       - name: Build TAR
         run: |
