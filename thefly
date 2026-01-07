@@ -99,6 +99,7 @@ cat - <<'EOF' >"$_fly_lib/.login.bash"
     done
     unalias typeset
     unalias readonly
+    unset -f shopt
 EOF
 
 cat - <<'EOF' >"$_fly_lib/.login.zsh"
