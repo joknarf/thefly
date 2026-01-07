@@ -95,7 +95,7 @@ cat - <<'EOF' >"$_fly_lib/.login.bash"
     $FLY_ETC_RC && . /etc/profile
     \cd
     $FLY_USER_RC && for i in .bash_profile .bash_login .profile;do
-        [ -r "$i" ] && . "./$i" && break
+        if [ -r "$i" ] ;then . "./$i"; break; fi
     done
     unalias typeset
     unalias readonly
