@@ -13,8 +13,9 @@
 bash/zsh/ksh plugin/dotfiles manager and teleporter  
 
 Your shell env and plugins are available everywhere (hosts/users)  
-&nbsp;  
+
 bzzz bzzz !  
+
 <br/>  
 
 ## Demo
