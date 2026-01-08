@@ -10,7 +10,7 @@
 <img align=left width="150px" src="https://github.com/user-attachments/assets/a537f833-a64f-40b0-99a3-fff9cca08ce8">
 
 <br/>
-bash/zsh/ksh plugin manager and env teleporter  
+bash/zsh/ksh plugin/dotfiles manager and teleporter  
 
 Your shell env and plugins are available everywhere (hosts/users)  
 &nbsp;  
