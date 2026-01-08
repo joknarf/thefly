@@ -460,7 +460,7 @@ function _fly_sudo_ssh
 function _fly_ssh
 {
     ! $_fly_ssh_ok && { _fly_ssh2 "$@"; return $?; } 
-    typeset ssh_config cmd c
+    typeset ssh_config cmd c i
     _fly_login_rc "$_fly_tmpdir"
     cmd="$(_fly_pkg_warp)"
     [ ${#cmd} -gt 130000 ] && { _fly_ssh2 "$@"; return $?; }
