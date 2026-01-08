@@ -83,7 +83,8 @@ clones `https://github.com/joknarf/redo` in `~/.fly.d/plugins/redo` and sources 
 
 ## Teleport plugins/shell env
 
-* To another user on current host
+### To another user on current host
+
 ```
 $ flyas <user>
 or
@@ -93,7 +94,8 @@ will duplicate `~/.fly.d` (without cvs files/tests) in `/tmp/.fly.<user>/<flyid>
 by default uses `<user>` shell, to force your favorite shell:  
 `fsub` or `bsu` (bash) - `fsuz` or `zsu` (zsh) - `fsuk` or `ksu` (ksh)
 
-* To another host/user
+### To another host/user
+
 ```
 $ flyto [<ssh opts>] <user>[<@host>]
 or
@@ -103,11 +105,11 @@ will duplicate `~/.fly.d` (without cvs files/tests) in `<host>:/tmp/.fly.<user>/
 by default uses `<user>` shell, to force your favorite shell:  
 `fsshb` or `bto` (bash) - `fsshz` or `zto` (zsh) - `fsshk` or `kto` (ksh)  
  
-* To another shell  
+### To another shell
+
 Change current shell and load your env/plugins:  
 `$ flysh <shell> # shell in bash ksh zsh`  
 or `fbash` - `fzsh` - `fksh`  
-
  
 ## Customize env
 
