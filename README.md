@@ -200,6 +200,7 @@ $ fly add joknarf/pgtree       # bash/ksh/zsh process hierarchy
 $ fly add joknarf/lsicon       # ls enhancer (colors/icons)
 $ fly add joknarf/dfbar        # df enhancer (colors/usage bar)
 ```
+
 |link                                                 |description                                                             |
 |-----------------------------------------------------|------------------------------------------------------------------------|
 |[nerdp](https://github.com/joknarf/nerdp)            |nerd dynamic customizable nice prompt                                   |
