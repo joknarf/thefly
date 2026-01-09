@@ -143,17 +143,22 @@ You can create a `.fly.d/bin` directory and put scripts you want to teleport and
 export PATH="$PATH:$FLY_HOME/.fly.d/bin"
 ```
 
-## Create your standalone fly package with your full shell env/plugins
+## Create your standalone fly package 
 
-Save your whole shell environment to use everywhere with standalone fly package.  
-All your ~/.fly.d environment saved in autoextractable file. The fly package enables your env when sourced.  
+Save your whole shell environment to use everywhere with standalone fly package.
+
+All your ~/.fly.d environment saved in autoextractable file. The fly package enables your env when sourced.
+
 Build your fly package (you can copy and use it directly to get your env or make it available on web server to remote download)  
 ```
 flypack >fly.pak
 ```
 Then use your fly.pak anywhere :
+
 `. ./fly.pak` : to activate your environment (in `/tmp/.fly.$USER`)
+
 `. ./fly.pak install` : to extract in ~/.fly.d and activate
+
 To activate from url:
 ```
 . <(curl -sL https://raw.githubusercontent.com/joknarf/flypack/main/fly.pak)
