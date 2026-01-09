@@ -251,6 +251,6 @@ By choice, the `/tmp/.fly.$USER` is not removed at end of shell session, as mult
 
 The files will remain and will be only be cleared by OS tmpfiles mechanism, the ideal size is to stay below 128K.
 
-(typically thefly will use a ssh config RemoteCommand for the duplication+connect, but if size is over 128K, will need 2 ssh connection, ssh duplicate + ssh interactive connect) 
+(typically thefly will use a ssh config RemoteCommand for the duplication+connect, but if size is over 128K, will use 2 ssh connection, ssh duplicate + ssh interactive connect) 
 
 Bzzz Bzzz
