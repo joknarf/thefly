@@ -33,7 +33,7 @@ Keep your full shell environment anywhere you go.
 * teleport dotfiles and plugins through sudo (`flyas`)
 * teleport dotfiles and plugins through ssh (`flyto`)
 * force specific destination shell when sudo or ssh (not using target user shell)
-* create a single pak env file including dotfiles and plugins to be used anywhere to activate your full environment (`source <myenv.pak>`)
+* create a single pak env file including dotfiles and plugins to be used anywhere (`flypack >pak`, `. ./pak`)
   
 ## Install
 ```
