@@ -93,6 +93,7 @@ fly help
 fly add joknarf/redo
 ```
 clones `https://github.com/joknarf/redo` in `~/.fly.d/plugins/redo` and sources the `plugin.<shell>`  
+
 (all plugins in `~/fly.d/plugins/*/*.plugin.<shell>` will be sourced at login with `fly source` in your shell rc file)
 
 * update plugin
@@ -119,9 +120,12 @@ $ flyas <user>
 or
 $ fsu <user>
 ```
-will duplicate `~/.fly.d` (without cvs files/tests) in `/tmp/.fly.<user>/<flyid>/.fly.d` and source all plugins  
-by default uses `<user>` shell, to force your favorite shell:  
+will duplicate `~/.fly.d` (without cvs files/tests) in `/tmp/.fly.<user>/<flyid>/.fly.d` and source all plugins
+
+by default uses `<user>` shell, to force your favorite shell:
+
 `fsub` or `bsu` (bash) - `fsuz` or `zsu` (zsh) - `fsuk` or `ksu` (ksh)
+
 (current user need to have sudo privilege to target user)
 
 ### To another host
@@ -131,22 +135,28 @@ $ flyto [<ssh opts>] <user>[<@host>]
 or
 $ fssh [<ssh opts>] <user>[<@host>]
 ```
-will duplicate `~/.fly.d` (without cvs files/tests) in `<host>:/tmp/.fly.<user>/<flyid>/.fly.d` and source all plugins  
-by default uses `<user>` shell, to force your favorite shell:  
-`fsshb` or `bto` (bash) - `fsshz` or `zto` (zsh) - `fsshk` or `kto` (ksh)  
+will duplicate `~/.fly.d` (without cvs files/tests) in `<host>:/tmp/.fly.<user>/<flyid>/.fly.d` and source all plugins
+
+by default uses `<user>` shell, to force your favorite shell:
+
+`fsshb` or `bto` (bash) - `fsshz` or `zto` (zsh) - `fsshk` or `kto` (ksh)
+
  
 ### To another shell
 
 Change current shell and load your env/plugins:  
-`$ flysh <shell> # shell in bash ksh zsh`  
+`$ flysh <shell> # shell in bash ksh zsh`
+
 or `fbash` - `fzsh` - `fksh`  
  
 ## Customize env
 
-Putting your env in `~/.fly.d/.flyrc` will be automatically sourced (must be compatible with different shells)  
+Putting your env in `~/.fly.d/.flyrc` will be automatically sourced (must be compatible with different shells)
+
 Putting additional shell specific env in `~/.fly.d/.<shellname>rc` (.bashrc/.kshrc/.zshrc), will be automatically sourced for shell.
 
-anything in `~.fly.d` will be available through ssh/sudo (flyto/flyas) in `$FLY_HOME/.fly.d`  
+anything in `~.fly.d` will be available through ssh/sudo (flyto/flyas) in `$FLY_HOME/.fly.d`
+
 For example, just put your `.vimrc` in `~/.fly.d` and add in `~/.fly.d/.flyrc`:
 ```
 export VIMINIT="source $FLY_HOME/.fly.d/.vimrc"
