@@ -113,40 +113,45 @@ fly upgrade
 
 ## Teleport plugins/shell env
 
+thefly is able to duplicate your .fly.d directory through sudo and ssh to login with your full environment.
+
+When teleporting the .fly.d is duplicated (without cvs files/tests) in :
+```
+/tmp/.fly.$USER/<id>/.fly.d
+```
+files are owned by target user, `$FLY_HOME` is set to `/tmp/.fly.$USER/<id>`
+
+You can use all teleport method multiple times (`flyto host` then `flyas user`...)
+
 ### To another user
 
-```
-$ flyas <user>
-or
-$ fsu <user>
-```
-will duplicate `~/.fly.d` (without cvs files/tests) in `/tmp/.fly.<user>/<flyid>/.fly.d` and source all plugins
-
-by default uses `<user>` shell, to force your favorite shell:
-
-`fsub` or `bsu` (bash) - `fsuz` or `zsu` (zsh) - `fsuk` or `ksu` (ksh)
-
+sudo interactive shell to another user with your env
 (current user need to have sudo privilege to target user)
+
+```
+$ flyas <user> [shell]
+or
+$ fsu <user> [shell]
+```
+By default uses `<user>`'s shell.
 
 ### To another host
 
+connect to another host through ssh with your env
 ```
 $ flyto [<ssh opts>] <user>[<@host>]
 or
 $ fssh [<ssh opts>] <user>[<@host>]
 ```
-will duplicate `~/.fly.d` (without cvs files/tests) in `<host>:/tmp/.fly.<user>/<flyid>/.fly.d` and source all plugins
 
-by default uses `<user>` shell, to force your favorite shell:
+by default uses `<user>` shell, to force your favorite shell use `fsshb` (bash) - `fsshz` (zsh) - `fsshk` (ksh)
 
-`fsshb` or `bto` (bash) - `fsshz` or `zto` (zsh) - `fsshk` or `kto` (ksh)
-
- 
 ### To another shell
 
-Change current shell and load your env/plugins:  
-`$ flysh <shell> # shell in bash ksh zsh`
-
+Change current shell and load your env/plugins :  
+```
+$ flysh <shell> # shell in bash ksh zsh
+```
 or `fbash` - `fzsh` - `fksh`  
  
 ## Customize env
