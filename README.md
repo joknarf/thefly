@@ -125,7 +125,7 @@ You can use all teleport method multiple times (`flyto host` then `flyas user`..
 
 ### To another user
 
-sudo interactive shell to another user with your env
+sudo login interactive shell to another user with your env
 (current user need to have sudo privilege to target user)
 
 ```
@@ -137,7 +137,7 @@ By default uses `<user>`'s shell.
 
 ### To another host
 
-connect to another host through ssh with your env
+ssh connect with interactive shell to another host with your env
 ```
 $ flyto [<ssh opts>] <user>[<@host>]
 or
