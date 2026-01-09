@@ -7,7 +7,8 @@
 
 # thefly
 
-<img align=left width="150px" src="https://github.com/user-attachments/assets/a537f833-a64f-40b0-99a3-fff9cca08ce8">
+<img align="left" width="150px" height="150px" alt="thefly_logo" src="https://github.com/user-attachments/assets/3a2f3d25-9c32-4f67-b1f4-4bcb5a5ffb44" />
+
 
 <br/>
 bash/zsh/ksh plugin/dotfiles manager and teleporter  
@@ -18,7 +19,7 @@ bzzz bzzz !
 
 <br/>  
 
-What the point to have a fine tuned local shell environment if you lose it as soon as you connect to another server / sudo to another user
+What's the point to have a fine tuned local shell environment if you lose it as soon as you connect to another server / sudo to another user ?
 
 ## Demo
 ![thefly_bzz](https://github.com/user-attachments/assets/1617632b-db08-40d4-a845-841e8ee5c7c6)
