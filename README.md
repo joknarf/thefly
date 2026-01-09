@@ -18,10 +18,23 @@ bzzz bzzz !
 
 <br/>  
 
+What the point to have a fine tuned local shell environment if you lose it as soon as you connect to another server / sudo to another user
+
 ## Demo
 ![thefly_bzz](https://github.com/user-attachments/assets/1617632b-db08-40d4-a845-841e8ee5c7c6)
 
+## features
 
+Keep your full shell environment anywhere you go.
+
+* supports bash / zsh / ksh
+* multi-shell plugin manager to install / update / uninstall shell plugins
+* multi-shell dotfiles manager
+* teleport dotfiles and plugins through sudo (`flyas`)
+* teleport dotfiles and plugins through ssh (`flyto`)
+* force specific destination shell when sudo or ssh (not using target user shell)
+* create a single pak env file including dotfiles and plugins to be used anywhere to activate your full environment (`source <myenv.pak>`)
+  
 ## Install
 ```
 . <(curl https://raw.githubusercontent.com/joknarf/thefly/main/thefly) install
