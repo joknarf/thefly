@@ -41,8 +41,8 @@ Keep your full shell environment anywhere you go.
 ```
 or
 ```
-$ git clone https://github.com/joknarf/thefly
-$ . thefly/thefly install
+git clone https://github.com/joknarf/thefly
+. thefly/thefly install
 ```
 Creates ~/.fly.d/fly and activate thefly manager for current user
 
