@@ -247,7 +247,7 @@ $ fly add joknarf/dfbar        # df enhancer (colors/usage bar)
 
 Remember that `~/.fly.d` directory will be duplicated in `/tmp` when teleporting, don't put huge data in your `~/.fly.d` directory, the consequences could be dramatic ! (ask Jeff G. ;-)
 
-By choice, the `/tmp/.fly.*` is not removed at end of shell session, as multiple session may use the same fly env (other choice would be to duplicate same .fly.d for each session but can be overkill)
+By choice, the `/tmp/.fly.$USER` is not removed at end of shell session, as multiple session may use the same fly env (other choice would be to duplicate same .fly.d for each session but can be overkill)
 
 The files will remain and will be only be cleared by OS tmpfiles mechanism, the ideal size is to stay below 128K.
 
