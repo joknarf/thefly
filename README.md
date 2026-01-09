@@ -27,7 +27,7 @@ What the point to have a fine tuned local shell environment if you lose it as so
 
 Keep your full shell environment anywhere you go.
 
-* supports bash / zsh / ksh
+* supports bash / zsh / ksh (on Linux / MacOS / ...)
 * multi-shell plugin manager to install / update / uninstall shell plugins
 * multi-shell dotfiles manager
 * teleport dotfiles and plugins through sudo (`flyas`)
@@ -86,17 +86,33 @@ Get some help
 ```
 fly help
 ```
-## Add plugins
+## Plugins management
 
+* add plugin
 ```
 fly add joknarf/redo
 ```
 clones `https://github.com/joknarf/redo` in `~/.fly.d/plugins/redo` and sources the `plugin.<shell>`  
 (all plugins in `~/fly.d/plugins/*/*.plugin.<shell>` will be sourced at login with `fly source` in your shell rc file)
 
+* update plugin
+```
+fly update [plugin]
+```
+
+* remove plugin
+```
+fly del [plugin]
+```
+
+* update user fly
+```
+fly upgrade
+```
+
 ## Teleport plugins/shell env
 
-### To another user on current host
+### To another user
 
 ```
 $ flyas <user>
@@ -106,8 +122,9 @@ $ fsu <user>
 will duplicate `~/.fly.d` (without cvs files/tests) in `/tmp/.fly.<user>/<flyid>/.fly.d` and source all plugins  
 by default uses `<user>` shell, to force your favorite shell:  
 `fsub` or `bsu` (bash) - `fsuz` or `zsu` (zsh) - `fsuk` or `ksu` (ksh)
+(current user need to have sudo privilege to target user)
 
-### To another host/user
+### To another host
 
 ```
 $ flyto [<ssh opts>] <user>[<@host>]
@@ -143,7 +160,7 @@ You can create a `.fly.d/bin` directory and put scripts you want to teleport and
 export PATH="$PATH:$FLY_HOME/.fly.d/bin"
 ```
 
-## Create your standalone fly package 
+## Standalone fly package 
 
 Save your whole shell environment to use everywhere with standalone fly package.
 
@@ -173,7 +190,7 @@ RequestTTY yes
 RemoteCommand . <(curl -sL https://raw.githubusercontent.com/joknarf/flypack/main/fly.pak)
 ```
 
-## Download/activate your env/plugins from your fly git repo or web server
+## Activate from git repo or url
 
 put your .fly.d directory into a git repo and activate all your env/plugins in your current user
 ```
@@ -182,29 +199,10 @@ put your .fly.d directory into a git repo and activate all your env/plugins in y
 
 create a tgz file with your .fly.d exposed on web server and activate env/plugins in your current user
 ```
-. <(curl https://raw.githubusercontent.com/joknarf/thefly/main/thefly) install https://myserver/myfly
+. <(curl https://raw.githubusercontent.com/joknarf/thefly/main/thefly) install https://myserver/myfly.tgz
 ```
 
-## Connect using thefly env/plugins from http/git repo
-
-uses user ~.fly.d to load env/plugins
-```
-$ ssh -t <user>@<host> '. <(curl https://raw.githubusercontent.com/joknarf/thefly/main/thefly) remote'  
-```
-
-get env/plugins from .fly.d tgz (contains .fly.d/*)
-```
-$ ssh -t <user>@<host> '. <(curl https://raw.githubusercontent.com/joknarf/thefly/main/thefly) remote <url .fly.d.tgz>'  
-```
-
-get env/plugins from github repository (repo contains .fly.d contents, and can contain plugins submodules)
-```
-$ ssh -t <user>@<host> '. <(curl https://raw.githubusercontent.com/joknarf/thefly/main/thefly) remote <git owner/repo .fly.d>'  
-```
-
-
-
-## Set your joknarf cool plugins env
+## joknarf cool plugins
 
 ```
 $ fly add joknarf/nerdp        # bash/ksh/zsh nerd prompt
