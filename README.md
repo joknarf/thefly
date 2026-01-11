@@ -7,8 +7,7 @@
 
 # thefly
 
-<img align="left" width="150px" height="150px" alt="thefly_logo" src="https://github.com/user-attachments/assets/3a2f3d25-9c32-4f67-b1f4-4bcb5a5ffb44" />
-
+<img align="left" width="150" alt="flyn2" src="https://github.com/user-attachments/assets/06efbf60-3231-4bf9-82f6-860648d9bf68" />
 
 <br/>
 bash/zsh/ksh plugin/dotfiles manager and teleporter  
