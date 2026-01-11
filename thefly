@@ -173,8 +173,9 @@ cat - >"$FLY_HOME/.fly.d/fly" <<'EOFLY' && $_fly_sourced && . "$FLY_HOME/.fly.d/
 # Author: Franck Jouvanceau
 ###########################
 [ "$1" != source ] && unset _fly_loaded
-[ "$_fly_loaded" ] && echo skip && return
-echo "Bzzz Bzzz !!!" >&2
+[ "$_fly_loaded" ] && return
+: "${FLY_MSG:=Bzzz Bzzz !!!}"
+echo "FLY_MSG" >&2
 _fly_loaded=1
 : "${FLY_HOME:=$HOME}"
 : "${FLY_RC:=$HOME/.flyrc}"
