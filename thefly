@@ -478,7 +478,7 @@ RequestTTY yes
 RemoteCommand $cmd
 $ssh_config
 _EOF_
-    ssh -F "$FLY_HOME/.fly_ssh" "$@"
+    \cd $FLY_HOME;ssh -F .fly_ssh "$@";\cd $OLDPWD
 }
 
 function _fly_ssh2
