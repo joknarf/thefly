@@ -168,7 +168,7 @@ Putting your env in `~/.fly.d/.flyrc` will be automatically sourced (must be com
 
 Putting additional shell specific env in `~/.fly.d/.<shellname>rc` (.bashrc/.kshrc/.zshrc), will be automatically sourced for shell.
 
-anything in `~.fly.d` will be available through ssh/sudo (flyto/flyas) in `$FLY_HOME/.fly.d`
+anything in `~/.fly.d` will be available through ssh/sudo (flyto/flyas) in `$FLY_HOME/.fly.d`
 
 For example, just put your `.vimrc` in `~/.fly.d` and add in `~/.fly.d/.flyrc`:
 ```
