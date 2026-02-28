@@ -156,6 +156,14 @@ or `fbash` - `fzsh` - `fksh`
  
 ## Customize env
 
+You can use `FLY_TMPDIR` variable to set the teleportation destination directory instead of default `/tmp`:
+
+```
+TMPDIR=/var/tmp
+flyto myserver
+flyas myuser
+```` 
+
 Putting your env in `~/.fly.d/.flyrc` will be automatically sourced (must be compatible with different shells)
 
 Putting additional shell specific env in `~/.fly.d/.<shellname>rc` (.bashrc/.kshrc/.zshrc), will be automatically sourced for shell.
