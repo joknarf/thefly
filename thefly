@@ -186,13 +186,12 @@ _fly_loaded=1
 : "${FLY_ETC_RC:=true}"
 : "${FLY_TMPDIR:=/tmp}"
 : "${_fly_uuid:=$(cat "$FLY_HOME/.fly.d/.flyuuid" 2>/dev/null || uuidgen)}"
-: "${_fly_tmpdir:="$FLY_TMPDIR/.fly.\${UUID:-\$(id -u)}/$_fly_uuid"}"
 type gtar >/dev/null 2>&1 && _fly_tar=gtar || _fly_tar=tar
 [[ "$($_fly_tar --version 2>/dev/null)" = *busybox* ]] && {
     _fly_taropts=( --exclude=.git --exclude=.github --exclude=.gitignore )
 } || _fly_taropts=( --no-xattrs --exclude-vcs )
 
-function usage
+function _fly_usage
 {
     cat - <<'EOF'
 usage: fly <action> <options>
@@ -247,6 +246,7 @@ function _fly_login_rc
 {
     cat - <<EOF >"$FLY_HOME/.fly.d/.fly.lib/.login"
     FLY_HOME="${1:-$FLY_HOME}"
+    FLY_TMPDIR="$FLY_TMPDIR"
     FLY_USER_RC="$FLY_USER_RC"
     FLY_ETC_RC="$FLY_ETC_RC"
     FLY_SHELL="$_fly_destshell"
@@ -303,7 +303,7 @@ alias fsutoz=' _fly_destshell=zsh _fly sudossh'
 
 case "$1" in
     help)
-        usage
+        _fly_usage
     ;;
     login)      
         shift 
@@ -493,6 +493,7 @@ function _fly_ssh2
 function _fly
 {
     typeset plugin submodule
+    _fly_tmpdir="$FLY_TMPDIR/.fly.\${UUID:-\$(id -u)}/$_fly_uuid"
     case "$1" in
         list)
             _fly_zsh_glob fix
