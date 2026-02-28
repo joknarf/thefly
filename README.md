@@ -75,7 +75,7 @@ sudo installer -pkg thefly.pkg -target /
 then run:
 ```
 thefly install
-. ~/.fly.d/activate
+. ~/.fly.d/fly activate
 ```
 
 Add in your rc file (.profile .bash_profile .bashrc .zshrc):
