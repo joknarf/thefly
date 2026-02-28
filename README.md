@@ -156,7 +156,7 @@ or `fbash` - `fzsh` - `fksh`
  
 ## Customize env
 
-You can use `FLY_TMPDIR` variable to set the teleportation destination directory instead of default `/tmp`:
+You can use `FLY_TMPDIR` variable to set the teleportation destination directory instead of default `/tmp` (/tmp mounted could be mounted as noexec, or being full...):
 
 ```
 TMPDIR=/var/tmp
