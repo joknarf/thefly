@@ -146,8 +146,8 @@ cat - <<'EOF' > "$_fly_lib/.loginshell"
     #[ ! -t 0 ] && exec </dev/tty
     case "$FLY_SHELL" in
         *bash) PS1="" exec $FLY_SHELL --rcfile ".bashrc";;
-        *zsh)  ZDOTDIR=$FLY_HOME/.fly.d/.fly.lib exec $FLY_SHELL -di;;
-        *ksh)  export ENV=$FLY_HOME/.fly.d/.fly.lib/.login;exec $FLY_SHELL -i;;
+        *zsh)  ZDOTDIR=$FLY_HOME/.fly.d/.fly.lib exec $FLY_SHELL -d;;
+        *ksh)  ENV=$FLY_HOME/.fly.d/.fly.lib/.login exec $FLY_SHELL;;
     esac
 EOF
 
