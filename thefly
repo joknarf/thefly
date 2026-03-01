@@ -448,7 +448,7 @@ function _fly_pkg_warp
     [ "$1" ] && echo "USER=$1"
     cat - <<EOF
 $(_fly_package_zfx)
-. "$_fly_tmpdir/.fly.d/.fly.lib/.loginshell" "$_fly_tmpdir" "$_fly_destshell"
+. "\$FLY_HOME/.fly.d/.fly.lib/.loginshell" "\$FLY_HOME" "$_fly_destshell"
 EOF
 }
 
@@ -534,5 +534,6 @@ _fly_ssh_ok
 
 
 unset _fly_destshell
+unset -f _fly_usage
 set --
 EOFLY
