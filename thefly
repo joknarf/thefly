@@ -526,7 +526,7 @@ function _fly
             shift
             _fly_pack
         ;;
-        *) usage;return 1;;
+        *) echo "unknown option, use 'fly help'";return 1;;
     esac
 }
 
