@@ -410,17 +410,16 @@ function _fly_sudo
 
 function _fly_ssh_ok
 {
-    typeset ssh_ver ssh_maj ssh_min
+    typeset ssh_ver ssh_maj ssh_min r
     _fly_ssh_ok=false
     type ssh >/dev/null 2>&1 || return
-    typeset ssh_ver="$(ssh -V 2>&1)"
-    ssh_ver="${ssh_ver%% *}";ssh_ver="${ssh_ver#*_}";ssh_ver="${ssh_ver%p*}"
-    [[ "$ssh_ver" = *.*.* ]] && ssh_ver="${ssh_ver%.*}"
-    ssh_min=${ssh_ver#*.}
-    ssh_maj=${ssh_ver%.*}
-    [ "$ssh_maj" -gt 8 ] && _fly_ssh_ok=true
+    read -r ssh_ver r <<<"$(ssh -V 2>&1)"
+    ssh_ver="${ssh_ver#*_}";ssh_ver="${ssh_ver%p*}"
+    IFS='.' read -r ssh_maj ssh_min r <<<"$ssh_ver"
+    [ "$ssh_maj" -gt 8 ] && _fly_ssh_ok=true && return
     # ssh 8.0 RemoteCommand buffer too short
     [ "$ssh_maj" = 8 ] && [ "$ssh_min" -gt 0 ] && _fly_ssh_ok=true
+    return 0
 }
 
 function _fly_package_zfx
