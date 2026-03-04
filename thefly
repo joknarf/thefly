@@ -51,13 +51,10 @@ _fly_lib="$FLY_HOME/.fly.d/.fly.lib"
 umask 077
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/.fshell
 : "${FLY_SHELL:=$_fly_destshell}"
-[ "$FLY_SHELL" ] && return
-[[ "$0" =~ (-|/|^)(bash|zsh|ksh)$ ]] && FLY_SHELL="${0/-/}" && return
-case "$KSH_VERSION$BASH$ZSH_VERSION" in
-    "$KSH_VERSION") FLY_SHELL=ksh;;
-    "$BASH")        FLY_SHELL=bash;;
-    "$ZSH_VERSION") FLY_SHELL=zsh;;
-    *)              FLY_SHELL=bash;;
+: "${FLY_SHELL:=$SHELL}"
+case "$FLY_SHELL" in 
+    *bash|*ksh|*zsh|*fish) return;;
+    *) FLY_SHELL=bash;
 esac
 FLY_EOF
 
@@ -482,8 +479,8 @@ function _fly_ssh
        set -- "$@" "$i"
     done
     [ ! "$ssh_config" ] && [ -f ~/.ssh/config ] && ssh_config="Include $HOME/.ssh/config"
-    cmd="${cmd//$'\n'/;}"
-    [ "$_fly_destshell" = fish ] && cmd="bash <(base64 -d <<<'$(gzip -c <<<"$cmd"|base64 -w0)'|gzip -dc)"
+    #cmd="${cmd//$'\n'/;}"
+    cmd="sh <(base64 -d <<<'$(gzip -c <<<"$cmd"|base64 -w0)'|gzip -dc)"
     cat - <<_EOF_ >"$FLY_HOME/.fly_ssh"
 RequestTTY yes
 RemoteCommand $cmd
@@ -543,9 +540,9 @@ function _fly
 _fly_ssh_ok
 
 
-unset _fly_destshell
+#unset _fly_destshell
 unset -f _fly_usage
-set --
+#set --
 FLY_EOF
 
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/fly.fish
@@ -568,18 +565,18 @@ not set -q _fly_uuid && set -x _fly_uuid (cat "$FLY_HOME/.fly.d/.flyuuid" 2>/dev
 set -x _fly_lib $FLY_HOME/.fly.d/.fly.lib
 set -x FLY_SHELL fish 
 
-function _fly
-    set _fly_tmpdir "$FLY_TMPDIR/.fly.(id -u)/$_fly_uuid"
-    not set -q _fly_destshell && set _fly_destshell "$FLY_SHELL"
-    switch "$argv[1]"
-        case sudo as
-            bash -c ". $FLY_HOME/.fly.d/fly;_fly_destshell=$_fly_destshell _fly sudo $argv[2]"            
-        case ssh to
-            bash -c ". $FLY_HOME/.fly.d/fly;_fly_destshell=$_fly_destshell _fly ssh $argv[2..-1]"
-        case *
-            echo "Unknown command: $argv[1]" >&2
-    end
-end
+#function _fly
+#    set _fly_tmpdir "$FLY_TMPDIR/.fly.(id -u)/$_fly_uuid"
+#    not set -q _fly_destshell && set _fly_destshell "$FLY_SHELL"
+#    switch "$argv[1]"
+#        case sudo as
+#            bash -c ". $FLY_HOME/.fly.d/fly;_fly_destshell=$_fly_destshell _fly sudo $argv[2]"            
+#        case ssh to
+#            bash -c ". $FLY_HOME/.fly.d/fly;_fly_destshell=$_fly_destshell _fly ssh $argv[2..-1]"
+#        case *
+#            echo "Unknown command: $argv[1]" >&2
+#    end
+#end
 
 switch "$argv[1]"
     case source
@@ -588,6 +585,16 @@ switch "$argv[1]"
         . $_fly_lib/.login.fish
         . $_fly_lib/.source_plugins.fish
 end
+
+function fly
+   FLY_HOME="$FLY_HOME" bash -c 'args=("$@");. $FLY_HOME/.fly.d/fly "${args[@]}"' _ $argv
+end
+
+function _fly
+   FLY_HOME="$FLY_HOME" bash -c 'args=("$@");. $FLY_HOME/.fly.d/fly;_fly "${args[@]}"' _ $argv
+end
+
+. $_fly_lib/aliases
 FLY_EOF
 
 )
