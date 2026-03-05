@@ -11,8 +11,10 @@ $_fly_sourced && _ret=return || _ret=exit
 
 ! $_fly_sourced && [ ! "$SHELLOK" ] && {
   export SHELLOK=1
-  [ -x "$SHELL" ] && exec $SHELL $0 "$@"
-  exec /usr/bin/env bash $0 "$@"
+  case "$SHELL" in
+    *bash|*ksh|*zsh) exec $SHELL $0 "$@";;
+    *) exec /usr/bin/env bash $0 "$@";;
+  esac
 }
 : "${FLY_HOME:=$HOME}"
 : "${_fly_githubraw:=https://raw.githubusercontent.com}"
@@ -497,7 +499,7 @@ function _fly_pkg_warp
 {
     cat - <<EOF
 $(_fly_package_zfx)
-. "\$FLY_HOME/.fly.d/.fly.lib/.loginshell" "\$FLY_HOME"
+. "\$FLY_HOME/.fly.d/.fly.lib/.loginshell"
 EOF
 }
 
@@ -522,7 +524,6 @@ function _fly_ssh
     ! $_fly_ssh_ok && { _fly_ssh2 "$@"; return $?; } 
     typeset ssh_config cmd c i
     . "$_fly_lib/init_fly" "$_fly_tmpdir"
-    #cmd="$(_fly_pkg_warp)"
     cmd="exec /bin/sh -c '$(_fly_pkg_warp)'"
     [ ${#cmd} -gt 130000 ] && { _fly_ssh2 "$@"; return $?; }
     for i in "$@";do
@@ -533,7 +534,6 @@ function _fly_ssh
     done
     [ ! "$ssh_config" ] && [ -f ~/.ssh/config ] && ssh_config="Include $HOME/.ssh/config"
     cmd="${cmd//$'\n'/;}"
-    #cmd="sh <(base64 -d <<<'$(gzip -c <<<"$cmd"|base64 -w0)'|gzip -dc)"
     cat - <<_EOF_ >"$FLY_HOME/.fly_ssh"
 RequestTTY yes
 RemoteCommand $cmd
@@ -546,7 +546,7 @@ function _fly_ssh2
 {
     . $_fly_lib/init_fly "$_fly_tmpdir"
     _fly_package | ssh -o LogLevel=Error "$@" "/bin/sh -c '$(_fly_xpretar) $(_fly_xpackage)'" || return $?
-    ssh "$@" -t "exec /bin/sh -c '. $_fly_tmpdir/.fly.d/.fly.lib/.loginshell $_fly_tmpdir'"
+    ssh "$@" -t "exec /bin/sh -c 'FLY_HOME=$_fly_tmpdir;. \$FLY_HOME/.fly.d/.fly.lib/.loginshell'"
 }
 
 
