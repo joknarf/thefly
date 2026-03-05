@@ -51,13 +51,10 @@ _fly_lib="$FLY_HOME/.fly.d/.fly.lib"
 umask 077
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/.fshell
 : "${FLY_SHELL:=$_fly_destshell}"
-[ "$FLY_SHELL" ] && return
-[[ "$0" =~ (-|/|^)(bash|zsh|ksh)$ ]] && FLY_SHELL="${0/-/}" && return
-case "$KSH_VERSION$BASH$ZSH_VERSION" in
-    "$KSH_VERSION") FLY_SHELL=ksh;;
-    "$BASH")        FLY_SHELL=bash;;
-    "$ZSH_VERSION") FLY_SHELL=zsh;;
-    *)              FLY_SHELL=bash;;
+: "${FLY_SHELL:=$SHELL}"
+case "$FLY_SHELL" in 
+    *bash|*ksh|*zsh|*fish) return;;
+    *) FLY_SHELL=bash;
 esac
 FLY_EOF
 
@@ -113,8 +110,9 @@ FLY_EOF
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/.loginshell
 FLY_HOME="${1:-$FLY_HOME}"
 \cd "$FLY_HOME/.fly.d/.fly.lib"
+. ./.login
 . $FLY_HOME/.fly.d/.fly.lib/.fshell
-FLY_SHELL="${2:-$FLY_SHELL}"
+. ./login_rc.${FLY_SHELL##*/}
 [ ! -t 0 ] && [ -t 1 ] && exec <&1
 #[ ! -t 0 ] && exec </dev/tty
 case "$FLY_SHELL" in
@@ -203,26 +201,36 @@ alias fsutok=' _fly_destshell=ksh _fly sudossh'
 alias fsutoz=' _fly_destshell=zsh _fly sudossh'
 FLY_EOF
 
-cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/login_rc.
+cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/init_fly
 cat - <<EOF >"$_fly_lib/.login"
 FLY_HOME="${1:-$FLY_HOME}"
 FLY_TMPDIR="$FLY_TMPDIR"
 FLY_USER_RC="$FLY_USER_RC"
 FLY_ETC_RC="$FLY_ETC_RC"
+FLY_TARZ="$FLY_TARZ"
 FLY_SHELL="$_fly_destshell"
+EOF
+FLY_EOF
+
+cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/login_rc.
+cat - <<EOF >.login
+FLY_HOME="$FLY_HOME"
+FLY_TMPDIR="$FLY_TMPDIR"
+FLY_USER_RC="$FLY_USER_RC"
+FLY_ETC_RC="$FLY_ETC_RC"
+FLY_SHELL="$FLY_SHELL"
 unset _fly_loaded
-. "${1:-$FLY_HOME}/.fly.d/fly" login
+. "\$FLY_HOME/.fly.d/fly" login
 FLY_USER_RC="true"
 FLY_ETC_RC="true"
 EOF
 FLY_EOF
 
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/login_rc.fish
-[ "$1" ] && set -- "$FLY_TMPDIR/.fly.(id -u)/$_fly_uuid"
-cat - <<EOF >"$FLY_HOME/.fly.d/.fly.lib/.login"
-set FLY_HOME ${1:-$FLY_HOME}
-set FLY_TMPDIR $FLY_TMPDIR
-set FLY_SHELL $_fly_destshell
+cat - <<EOF >.login
+set FLY_HOME "$FLY_HOME"
+set FLY_TMPDIR "$FLY_TMPDIR"
+set FLY_SHELL "$FLY_SHELL"
 set -e _fly_loaded
 . "\$FLY_HOME/.fly.d/fly.fish" login
 EOF
@@ -245,6 +253,7 @@ _fly_loaded=1
 : "${FLY_USER_RC:=true}"
 : "${FLY_ETC_RC:=true}"
 : "${FLY_TMPDIR:=/tmp}"
+: "${FLY_TARZ:=z}"
 : "${_fly_uuid:=$(cat "$FLY_HOME/.fly.d/.flyuuid" 2>/dev/null || uuidgen)}"
 type gtar >/dev/null 2>&1 && _fly_tar=gtar || _fly_tar=tar
 [[ "$($_fly_tar --version 2>/dev/null)" = *busybox* ]] && {
@@ -320,8 +329,8 @@ case "$1" in
     ;;
     loginshell|install)
         shift
-        . "$_fly_lib/login_rc.$_fly_destshell"
-        . "$_fly_lib/.loginshell" "$FLY_HOME" "$_fly_destshell"
+        . "$_fly_lib/init_fly"
+        . "$_fly_lib/.loginshell" "$FLY_HOME" 
     ;;
     source|activate)
         shift
@@ -379,41 +388,28 @@ esac
 function _fly_package
 {
     [ "$FLY_RC" ] && [ -r "$FLY_RC" ] && cp "$FLY_RC" "$FLY_HOME/.fly.d/.fly.lib"
-    $_fly_tar -czf - -C "$FLY_HOME" "${_fly_taropts[@]}" --exclude=README.md --exclude='plugins/*/.*' --exclude '*/*/tests' .fly.d
+    $_fly_tar -c${_fly_tarz}f - -C "$FLY_HOME" "${_fly_taropts[@]}" --exclude=README.md --exclude='plugins/*/.*' --exclude '*/*/tests' .fly.d
 }
 
 function _fly_xpretar
 {
     printf 'FLY_HOME="%s";' "$_fly_tmpdir"
-    printf 'type gtar >/dev/null 2>&1 && _fly_tar=gtar || _fly_tar=tar;'
     printf 'umask 077;mkdir -p "$FLY_HOME";rm -rf "$FLY_HOME/.fly.d";'
     printf '! chmod 700 "$FLY_HOME" && echo "Not owner of $FLY_HOME. Abort" >&2 && exit 1;'
+    printf 'type gtar >/dev/null 2>&1 && tar=gtar || tar=tar;'
 }
 
 function _fly_xpackage
 {   
-    printf '$_fly_tar -xmzf - -C "$FLY_HOME" --no-same-owner'
-}
-
-function _fly_user_shell
-{
-  typeset user="$1" userdef
-  userdef="$(getent passwd "$user" 2>/dev/null)" && echo "${userdef##*:}" && return
-  userdef="$(dscl . -read "Users/$user" UserShell 2>/dev/null)" && echo "${userdef#*: }" && return
-  awk -F: '$1==user{print $NF}' user="$user" /etc/passwd
+    printf '$tar -xm%sf - -C "$FLY_HOME" --no-same-owner' "$_fly_tarz"
 }
 
 function _fly_sudo
 {
     typeset user="${1:-root}"
-    [ "$_fly_destshell" ] || _fly_destshell="$(_fly_user_shell "$user")"
-    [[ "$_fly_destshell" = */sh ]] && _fly_destshell="$FLY_SHELL"
-    [[ "$_fly_destshell" = *sh ]] || _fly_destshell="$FLY_SHELL"
-    initshell="$_fly_destshell"
-    [[ "$_fly_destshell" = fish ]] && initshell="bash"
-    . "$_fly_lib/login_rc.${_fly_destshell##*/}" "$_fly_tmpdir"
+    . "$_fly_lib/init_fly" "$_fly_tmpdir"
     \cd /
-    _fly_pkg_warp "$user" |SHELL="$initshell" sudo -Hsu "$user"
+    _fly_pkg_warp |SHELL="/bin/sh" sudo -Hsu "$user"
     \cd "$OLDPWD"
     unset _fly_destshell
 }
@@ -435,9 +431,9 @@ function _fly_ssh_ok
 function _fly_package_zfx
 {
     typeset b64opt
-    echo ok |base64 -w0 >/dev/null 2>&1 && b64opt='-w0'
+    base64 -w0 <<<ok >/dev/null 2>&1 && b64opt='-w0'
     cat - <<EOF
-$(_fly_xpretar) base64 -d <<<'$(_fly_package |base64 $b64opt)' |$(_fly_xpackage)
+$(_fly_xpretar) echo "$(_fly_package |base64 $b64opt)"|base64 -d|$(_fly_xpackage)
 EOF
 
 }
@@ -453,11 +449,18 @@ EOF
 
 function _fly_pkg_warp
 {
-    # Old sudo keeps USER=root when sudo from root
-    [ "$1" ] && echo "USER=$1"
     cat - <<EOF
 $(_fly_package_zfx)
-. "\$FLY_HOME/.fly.d/.fly.lib/.loginshell" "\$FLY_HOME" "$_fly_destshell"
+. "\$FLY_HOME/.fly.d/.fly.lib/.loginshell" "\$FLY_HOME"
+EOF
+}
+
+function _fly_pkg_b64
+{
+    typeset b64opt
+    base64 -w0 <<<ok >/dev/null 2>&1 && b64opt='-w0'
+  cat - <<EOF
+base64 -d <<<'$(_fly_pkg_warp| gzip -c |base64 $b64opt)' |gzip -dc
 EOF
 }
 
@@ -472,8 +475,9 @@ function _fly_ssh
 {
     ! $_fly_ssh_ok && { _fly_ssh2 "$@"; return $?; } 
     typeset ssh_config cmd c i
-    . "$_fly_lib/login_rc.$_fly_destshell" "$_fly_tmpdir"
-    cmd="$(_fly_pkg_warp)"
+    . "$_fly_lib/init_fly" "$_fly_tmpdir"
+    #cmd="$(_fly_pkg_warp)"
+    cmd="exec /bin/sh -c '$(_fly_pkg_warp)'"
     [ ${#cmd} -gt 130000 ] && { _fly_ssh2 "$@"; return $?; }
     for i in "$@";do
        [ "$i" = -F ] && shift && c=1 && continue
@@ -483,7 +487,7 @@ function _fly_ssh
     done
     [ ! "$ssh_config" ] && [ -f ~/.ssh/config ] && ssh_config="Include $HOME/.ssh/config"
     cmd="${cmd//$'\n'/;}"
-    [ "$_fly_destshell" = fish ] && cmd="bash <(base64 -d <<<'$(gzip -c <<<"$cmd"|base64 -w0)'|gzip -dc)"
+    #cmd="sh <(base64 -d <<<'$(gzip -c <<<"$cmd"|base64 -w0)'|gzip -dc)"
     cat - <<_EOF_ >"$FLY_HOME/.fly_ssh"
 RequestTTY yes
 RemoteCommand $cmd
@@ -494,16 +498,17 @@ _EOF_
 
 function _fly_ssh2
 {
-    . $_fly_lib/login_rc.$_fly_destshell "$_fly_tmpdir"
-    _fly_package | ssh -o LogLevel=Error "$@" "$(_fly_xpretar) $(_fly_xpackage)" || return $?
-    ssh "$@" -t '. '"$_fly_tmpdir"'/.fly.d/.fly.lib/.loginshell '"$_fly_tmpdir"' '"$_fly_destshell"''
+    . $_fly_lib/init_fly "$_fly_tmpdir"
+    _fly_package | ssh -o LogLevel=Error "$@" "/bin/sh -c '$(_fly_xpretar) $(_fly_xpackage)'" || return $?
+    ssh "$@" -t "exec /bin/sh -c '. $_fly_tmpdir/.fly.d/.fly.lib/.loginshell $_fly_tmpdir'"
 }
 
 
 function _fly
 {
     typeset plugin submodule
-    _fly_tmpdir="$FLY_TMPDIR/.fly.\${UUID:-\$(id -u)}/$_fly_uuid"
+    _fly_tmpdir="$FLY_TMPDIR/.fly.\`id -u\`/$_fly_uuid"
+    _fly_tarz="$FLY_TARZ"
     case "$1" in
         list)
             _fly_zsh_glob fix
@@ -513,7 +518,7 @@ function _fly
         shell)
             shift
             [ "$1" ] && ! type "$1" >/dev/null 2>&1 && echo "Cannot find shell $1" >&2 && return 1
-            _fly_destshell="${1:-$FLY_SHELL}"; . "$_fly_lib/login_rc.$_fly_destshell" "$FLY_HOME"; . "$FLY_HOME/.fly.d/.fly.lib/.loginshell" "$FLY_HOME" "$_fly_destshell"
+            _fly_destshell="${1:-$FLY_SHELL}"; . "$_fly_lib/init_fly" "$FLY_HOME"; . "$FLY_HOME/.fly.d/.fly.lib/.loginshell" "$FLY_HOME"
         ;;
         ssh|to) 
             shift
@@ -543,9 +548,9 @@ function _fly
 _fly_ssh_ok
 
 
-unset _fly_destshell
+#unset _fly_destshell
 unset -f _fly_usage
-set --
+#set --
 FLY_EOF
 
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/fly.fish
@@ -568,19 +573,6 @@ not set -q _fly_uuid && set -x _fly_uuid (cat "$FLY_HOME/.fly.d/.flyuuid" 2>/dev
 set -x _fly_lib $FLY_HOME/.fly.d/.fly.lib
 set -x FLY_SHELL fish 
 
-function _fly
-    set _fly_tmpdir "$FLY_TMPDIR/.fly.(id -u)/$_fly_uuid"
-    not set -q _fly_destshell && set _fly_destshell "$FLY_SHELL"
-    switch "$argv[1]"
-        case sudo as
-            bash -c ". $FLY_HOME/.fly.d/fly;_fly_destshell=$_fly_destshell _fly sudo $argv[2]"            
-        case ssh to
-            bash -c ". $FLY_HOME/.fly.d/fly;_fly_destshell=$_fly_destshell _fly ssh $argv[2..-1]"
-        case *
-            echo "Unknown command: $argv[1]" >&2
-    end
-end
-
 switch "$argv[1]"
     case source
         source $_fly_lib/.source_plugins.fish
@@ -588,6 +580,16 @@ switch "$argv[1]"
         . $_fly_lib/.login.fish
         . $_fly_lib/.source_plugins.fish
 end
+
+function fly
+   FLY_HOME="$FLY_HOME" bash -c 'args=("$@");. $FLY_HOME/.fly.d/fly "${args[@]}"' _ $argv
+end
+
+function _fly
+   FLY_HOME="$FLY_HOME" bash -c 'args=("$@");. $FLY_HOME/.fly.d/fly;_fly "${args[@]}"' _ $argv
+end
+
+. $_fly_lib/aliases
 FLY_EOF
 
 )
