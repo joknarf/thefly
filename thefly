@@ -441,7 +441,7 @@ function _fly_ssh_ok
 function _fly_package_zfx
 {
     typeset b64opt
-    echo ok |base64 -w0 >/dev/null 2>&1 && b64opt='-w0'
+    base64 -w0 <<<ok >/dev/null 2>&1 && b64opt='-w0'
     cat - <<EOF
 $(_fly_xpretar) base64 -d <<<'$(_fly_package |base64 $b64opt)' |$(_fly_xpackage)
 EOF
@@ -465,8 +465,10 @@ $(_fly_package_zfx)
 EOF
 }
 
-function _fly_pkg_sh
+function _fly_pkg_b64
 {
+    typeset b64opt
+    base64 -w0 <<<ok >/dev/null 2>&1 && b64opt='-w0'
   cat - <<EOF
 base64 -d <<<'$(_fly_pkg_warp| gzip -c |base64 $b64opt)' |gzip -dc
 EOF
@@ -485,7 +487,7 @@ function _fly_ssh
     typeset ssh_config cmd c i
     . "$_fly_lib/init_fly" "$_fly_tmpdir"
     #cmd="$(_fly_pkg_warp)"
-    cmd="$(_fly_pkg_sh) | sh"
+    cmd="sh <<<'$(_fly_pkg_warp)'"
     [ ${#cmd} -gt 130000 ] && { _fly_ssh2 "$@"; return $?; }
     for i in "$@";do
        [ "$i" = -F ] && shift && c=1 && continue
