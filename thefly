@@ -112,6 +112,8 @@ FLY_HOME="${1:-$FLY_HOME}"
 \cd "$FLY_HOME/.fly.d/.fly.lib"
 . $FLY_HOME/.fly.d/.fly.lib/.fshell
 FLY_SHELL="${2:-$FLY_SHELL}"
+. ./.login
+. ./login_rc.${FLY_SHELL##*/}
 [ ! -t 0 ] && [ -t 1 ] && exec <&1
 #[ ! -t 0 ] && exec </dev/tty
 case "$FLY_SHELL" in
@@ -200,26 +202,35 @@ alias fsutok=' _fly_destshell=ksh _fly sudossh'
 alias fsutoz=' _fly_destshell=zsh _fly sudossh'
 FLY_EOF
 
-cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/login_rc.
+cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/init_fly
 cat - <<EOF >"$_fly_lib/.login"
 FLY_HOME="${1:-$FLY_HOME}"
 FLY_TMPDIR="$FLY_TMPDIR"
 FLY_USER_RC="$FLY_USER_RC"
 FLY_ETC_RC="$FLY_ETC_RC"
 FLY_SHELL="$_fly_destshell"
+EOF
+FLY_EOF
+
+cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/login_rc.
+cat - <<EOF >"$_fly_lib/.login"
+FLY_HOME="$FLY_HOME"
+FLY_TMPDIR="$FLY_TMPDIR"
+FLY_USER_RC="$FLY_USER_RC"
+FLY_ETC_RC="$FLY_ETC_RC"
+FLY_SHELL="$FLY_SHELL"
 unset _fly_loaded
-. "${1:-$FLY_HOME}/.fly.d/fly" login
+. "\$FLY_HOME/.fly.d/fly" login
 FLY_USER_RC="true"
 FLY_ETC_RC="true"
 EOF
 FLY_EOF
 
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/login_rc.fish
-[ "$1" ] && set -- "$FLY_TMPDIR/.fly.(id -u)/$_fly_uuid"
 cat - <<EOF >"$FLY_HOME/.fly.d/.fly.lib/.login"
-set FLY_HOME ${1:-$FLY_HOME}
-set FLY_TMPDIR $FLY_TMPDIR
-set FLY_SHELL $_fly_destshell
+set FLY_HOME "$FLY_HOME"
+set FLY_TMPDIR "$FLY_TMPDIR"
+set FLY_SHELL "$FLY_SHELL"
 set -e _fly_loaded
 . "\$FLY_HOME/.fly.d/fly.fish" login
 EOF
@@ -317,7 +328,7 @@ case "$1" in
     ;;
     loginshell|install)
         shift
-        . "$_fly_lib/login_rc.$_fly_destshell"
+        . "$_fly_lib/init_fly"
         . "$_fly_lib/.loginshell" "$FLY_HOME" "$_fly_destshell"
     ;;
     source|activate)
@@ -408,7 +419,7 @@ function _fly_sudo
     [[ "$_fly_destshell" = *sh ]] || _fly_destshell="$FLY_SHELL"
     initshell="$_fly_destshell"
     [[ "$_fly_destshell" = fish ]] && initshell="bash"
-    . "$_fly_lib/login_rc.${_fly_destshell##*/}" "$_fly_tmpdir"
+    . "$_fly_lib/init_fly" "$_fly_tmpdir"
     \cd /
     _fly_pkg_warp "$user" |SHELL="$initshell" sudo -Hsu "$user"
     \cd "$OLDPWD"
@@ -469,7 +480,7 @@ function _fly_ssh
 {
     ! $_fly_ssh_ok && { _fly_ssh2 "$@"; return $?; } 
     typeset ssh_config cmd c i
-    . "$_fly_lib/login_rc.$_fly_destshell" "$_fly_tmpdir"
+    . "$_fly_lib/init_fly" "$_fly_tmpdir"
     cmd="$(_fly_pkg_warp)"
     [ ${#cmd} -gt 130000 ] && { _fly_ssh2 "$@"; return $?; }
     for i in "$@";do
@@ -491,7 +502,7 @@ _EOF_
 
 function _fly_ssh2
 {
-    . $_fly_lib/login_rc.$_fly_destshell "$_fly_tmpdir"
+    . $_fly_lib/init_fly "$_fly_tmpdir"
     _fly_package | ssh -o LogLevel=Error "$@" "$(_fly_xpretar) $(_fly_xpackage)" || return $?
     ssh "$@" -t '. '"$_fly_tmpdir"'/.fly.d/.fly.lib/.loginshell '"$_fly_tmpdir"' '"$_fly_destshell"''
 }
@@ -510,7 +521,7 @@ function _fly
         shell)
             shift
             [ "$1" ] && ! type "$1" >/dev/null 2>&1 && echo "Cannot find shell $1" >&2 && return 1
-            _fly_destshell="${1:-$FLY_SHELL}"; . "$_fly_lib/login_rc.$_fly_destshell" "$FLY_HOME"; . "$FLY_HOME/.fly.d/.fly.lib/.loginshell" "$FLY_HOME" "$_fly_destshell"
+            _fly_destshell="${1:-$FLY_SHELL}"; . "$_fly_lib/init_fly" "$FLY_HOME"; . "$FLY_HOME/.fly.d/.fly.lib/.loginshell" "$FLY_HOME" "$_fly_destshell"
         ;;
         ssh|to) 
             shift
