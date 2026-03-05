@@ -2,7 +2,7 @@
 ########## thefly #########
 # Author: Franck Jouvanceau
 ###########################
-# 
+#
 _fly_sourced=false
 [ "$BASH_VERSION" ] && [[ ${BASH_SOURCE[0]} != "$0" ]] && _fly_sourced=true
 [ "$ZSH_VERSION" ] && [[ $ZSH_EVAL_CONTEXT == *:file ]] && _fly_sourced=true
@@ -15,40 +15,86 @@ $_fly_sourced && _ret=return || _ret=exit
   exec /usr/bin/env bash $0 "$@"
 }
 : "${FLY_HOME:=$HOME}"
+: "${_fly_githubraw:=https://raw.githubusercontent.com}"
 
 type uuidgen >/dev/null 2>&1 || uuidgen() {
     tr -dc 'a-f0-9' </dev/urandom| head -c 16
 }
 
+function _fly_http_extract {
+    curl -s -o .fly.pak -L "$2" || exit 1
+    _fly_uuid=$(tar -xmzf .fly.pak .fly.d/.flyuuid -O)
+    [ ! "$_fly_uuid" ] && echo "not fly package" && return 1
+    [ "$1" = "remote" ] && FLY_HOME="/tmp/.fly.$USER/$_fly_uuid"
+    (umask 077;mkdir -p "$FLY_HOME")
+    type gtar >/dev/null 2>&1 && _fly_tar=gtar || _fly_tar=tar
+    $_fly_tar -C $FLY_HOME -xmzf .fly.pak || return 1
+    rm -f .fly.pak
+    return 0
+}
+
+function _fly_git_extract {
+    _fly_uuid=$(curl -L -s "$_fly_githubraw/$2/main/.flyuuid") || return 1
+    [ ! "$_fly_uuid" ] && echo "not fly repo" && exit 1
+    [ "$1" = "remote" ] && FLY_HOME="/tmp/.fly.$USER/$_fly_uuid"
+    [ -d "$FLY_HOME/.fly.d/.git" ] && return 0
+    (
+        umask 077
+        mkdir -p "$FLY_HOME"
+        \cd "$FLY_HOME" || exit 1
+        git clone --depth 1 --shallow-submodules --recurse-submodules --remote-submodules -j8 "https://github.com/$2" .fly.d -q 2>/dev/null || \
+        git clone --depth 1 --recursive "https://github.com/$2" .fly.d -q >/dev/null
+        mkdir -p "$FLY_HOME/.fly.d/.fly.lib"
+    )
+}
+
+function _fly_init
+{
+    (
+        umask 077
+        [ ! -d $FLY_HOME/.fly.d ] && { mkdir $FLY_HOME/.fly.d || exit 1; }
+        ! chmod 700 "$FLY_HOME/.fly.d" && echo "Not owner of $FLY_HOME/.fly.d. Abort" >&2 && return 1
+        \cd $FLY_HOME/.fly.d || exit 1
+        for f in .flyrc .bashrc .zshrc .kshrc .fishrc;do
+            [ -f $f ] || touch $f
+        done
+        [ -s ".flyuuid" ] || uuidgen >".flyuuid"
+        mkdir -p .fly.lib plugins plugins.d plugins.d/{00-pre,99-post}
+        [ -d .git ] || { git init;git -M main; git checkout -b main; printf '%s\n%s' fly .fly.lib >.gitignore; } >/dev/null 2>&1
+        cd .fly.lib
+        touch .login
+        for f in .bashrc .fishrc .zshrc;do
+            ln -s .login $f 2>/dev/null
+        done
+        for f in bash zsh ksh;do
+            ln -s login_rc. login_rc.$f 2>/dev/null
+        done        
+    )
+}
+
 case "$1" in
-    install)
+    install|remote)
         unset _fly_loaded
+        [ "$1" =  "remote" ] && {
+            (umask 077;mkdir -p "/tmp/.fly.$USER")
+            ! chmod 700 /tmp/.fly.$USER && echo "Not owner of /tmp/.fly.$USER. Abort" >&2 && return 1
+            \cd "/tmp/.fly.$USER" || $_ret 1
+        }
+        case "$2" in
+            http*://*) _fly_http_extract "$1" "$2" || $_ret 1; set -- loginshell;;
+            */*)       _fly_git_extract "$1" "$2" || $_ret 1; _fly_init; set -- loginshell;;
+            '')        _fly_init || $_ret 1; [ "$1" = install ] && set -- source || set -- loginshell;;
+        esac
     ;;
-    *)  echo "usage: thefly install"
+    *)  echo "usage: thefly [install|remote] [<url .fly.tgz>|<git owner/<repo>]"
         $_ret 1
     ;;
 esac
+unset -f _fly_init _fly_http_extract _fly_git_extract
 
 _fly_lib="$FLY_HOME/.fly.d/.fly.lib"
 (
     umask 077
-    [ ! -d $FLY_HOME/.fly.d ] && { mkdir $FLY_HOME/.fly.d || exit 1; }
-    cd $FLY_HOME/.fly.d 
-    for f in .bashrc .zshrc .kshrc .fishrc;do
-      [ -f $f ] || touch $f
-    done
-    mkdir -p .fly.lib plugins plugins.d
-    cd .fly.lib
-    for f in .bashrc .fishrc .zshrc;do
-      ln -s .login $f 2>/dev/null
-    done
-    for f in bash zsh ksh;do
-      ln -s login_rc. login_rc.$f 2>/dev/null
-    done
-)
-
-(
-umask 077
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/.fshell
 : "${FLY_SHELL:=$_fly_destshell}"
 : "${FLY_SHELL:=$SHELL}"
