@@ -64,13 +64,13 @@ function _fly_init
         mkdir -p .fly.lib plugins plugins.d plugins.d/{00-pre,99-post}
         [ -d .git ] || { git init;git -M main; git checkout -b main; printf '%s\n%s' fly .fly.lib >.gitignore; } >/dev/null 2>&1
         cd .fly.lib
-        touch .login
         for f in .bashrc .fishrc .zshrc;do
             ln -s .login $f 2>/dev/null
         done
         for f in bash zsh ksh;do
             ln -s login_rc. login_rc.$f 2>/dev/null
-        done        
+        done
+        touch .login
     )
 }
 
