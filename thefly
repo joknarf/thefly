@@ -487,7 +487,7 @@ function _fly_ssh
     typeset ssh_config cmd c i
     . "$_fly_lib/init_fly" "$_fly_tmpdir"
     #cmd="$(_fly_pkg_warp)"
-    cmd="sh <<<'$(_fly_pkg_warp)'"
+    cmd="exec sh <<<'$(_fly_pkg_warp)'"
     [ ${#cmd} -gt 130000 ] && { _fly_ssh2 "$@"; return $?; }
     for i in "$@";do
        [ "$i" = -F ] && shift && c=1 && continue
