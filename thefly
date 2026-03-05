@@ -443,7 +443,7 @@ function _fly_package_zfx
     typeset b64opt
     base64 -w0 <<<ok >/dev/null 2>&1 && b64opt='-w0'
     cat - <<EOF
-$(_fly_xpretar) base64 -d <<<'$(_fly_package |base64 $b64opt)' |$(_fly_xpackage)
+$(_fly_xpretar) base64 -d <<<"$(_fly_package |base64 $b64opt)" |$(_fly_xpackage)
 EOF
 
 }
@@ -487,7 +487,7 @@ function _fly_ssh
     typeset ssh_config cmd c i
     . "$_fly_lib/init_fly" "$_fly_tmpdir"
     #cmd="$(_fly_pkg_warp)"
-    cmd="$(_fly_pkg_b64)| sh"
+    cmd="sh <<<'$(_fly_pkg_warp)'"
     [ ${#cmd} -gt 130000 ] && { _fly_ssh2 "$@"; return $?; }
     for i in "$@";do
        [ "$i" = -F ] && shift && c=1 && continue
@@ -496,7 +496,7 @@ function _fly_ssh
        set -- "$@" "$i"
     done
     [ ! "$ssh_config" ] && [ -f ~/.ssh/config ] && ssh_config="Include $HOME/.ssh/config"
-    #cmd="${cmd//$'\n'/;}"
+    cmd="${cmd//$'\n'/;}"
     #cmd="sh <(base64 -d <<<'$(gzip -c <<<"$cmd"|base64 -w0)'|gzip -dc)"
     cat - <<_EOF_ >"$FLY_HOME/.fly_ssh"
 RequestTTY yes
