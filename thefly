@@ -468,7 +468,7 @@ EOF
 function _fly_pkg_sh
 {
   cat - <<EOF
-base64 -d <<<'_fly_pkg_warp| gzip -c |base64 $b64opt)' |gzip -dc
+base64 -d <<<'$(_fly_pkg_warp| gzip -c |base64 $b64opt)' |gzip -dc
 EOF
 }
 
