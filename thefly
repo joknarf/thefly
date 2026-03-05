@@ -449,7 +449,7 @@ function _fly_pkg_warp
 {
     cat - <<EOF
 $(_fly_package_zfx)
-. "\$FLY_HOME/.fly.d/.fly.lib/.loginshell" "\$FLY_HOME" $_fly_destshell
+. "\$FLY_HOME/.fly.d/.fly.lib/.loginshell" "\$FLY_HOME"
 EOF
 }
 
