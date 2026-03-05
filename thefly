@@ -197,15 +197,17 @@ set -l _fly_shell (string replace -r '^.*/' '' $FLY_SHELL)
 set -e argv
 test -r "$FLY_HOME/.fly.d/.$_fly_shell"rc && source "$FLY_HOME/.fly.d/.$_fly_shell"rc
 if test -n "$_fly_p"
-    for _fly_plugin in $FLY_HOME/.fly.d/plugins$_fly_p/*.plugin.$_fly_shell
-        test -r "$_fly_plugin"; and source "$_fly_plugin"
+    for _fly_plugin in $FLY_HOME/.fly.d/plugins$_fly_p/conf.d/*.$_fly_shell
+        set _fly_pdir (dirname (dirname $_fly_plugin))
+        test -r "$_fly_plugin"; and set -a fish_function_path "$_fly_pdir/functions"; and set -a fish_complete_path "$fly_pdir/comletions"; and source "$_fly_plugin"
     end
 else
-    for _fly_plugin in $FLY_HOME/.fly.d/plugins.d/*/*.plugin.$_fly_shell
-        test -r "$_fly_plugin"; and source "$_fly_plugin"
+    for _fly_plugin in $FLY_HOME/.fly.d/plugins.d/*/conf.d/*.$_fly_shell
+        set _fly_pdir (dirname (dirname $_fly_plugin))
+        test -r "$_fly_plugin"; and set -a fish_function_path "$_fly_pdir/functions"; and set -a fish_complete_path "$fly_pdir/comletions"; and source "$_fly_plugin"
     end
 end
-set -e _fly_p _fly_plugin _fly_shell
+set -e _fly_p _fly_plugin _fly_shell _fly_pdir
 FLY_EOF
 
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/aliases
@@ -386,6 +388,7 @@ case "$1" in
     ;;
     source|activate)
         shift
+        [ "$_fly_fish" ] && return
         . "$_fly_lib/.source_plugins" "$1"
     ;;
     add)
@@ -396,7 +399,8 @@ case "$1" in
         (\cd "$FLY_HOME/.fly.d" && git config -f ".gitmodules submodule.plugins/${1##*/}.shallow" true >/dev/null 2>/dev/null)
         ln -s ../plugins/${1##*/} $FLY_HOME/.fly.d/plugins.d/50-${1##*/}
         set --
-        . "$_fly_lib/.source_plugins" "${1#*/}"
+        [ "$_fly_fish" ] || . "$_fly_lib/.source_plugins" "${1#*/}"
+        :
     ;;
     del)
         shift
@@ -415,7 +419,7 @@ case "$1" in
         shift
         [ ! "$1" ] && echo "usage: fly update <plugin>" >&2 && return 1 
         (\cd "$FLY_HOME/.fly.d/plugins/${1#*/}" && git pull origin "$(git rev-parse --abbrev-ref HEAD)")
-        . "$_fly_lib/.source_plugins" "${1#*/}"
+        [ "$_fly_fish" ] || . "$_fly_lib/.source_plugins" "${1#*/}"
     ;;
     updateall)
         shift
@@ -429,7 +433,7 @@ case "$1" in
             git submodule foreach git pull 2>/dev/null
         })
         _fly_zsh_glob reset
-        . "$_fly_lib/.source_plugins"
+        [ "$_fly_fish" ] || . "$_fly_lib/.source_plugins"
     ;;
     upgrade)
         shift
@@ -568,6 +572,7 @@ function _fly
         shell)
             shift
             [ "$1" ] && ! type "$1" >/dev/null 2>&1 && echo "Cannot find shell $1" >&2 && return 1
+            unset _fly_fish
             _fly_destshell="${1:-$FLY_SHELL}"; . "$_fly_lib/init_fly" "$FLY_HOME"; . "$FLY_HOME/.fly.d/.fly.lib/.loginshell" "$FLY_HOME"
         ;;
         ssh|to) 
@@ -622,6 +627,7 @@ not set -q FLY_TMPDIR && set -x FLY_TMPDIR /tmp
 not set -q _fly_uuid && set -x _fly_uuid (cat "$FLY_HOME/.fly.d/.flyuuid" 2>/dev/null; or uuidgen)
 set -x _fly_lib $FLY_HOME/.fly.d/.fly.lib
 set -x FLY_SHELL fish 
+set -x _fly_fish true
 
 switch "$argv[1]"
     case source
