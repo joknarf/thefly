@@ -459,11 +459,16 @@ EOF
 
 function _fly_pkg_warp
 {
-    # Old sudo keeps USER=root when sudo from root
-    [ "$1" ] && echo "USER=$1"
     cat - <<EOF
 $(_fly_package_zfx)
 . "\$FLY_HOME/.fly.d/.fly.lib/.loginshell" "\$FLY_HOME" "$_fly_destshell"
+EOF
+}
+
+function _fly_pkg_sh
+{
+  cat - <<EOF
+base64 -d <<<'_fly_pkg_warp| gzip -c |base64 $b64opt)' |gzip -dc
 EOF
 }
 
@@ -479,7 +484,8 @@ function _fly_ssh
     ! $_fly_ssh_ok && { _fly_ssh2 "$@"; return $?; } 
     typeset ssh_config cmd c i
     . "$_fly_lib/init_fly" "$_fly_tmpdir"
-    cmd="$(_fly_pkg_warp)"
+    #cmd="$(_fly_pkg_warp)"
+    cmd="$(_fly_pkg_sh) | sh"
     [ ${#cmd} -gt 130000 ] && { _fly_ssh2 "$@"; return $?; }
     for i in "$@";do
        [ "$i" = -F ] && shift && c=1 && continue
@@ -489,7 +495,7 @@ function _fly_ssh
     done
     [ ! "$ssh_config" ] && [ -f ~/.ssh/config ] && ssh_config="Include $HOME/.ssh/config"
     #cmd="${cmd//$'\n'/;}"
-    cmd="sh <(base64 -d <<<'$(gzip -c <<<"$cmd"|base64 -w0)'|gzip -dc)"
+    #cmd="sh <(base64 -d <<<'$(gzip -c <<<"$cmd"|base64 -w0)'|gzip -dc)"
     cat - <<_EOF_ >"$FLY_HOME/.fly_ssh"
 RequestTTY yes
 RemoteCommand $cmd
