@@ -574,19 +574,6 @@ not set -q _fly_uuid && set -x _fly_uuid (cat "$FLY_HOME/.fly.d/.flyuuid" 2>/dev
 set -x _fly_lib $FLY_HOME/.fly.d/.fly.lib
 set -x FLY_SHELL fish 
 
-#function _fly
-#    set _fly_tmpdir "$FLY_TMPDIR/.fly.(id -u)/$_fly_uuid"
-#    not set -q _fly_destshell && set _fly_destshell "$FLY_SHELL"
-#    switch "$argv[1]"
-#        case sudo as
-#            bash -c ". $FLY_HOME/.fly.d/fly;_fly_destshell=$_fly_destshell _fly sudo $argv[2]"            
-#        case ssh to
-#            bash -c ". $FLY_HOME/.fly.d/fly;_fly_destshell=$_fly_destshell _fly ssh $argv[2..-1]"
-#        case *
-#            echo "Unknown command: $argv[1]" >&2
-#    end
-#end
-
 switch "$argv[1]"
     case source
         source $_fly_lib/.source_plugins.fish
