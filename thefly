@@ -213,7 +213,7 @@ EOF
 FLY_EOF
 
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/login_rc.
-cat - <<EOF >"$_fly_lib/.login"
+cat - <<EOF >.login
 FLY_HOME="$FLY_HOME"
 FLY_TMPDIR="$FLY_TMPDIR"
 FLY_USER_RC="$FLY_USER_RC"
@@ -227,7 +227,7 @@ EOF
 FLY_EOF
 
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/login_rc.fish
-cat - <<EOF >"$FLY_HOME/.fly.d/.fly.lib/.login"
+cat - <<EOF >.login
 set FLY_HOME "$FLY_HOME"
 set FLY_TMPDIR "$FLY_TMPDIR"
 set FLY_SHELL "$FLY_SHELL"
