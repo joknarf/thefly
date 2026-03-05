@@ -630,7 +630,7 @@ set -x FLY_SHELL fish
 set -x _fly_fish true
 
 switch "$argv[1]"
-    case source
+    case source activate
         source $_fly_lib/.source_plugins.fish
     case login
         . $_fly_lib/.login.fish
@@ -644,6 +644,8 @@ end
 function _fly
    FLY_HOME="$FLY_HOME" bash -c 'args=("$@");. $FLY_HOME/.fly.d/fly;_fly "${args[@]}"' _ $argv
 end
+
+alias flyfish='. $FLY_HOME/.fly.d/fly.fish'
 
 . $_fly_lib/aliases
 FLY_EOF
