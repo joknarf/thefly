@@ -299,7 +299,7 @@ _fly_loaded=1
 : "${FLY_USER_RC:=true}"
 : "${FLY_ETC_RC:=true}"
 : "${FLY_TMPDIR:=/tmp}"
-: "${FLY_TARZ:=z}"
+: "${FLY_TARZ:=-z}"
 : "${_fly_uuid:=$(cat "$FLY_HOME/.fly.d/.flyuuid" 2>/dev/null || uuidgen)}"
 type gtar >/dev/null 2>&1 && _fly_tar=gtar || _fly_tar=tar
 [[ "$($_fly_tar --version 2>/dev/null)" = *busybox* ]] && {
@@ -434,7 +434,7 @@ esac
 function _fly_package
 {
     [ "$FLY_RC" ] && [ -r "$FLY_RC" ] && cp "$FLY_RC" "$FLY_HOME/.fly.d/.fly.lib"
-    $_fly_tar -c${_fly_tarz}f - -C "$FLY_HOME" "${_fly_taropts[@]}" --exclude=README.md --exclude='plugins/*/.*' --exclude '*/*/tests' .fly.d
+    $_fly_tar -cf - -C "$FLY_HOME" "$_fly_tarz" "${_fly_taropts[@]}" --exclude=README.md --exclude='plugins/*/.*' --exclude '*/*/tests' .fly.d
 }
 
 function _fly_xpretar
@@ -447,7 +447,7 @@ function _fly_xpretar
 
 function _fly_xpackage
 {   
-    printf '$tar -xm%sf - -C "$FLY_HOME" --no-same-owner' "$_fly_tarz"
+    printf '$tar -xmf - -C "$FLY_HOME" %s --no-same-owner' "$_fly_tarz"
 }
 
 function _fly_sudo
