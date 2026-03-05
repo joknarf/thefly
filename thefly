@@ -498,15 +498,15 @@ _EOF_
 function _fly_ssh2
 {
     . $_fly_lib/init_fly "$_fly_tmpdir"
-    _fly_package | ssh -o LogLevel=Error "$@" "$(_fly_xpretar) $(_fly_xpackage)" || return $?
-    ssh "$@" -t '. '"$_fly_tmpdir"'/.fly.d/.fly.lib/.loginshell '"$_fly_tmpdir"' '"$_fly_destshell"''
+    _fly_package | ssh -o LogLevel=Error "$@" "sh -c '$(_fly_xpretar) $(_fly_xpackage)'" || return $?
+    ssh "$@" -t "exec sh -c '. $_fly_tmpdir/.fly.d/.fly.lib/.loginshell $_fly_tmpdir $_fly_destshell'"
 }
 
 
 function _fly
 {
     typeset plugin submodule
-    _fly_tmpdir="$FLY_TMPDIR/.fly.\${UUID:-\$(id -u)}/$_fly_uuid"
+    _fly_tmpdir="$FLY_TMPDIR/.fly.\`id -u\`/$_fly_uuid"
     case "$1" in
         list)
             _fly_zsh_glob fix
