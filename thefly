@@ -160,13 +160,13 @@ FLY_HOME="${1:-$FLY_HOME}"
 . $FLY_HOME/.fly.d/.fly.lib/.fshell
 [ ! -t 0 ] && [ -t 1 ] && exec <&1
 fly="$FLY_HOME/.fly.d/fly"
-[ "${FLY_SHELL%fish}" = "$FLY_SHELL" ] || fly="$fly.fish"
 echo ". $fly login" >.login
 case "$FLY_SHELL" in
     *bash) PS1="" exec $FLY_SHELL --rcfile ".bashrc";;
     *zsh)  ZDOTDIR=$FLY_HOME/.fly.d/.fly.lib exec $FLY_SHELL -d;;
     *ksh)  ENV=$FLY_HOME/.fly.d/.fly.lib/.login exec $FLY_SHELL;;
-    *fish) exec $FLY_SHELL -C ". .fishrc";;
+    *fish) echo ". $fly.fish login" >.login
+           exec $FLY_SHELL -C ". .fishrc";;
 esac
 FLY_EOF
 
