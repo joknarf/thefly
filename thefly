@@ -64,7 +64,7 @@ function _fly_init
         mkdir -p .fly.lib plugins plugins.d plugins.d/{00-pre,99-post}
         [ -d .git ] || { git init;git -M main; git checkout -b main; printf '%s\n%s' fly .fly.lib >.gitignore; } >/dev/null 2>&1
         cd .fly.lib
-        for f in .bashrc .fishrc .zshrc;do
+        for f in .bashrc .zshrc;do
             ln -s .login $f 2>/dev/null
         done
     )
@@ -94,6 +94,10 @@ unset -f _fly_init _fly_http_extract _fly_git_extract
 _fly_lib="$FLY_HOME/.fly.d/.fly.lib"
 (
     umask 077
+cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/.fishrc
+. "$FLY_HOME/.fly.d/fly.fish" login
+FLY_EOF
+
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/.fshell
 : "${FLY_SHELL:=$_fly_destshell}"
 : "${FLY_SHELL:=$SHELL}"
@@ -101,6 +105,10 @@ case "$FLY_SHELL" in
     *bash|*ksh|*zsh|*fish) return;;
     *) FLY_SHELL=bash;
 esac
+FLY_EOF
+
+cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/.login
+. "$FLY_HOME/.fly.d/fly" login
 FLY_EOF
 
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/.login.bash
@@ -159,14 +167,11 @@ FLY_HOME="${1:-$FLY_HOME}"
 . ./.teleport
 . $FLY_HOME/.fly.d/.fly.lib/.fshell
 [ ! -t 0 ] && [ -t 1 ] && exec <&1
-fly="$FLY_HOME/.fly.d/fly"
-echo ". $fly login" >.login
 case "$FLY_SHELL" in
     *bash) PS1="" exec $FLY_SHELL --rcfile ".bashrc";;
     *zsh)  ZDOTDIR=$FLY_HOME/.fly.d/.fly.lib exec $FLY_SHELL -d;;
     *ksh)  ENV=$FLY_HOME/.fly.d/.fly.lib/.login exec $FLY_SHELL;;
-    *fish) echo ". $fly.fish login" >.login
-           exec $FLY_SHELL -C ". .fishrc";;
+    *fish) exec $FLY_SHELL -C ". .fishrc";;
 esac
 FLY_EOF
 
