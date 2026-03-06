@@ -103,7 +103,7 @@ esac
 FLY_EOF
 
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/.login
-. "$FLY_HOME/.fly.d/fly" login
+. "$FLY_HOME/.fly.d/fly${FLY_SHEL##*/}" login
 FLY_EOF
 
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/.login.bash
@@ -582,7 +582,7 @@ unset -f _fly_usage
 #set --
 FLY_EOF
 
-cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/fly.fish
+cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/flyfish
 if test (count $argv) -gt 0 -a "$argv[1]" != source
     set -e _fly_loaded
 end
@@ -619,7 +619,7 @@ function _fly
    FLY_HOME="$FLY_HOME" bash -c 'args=("$@");. $FLY_HOME/.fly.d/fly;_fly "${args[@]}"' _ $argv
 end
 
-alias flyfish='. $FLY_HOME/.fly.d/fly.fish'
+alias flyfish='. $FLY_HOME/.fly.d/flyfish'
 
 . $_fly_lib/aliases
 FLY_EOF
