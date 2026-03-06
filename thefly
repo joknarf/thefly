@@ -68,6 +68,7 @@ function _fly_init
             ln -s .login $f 2>/dev/null
         done
     )
+    return 0
 }
 
 case "$1" in
@@ -100,10 +101,6 @@ case "$FLY_SHELL" in
     *bash|*ksh|*zsh|*fish) return;;
     *) FLY_SHELL=bash;
 esac
-FLY_EOF
-
-cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/.login
-. "$FLY_HOME/.fly.d/fly${FLY_SHEL##*/}" login
 FLY_EOF
 
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/.login.bash
@@ -161,6 +158,9 @@ FLY_HOME="${1:-$FLY_HOME}"
 . ./.teleport
 . $FLY_HOME/.fly.d/.fly.lib/.fshell
 [ ! -t 0 ] && [ -t 1 ] && exec <&1
+fly="$FLY_HOME/.fly.d/fly"
+[ "${FLY_SHELL%fish}" = "$FLY_SHELL" ] || fly="$fly.fish"
+echo ". $fly login" >.login
 case "$FLY_SHELL" in
     *bash) PS1="" exec $FLY_SHELL --rcfile ".bashrc";;
     *zsh)  ZDOTDIR=$FLY_HOME/.fly.d/.fly.lib exec $FLY_SHELL -d;;
@@ -582,7 +582,7 @@ unset -f _fly_usage
 #set --
 FLY_EOF
 
-cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/flyfish
+cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/fly.fish
 if test (count $argv) -gt 0 -a "$argv[1]" != source
     set -e _fly_loaded
 end
@@ -619,7 +619,7 @@ function _fly
    FLY_HOME="$FLY_HOME" bash -c 'args=("$@");. $FLY_HOME/.fly.d/fly;_fly "${args[@]}"' _ $argv
 end
 
-alias flyfish='. $FLY_HOME/.fly.d/flyfish'
+alias flyfish='. $FLY_HOME/.fly.d/fly.fish'
 
 . $_fly_lib/aliases
 FLY_EOF
