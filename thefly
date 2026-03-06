@@ -465,7 +465,7 @@ function _fly_sudo
     typeset user="${1:-root}"
     . "$_fly_lib/init_fly" "$_fly_tmpdir"
     \cd /
-    _fly_pkg_warp |SHELL="/bin/sh" sudo -Hsu "$user"
+    _fly_pkg_warp| sudo -Hu "$user" '/bin/sh'
     \cd "$OLDPWD"
     unset _fly_destshell
 }
