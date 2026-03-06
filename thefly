@@ -153,6 +153,7 @@ done
 FLY_EOF
 
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/.loginshell
+# /!\ sourced by /bin/sh
 FLY_HOME="${1:-$FLY_HOME}"
 \cd "$FLY_HOME/.fly.d/.fly.lib"
 . ./.teleport
