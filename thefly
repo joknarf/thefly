@@ -102,6 +102,10 @@ case "$FLY_SHELL" in
 esac
 FLY_EOF
 
+cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/.login
+. "$FLY_HOME/.fly.d/fly" login
+FLY_EOF
+
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/.login.bash
 \cd /;\cd
 alias typeset="typeset +r"
