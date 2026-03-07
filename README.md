@@ -104,7 +104,7 @@ clones `https://github.com/joknarf/redo` in `~/.fly.d/plugins/redo` and sources 
 
 (all plugins in `~/fly.d/plugins/*/*.plugin.<shell>` will be sourced at login with `fly source` in your shell rc file)  
 
-for fish plugins, the sourced files are in `~/.fly.d/plugins/*/conf.d/*.fish`, (`thefly` will add `functions/completions` directories to fish if present).
+for fish plugins, the sourced files are in `~/.fly.d/plugins/*/conf.d/*.fish`, (`thefly` will add `functions/completions` directories to fish if present). Need to execute `flyfish source` after adding plugin to activate.
 
 * update plugin
 ```
