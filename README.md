@@ -102,7 +102,9 @@ fly add joknarf/redo
 ```
 clones `https://github.com/joknarf/redo` in `~/.fly.d/plugins/redo` and sources the `plugin.<shell>`  
 
-(all plugins in `~/fly.d/plugins/*/*.plugin.<shell>` will be sourced at login with `fly source` in your shell rc file)
+(all plugins in `~/fly.d/plugins/*/*.plugin.<shell>` will be sourced at login with `fly source` in your shell rc file)  
+
+for fish plugins, the sourced files are in `~/.fly.d/plugins/*/conf.d/*.fish`, (`thefly` will add `functions/completions` directories to fish if present).
 
 * update plugin
 ```
