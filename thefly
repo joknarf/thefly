@@ -632,7 +632,7 @@ function _fly
    FLY_HOME="$FLY_HOME" bash -c 'args=("$@");. $FLY_HOME/.fly.d/fly;_fly "${args[@]}"' _ $argv
 end
 
-alias flyfish='. $FLY_HOME/.fly.d/fly.fish'
+alias fly.fish='. $FLY_HOME/.fly.d/fly.fish'
 
 . $_fly_lib/aliases
 FLY_EOF
