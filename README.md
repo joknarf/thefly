@@ -1,6 +1,6 @@
 [![Joknarf Tools](https://img.shields.io/badge/Joknarf%20Tools-Visit-darkgreen?logo=github)](https://joknarf.github.io/joknarf-tools)
 [![Build and Release Packages](https://github.com/joknarf/thefly/actions/workflows/release.yml/badge.svg)](https://github.com/joknarf/thefly/actions/workflows/release.yml)
-[![Shell](https://img.shields.io/badge/shell-bash%20|%20zsh%20|%20ksh%20-blue.svg)]()
+[![Shell](https://img.shields.io/badge/shell-bash%20|%20zsh%20|%20ksh%20|%20fish%20-blue.svg)]()
 [![OS](https://img.shields.io/badge/OS-Linux%20|%20macOS%20|%20SunOS%20...-blue.svg)]()
 [![Licence](https://img.shields.io/badge/licence-MIT-blue.svg)](https://shields.io/)
 [![Packages](https://img.shields.io/badge/Packages-%20rpm%20|%20deb%20|%20pkg%20|%20apk%20|%20brew%20-darkgreen.svg)](https://github.com/joknarf/thefly/releases/latest)
@@ -10,7 +10,7 @@
 <img align="left" width="150" alt="flyn2" src="https://github.com/user-attachments/assets/06efbf60-3231-4bf9-82f6-860648d9bf68" />
 
 <br/>
-bash/zsh/ksh plugin/dotfiles manager and teleporter  
+bash/zsh/ksh/fish plugin/dotfiles manager and teleporter  
 
 Your shell env and plugins are available everywhere (hosts/users)  
 
@@ -21,13 +21,14 @@ bzzz bzzz !
 What's the point to have a fine tuned local shell environment if you lose it as soon as you connect to another server / sudo to another user ?
 
 ## Demo
+
 ![thefly_bzz](https://github.com/user-attachments/assets/1617632b-db08-40d4-a845-841e8ee5c7c6)
 
 ## features
 
 Keep your full shell environment anywhere you go.
 
-* supports bash / zsh / ksh (on Linux / MacOS / ...)
+* supports bash / zsh / ksh / fish (on Linux / MacOS / ...)
 * multi-shell plugin manager to install / update / uninstall shell plugins
 * multi-shell dotfiles manager
 * teleport dotfiles and plugins through sudo (`flyas`)
@@ -36,6 +37,7 @@ Keep your full shell environment anywhere you go.
 * create a single pak env file including dotfiles and plugins to be used anywhere (`flypack >pak`, `. ./pak`)
   
 ## Install
+
 ```
 . <(curl https://raw.githubusercontent.com/joknarf/thefly/main/thefly) install
 ```
@@ -44,8 +46,9 @@ or
 git clone https://github.com/joknarf/thefly
 . thefly/thefly install
 ```
-Creates ~/.fly.d/fly and activate thefly manager for current user
+Creates `~/.fly.d/fly` and activate thefly manager for current user
 
+under `fish` do not source, execute `thefly install` then `. ~/.fly.d/fly.fish activate`
 
 or use your prefered method according to your OS:
 
@@ -81,6 +84,10 @@ thefly install
 Add in your rc file (.profile .bash_profile .bashrc .zshrc):
 ```
 . ~/.fly.d/fly source
+```
+for `fish` add in your `.config/fish/config.fish`:
+```
+. ~/.fly.d/fly.fish source
 ```
 Get some help
 ```
@@ -156,17 +163,21 @@ or `fbash` - `fzsh` - `fksh`
  
 ## Customize env
 
-You can use `FLY_TMPDIR` variable to set the teleportation destination directory instead of default `/tmp` (/tmp could be mounted as noexec, or being full...):
+* You can use `FLY_TMPDIR` variable to set the teleportation destination directory instead of default `/tmp` (/tmp could be mounted as noexec, or being full...):
 
 ```
-TMPDIR=/var/tmp
+FLY_TMPDIR=/var/tmp
 flyto myserver
 flyas myuser
 ```` 
 
-Putting your env in `~/.fly.d/.flyrc` will be automatically sourced (must be compatible with different shells)
+* `FLY_TARZ` variable can be set to customize tar compression used for teleportation (default `-z` uses gzip, recommended `-J` to use xz is your servers have xz installed).
 
-Putting additional shell specific env in `~/.fly.d/.<shellname>rc` (.bashrc/.kshrc/.zshrc), will be automatically sourced for shell.
+`thefly` is using a ssh embedded RemoteCommand containing compressed tar/base64 of your `.fly.d` if size under 128K (maximum command size), if size exceeds 128K, thefly will need to connect twice (once to transfer fly package, then spawn shell)
+
+* Putting your env in `~/.fly.d/.flyrc` will be automatically sourced (must be compatible with different shells, using fish won't source `.flyrc`)
+
+* Putting additional shell specific env in `~/.fly.d/.<shellname>rc` (.bashrc/.kshrc/.zshrc), will be automatically sourced for shell.
 
 anything in `~/.fly.d` will be available through ssh/sudo (flyto/flyas) in `$FLY_HOME/.fly.d`
 
