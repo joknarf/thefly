@@ -639,3 +639,4 @@ FLY_EOF
 
 )
 $_fly_sourced && . $FLY_HOME/.fly.d/fly activate
+:
