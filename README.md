@@ -159,10 +159,14 @@ or `fbash` - `fzsh` - `fksh`
 You can use `FLY_TMPDIR` variable to set the teleportation destination directory instead of default `/tmp` (/tmp could be mounted as noexec, or being full...):
 
 ```
-TMPDIR=/var/tmp
+FLY_TMPDIR=/var/tmp
 flyto myserver
 flyas myuser
 ```` 
+
+`FLY_TARZ` variable can be set to customize tar compression used for teleportation (default -z uses gzip, recommended -J to use xz is your servers have xz installed).
+
+`thefly` is using a ssh embedded RemoteCommand containing compressed tar/base64 of your `.fly.d` if size under 128K (maximum command size), if size exceeds 128K, thefly will need to connect twice (once to transfer fly package, then spawn shell)
 
 Putting your env in `~/.fly.d/.flyrc` will be automatically sourced (must be compatible with different shells)
 
