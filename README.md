@@ -46,8 +46,9 @@ or
 git clone https://github.com/joknarf/thefly
 . thefly/thefly install
 ```
-Creates ~/.fly.d/fly and activate thefly manager for current user
-(if under `fish` do not source, execute `thefly install`
+under `fish` do not source, execute `thefly install`
+
+Creates `~/.fly.d/fly` and activate thefly manager for current user
 
 or use your prefered method according to your OS:
 
