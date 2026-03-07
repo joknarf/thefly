@@ -209,9 +209,11 @@ flypack >fly.pak
 ```
 Then use your fly.pak anywhere :
 
-`. ./fly.pak` : to activate your environment (in `/tmp/.fly.$USER`)
+`. ./fly.pak` : to activate your environment (in `/tmp/.fly.$UID`)
 
 `. ./fly.pak install` : to extract in ~/.fly.d and activate
+
+under `fish` shell, do not source as not fish code, you can do `sh fly.pak [install]` then source the `fly.fish`
 
 To activate from url:
 ```
