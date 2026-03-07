@@ -163,7 +163,7 @@ or `fbash` - `fzsh` - `fksh`
  
 ## Customize env
 
-You can use `FLY_TMPDIR` variable to set the teleportation destination directory instead of default `/tmp` (/tmp could be mounted as noexec, or being full...):
+* You can use `FLY_TMPDIR` variable to set the teleportation destination directory instead of default `/tmp` (/tmp could be mounted as noexec, or being full...):
 
 ```
 FLY_TMPDIR=/var/tmp
@@ -171,13 +171,13 @@ flyto myserver
 flyas myuser
 ```` 
 
-`FLY_TARZ` variable can be set to customize tar compression used for teleportation (default -z uses gzip, recommended -J to use xz is your servers have xz installed).
+* `FLY_TARZ` variable can be set to customize tar compression used for teleportation (default -z uses gzip, recommended -J to use xz is your servers have xz installed).
 
 `thefly` is using a ssh embedded RemoteCommand containing compressed tar/base64 of your `.fly.d` if size under 128K (maximum command size), if size exceeds 128K, thefly will need to connect twice (once to transfer fly package, then spawn shell)
 
-Putting your env in `~/.fly.d/.flyrc` will be automatically sourced (must be compatible with different shells, using fish won't source `.flyrc`)
+* Putting your env in `~/.fly.d/.flyrc` will be automatically sourced (must be compatible with different shells, using fish won't source `.flyrc`)
 
-Putting additional shell specific env in `~/.fly.d/.<shellname>rc` (.bashrc/.kshrc/.zshrc), will be automatically sourced for shell.
+* Putting additional shell specific env in `~/.fly.d/.<shellname>rc` (.bashrc/.kshrc/.zshrc), will be automatically sourced for shell.
 
 anything in `~/.fly.d` will be available through ssh/sudo (flyto/flyas) in `$FLY_HOME/.fly.d`
 
