@@ -29,6 +29,7 @@ What's the point to have a fine tuned local shell environment if you lose it as 
 Keep your full shell environment anywhere you go.
 
 * supports bash / zsh / ksh / fish (on Linux / MacOS / ...)
+  * fish needs a bash installed on hosts (teleport code relies on POSIX+)
 * multi-shell plugin manager to install / update / uninstall shell plugins
 * multi-shell dotfiles manager
 * teleport dotfiles and plugins through sudo (`flyas`)
