@@ -67,6 +67,7 @@ function _fly_init
         for f in .bashrc .zshrc;do
             ln -s .login $f 2>/dev/null
         done
+        touch .teleport
     )
     return 0
 }
