@@ -299,7 +299,6 @@ _fly_lib="$FLY_HOME/.fly.d/.fly.lib"
 . "$_fly_lib/.fshell"
 alias fly=". $FLY_HOME/.fly.d/fly"
 . "$_fly_lib/aliases"
-unset _fly_destshell
 
 type gtar >/dev/null 2>&1 && _fly_tar=gtar || _fly_tar=tar
 [[ "$($_fly_tar --version 2>/dev/null)" = *busybox* ]] && {
@@ -365,6 +364,7 @@ case "$1" in
         shift 
         . "$_fly_lib/.login.${FLY_SHELL##*/}"
         . "$_fly_lib/.source_plugins"
+        unset _fly_destshell
     ;;
     loginshell|install)
         shift
