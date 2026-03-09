@@ -34,6 +34,7 @@ Keep your full shell environment anywhere you go.
 * multi-shell dotfiles manager
 * teleport dotfiles and plugins through sudo (`flyas`)
 * teleport dotfiles and plugins through ssh (`flyto`)
+* no configuration modification on target user/host when teleporting, resides on `/tmp`
 * force specific destination shell when sudo or ssh (not using target user shell)
 * create a single pak env file including dotfiles and plugins to be used anywhere (`flypack >pak`, `. ./pak`)
   
