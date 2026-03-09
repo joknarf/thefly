@@ -165,7 +165,7 @@ cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/.loginshell
 FLY_HOME="${1:-$FLY_HOME}"
 \cd "$FLY_HOME/.fly.d/.fly.lib"
 . ./.teleport
-. $FLY_HOME/.fly.d/.fly.lib/.fshell
+. ./.fshell
 [ ! -t 0 ] && [ -t 1 ] && exec <&1
 case "$FLY_SHELL" in
     *bash) PS1="" exec $FLY_SHELL --rcfile ".bashrc";;
