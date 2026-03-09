@@ -102,6 +102,7 @@ FLY_EOF
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/.fshell
 : "${FLY_SHELL:=$_fly_destshell}"
 [ "$FLY_SHELL" ] || case "$BASH_VERSION$ZSH_VERSION$KSH_VERSION" in
+    "");;
     "$BASH_VERSION") FLY_SHELL="bash";;
     "$ZSH_VERSION") FLY_SHELL="zsh";;
     "$KSH_VERSION") FLY_SHELL="ksh";;
@@ -598,6 +599,7 @@ _fly_ssh_ok
 
 
 #unset _fly_destshell
+typeset +x FLY_SHELL
 unset -f _fly_usage
 #set --
 FLY_EOF
