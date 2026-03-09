@@ -432,7 +432,6 @@ esac
 function _fly_package
 {
     [ "$FLY_RC" ] && [ -r "$FLY_RC" ] && cp "$FLY_RC" "$_fly_lib"
-    > $_fly_lib/.teleport
     $_fly_tar -cf - -C "$FLY_HOME" "$_fly_tarz" "${_fly_taropts[@]}" --exclude=README.md --exclude='plugins/*/.*' --exclude '*/*/tests' .fly.d
 }
 
@@ -583,6 +582,7 @@ function _fly
         ;;
         pack)
             shift
+            >"$_fly_lib/.teleport"
             _fly_pack
         ;;
         *) echo "unknown option, use 'fly help'";return 1;;
