@@ -100,7 +100,7 @@ cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/.fishrc
 FLY_EOF
 
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/.fshell
-: "${FLY_SHELL:=$_fly_destshell}"
+FLY_SHELL="$_fly_destshell"
 [ "$FLY_SHELL" ] || case "$BASH_VERSION$ZSH_VERSION$KSH_VERSION" in
     "");;
     "$BASH_VERSION") FLY_SHELL="bash";;
@@ -263,14 +263,6 @@ alias fsuf='_fly_destshell=fish _fly sudo'
 alias flyls='_fly list'
 alias flypack='_fly pack'
 alias cdfly='cd $FLY_HOME/.fly.d'
-
-alias flysudossh='_fly sudossh'
-alias flysuto='_fly sudossh'
-alias fsuto='_fly sudossh'
-alias fsussh='_fly sudossh'
-alias fsutob=' _fly_destshell=bash _fly sudossh'
-alias fsutok=' _fly_destshell=ksh _fly sudossh'
-alias fsutoz=' _fly_destshell=zsh _fly sudossh'
 FLY_EOF
 
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/init_fly
@@ -280,7 +272,7 @@ export FLY_TMPDIR="$FLY_TMPDIR"
 export FLY_USER_RC="$FLY_USER_RC"
 export FLY_ETC_RC="$FLY_ETC_RC"
 export FLY_TARZ="$FLY_TARZ"
-export FLY_SHELL="$_fly_destshell"
+export _fly_destshell="$_fly_destshell"
 EOF
 FLY_EOF
 
@@ -303,6 +295,12 @@ _fly_loaded=1
 : "${FLY_TMPDIR:=/tmp}"
 : "${FLY_TARZ:=-z}"
 : "${_fly_uuid:=$(cat "$FLY_HOME/.fly.d/.flyuuid" 2>/dev/null || uuidgen)}"
+_fly_lib="$FLY_HOME/.fly.d/.fly.lib"
+. "$_fly_lib/.fshell"
+alias fly=". $FLY_HOME/.fly.d/fly"
+. "$_fly_lib/aliases"
+unset _fly_destshell
+
 type gtar >/dev/null 2>&1 && _fly_tar=gtar || _fly_tar=tar
 [[ "$($_fly_tar --version 2>/dev/null)" = *busybox* ]] && {
     _fly_taropts=( --exclude=.git --exclude=.github --exclude=.gitignore )
@@ -358,13 +356,6 @@ function _fly_zsh_glob
     reset) [ "$_fly_zsh_nomatch" ] && unset _fly_zsh_nonomatch && unsetopt nonomatch;;
     esac
 }
-
-_fly_lib="$FLY_HOME/.fly.d/.fly.lib"
-. "$_fly_lib/.fshell"
-
-alias fly=". $FLY_HOME/.fly.d/fly"
-
-. "$_fly_lib/aliases"
 
 case "$1" in
     help)
@@ -461,7 +452,6 @@ function _fly_sudo
     \cd /
     _fly_pkg_warp| sudo -Hu "$user" '/bin/sh'
     \cd "$OLDPWD"
-    unset _fly_destshell
 }
 
 function _fly_ssh_ok
@@ -505,22 +495,6 @@ $(_fly_package_zfx)
 EOF
 }
 
-function _fly_pkg_b64
-{
-    typeset b64opt
-    base64 -w0 <<<ok >/dev/null 2>&1 && b64opt='-w0'
-  cat - <<EOF
-base64 -d <<<'$(_fly_pkg_warp| gzip -c |base64 $b64opt)' |gzip -dc
-EOF
-}
-
-function _fly_sudo_ssh
-{
-    typeset user="$1"
-    shift
-    sudo -Hsu "$user" <<<"$(_fly_package_zfx);exec <&1;. \$FLY_HOME/.fly.d/fly;_fly_destshell=$_fly_destshell _fly_ssh $@;exit"
-}
-
 function _fly_ssh
 {
     ! $_fly_ssh_ok && { _fly_ssh2 "$@"; return $?; } 
@@ -548,9 +522,8 @@ function _fly_ssh2
 {
     . $_fly_lib/init_fly "$_fly_tmpdir"
     _fly_package | ssh -o LogLevel=Error "$@" "/bin/sh -c '$(_fly_xpretar) $(_fly_xpackage)'" || return $?
-    ssh "$@" -t "exec /bin/sh -c 'FLY_HOME=$_fly_tmpdir;. \$FLY_HOME/.fly.d/.fly.lib/.loginshell'"
+    ssh "$@" -t "exec /bin/sh -c 'FLY_HOME=\"$_fly_tmpdir\";. \$FLY_HOME/.fly.d/.fly.lib/.loginshell'"
 }
-
 
 function _fly
 {
@@ -567,10 +540,13 @@ function _fly
             shift
             [ "$1" ] && ! type "$1" >/dev/null 2>&1 && echo "Cannot find shell $1" >&2 && return 1
             unset _fly_fish
-            _fly_destshell="${1:-$FLY_SHELL}"; . "$_fly_lib/init_fly" "$FLY_HOME"; . "$FLY_HOME/.fly.d/.fly.lib/.loginshell" "$FLY_HOME"
+            _fly_destshell="${1:-$FLY_SHELL}"
+            . "$_fly_lib/init_fly" "$FLY_HOME"
+            . "$_fly_lib/.loginshell" "$FLY_HOME"
         ;;
         ssh|to) 
             shift
+            [ "$_fly_ssh_ok" ] || _fly_ssh_ok
             [ ! "$1" ] && echo "fly: error: missing destination/ssh params" && return 1
             _fly_ssh "$@"
         ;;
@@ -580,12 +556,6 @@ function _fly
             _fly_destshell="${2:-$_fly_destshell}"
             _fly_sudo "$1"
         ;;
-        sudossh|suto)
-            shift
-            [ ! "$1" ] && echo "fly: error: missing user" && return 1
-            [ ! "$2" ] && echo "fly: error: missing destination/ssh params" && return 1
-            _fly_sudo_ssh "$@"
-        ;;
         pack)
             shift
             >"$_fly_lib/.teleport"
@@ -593,15 +563,10 @@ function _fly
         ;;
         *) echo "unknown option, use 'fly help'";return 1;;
     esac
+    unset _fly_destshell
 }
 
-_fly_ssh_ok
-
-
-#unset _fly_destshell
-typeset +x FLY_SHELL
 unset -f _fly_usage
-#set --
 FLY_EOF
 
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/fly.fish
