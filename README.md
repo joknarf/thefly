@@ -36,8 +36,10 @@ Keep your full shell environment anywhere you go.
 * teleport dotfiles and plugins through ssh (`flyto`)
 * no configuration modification on target user/host when teleporting, resides on `/tmp`
 * force specific destination shell when sudo or ssh (not using target user shell)
+* lightweight/fast, only few KB / pure shell
 * create a single pak env file including dotfiles and plugins to be used anywhere (`flypack >pak`, `. ./pak`)
-  
+* get a full coherent nice/powerfull environment with joknarf plugins: visit [Joknarf Tools](https://joknarf.github.io/joknarf-tools)
+
 ## Install
 
 ```
