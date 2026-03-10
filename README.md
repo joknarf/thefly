@@ -130,9 +130,9 @@ thefly is able to duplicate your .fly.d directory through sudo and ssh to login 
 
 When teleporting the .fly.d is duplicated (without cvs files/tests) in :
 ```
-/tmp/.fly.$USER/<id>/.fly.d
+/tmp/.fly.$UID/<id>/.fly.d
 ```
-files are owned by target user, `$FLY_HOME` is set to `/tmp/.fly.$USER/<id>`
+files are owned by target user, `$FLY_HOME` is set to `/tmp/.fly.$UID/<id>`
 
 You can use all teleport method multiple times (`flyto host` then `flyas user`...)
 
@@ -222,7 +222,7 @@ To activate from url:
 ```
 . <(curl -sL https://raw.githubusercontent.com/joknarf/flypack/main/fly.pak)
 ```
-to connect to a server with your env in `/tmp/.fly.$USER`, your can use:
+to connect to a server with your env in `/tmp/.fly.$UID`, your can use:
 ```
 $ ssh -t <host> '. <(curl -sL https://raw.githubusercontent.com/joknarf/flypack/main/fly.pak) [bash|ksh|zsh]'
 ```
@@ -274,7 +274,7 @@ $ fly add joknarf/dfbar        # df enhancer (colors/usage bar)
 
 Remember that `~/.fly.d` directory will be duplicated in `/tmp` when teleporting, don't put huge data in your `~/.fly.d` directory, the consequences could be dramatic ! (ask Jeff G. ;-)
 
-By choice, the `/tmp/.fly.$USER` is not removed at end of shell session, as multiple session may use the same fly env (other choice would be to duplicate same .fly.d for each session but can be overkill)
+By choice, the `/tmp/.fly.$UID` is not removed at end of shell session, as multiple session may use the same fly env (other choice would be to duplicate same .fly.d for each session but can be overkill)
 
 The files will remain and will be only be cleared by OS tmpfiles mechanism, the ideal size is to stay below 128K.
 
