@@ -183,20 +183,20 @@ esac
 FLY_EOF
 
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/.source_plugins
-    [ "$1" ] && _fly_p="/$1" || _fly_p=""
-    _fly_shell="${FLY_SHELL##*/}"
-    set --
-    [ -r "$FLY_HOME/.fly.d/.flyrc" ] && . "$FLY_HOME/.fly.d/.flyrc"
-    [ -r "$FLY_HOME/.fly.d/.${_fly_shell}rc" ] && . "$FLY_HOME/.fly.d/.${_fly_shell}rc"
-    $FLY_USER_RC && [ "$FLY_RC" ] && [ -r "$FLY_RC" ] && cp "$FLY_RC" "$FLY_HOME/.fly.d/.fly.lib"
-    [ "$FLY_RC" ] && [ -r "$FLY_HOME/.fly.d/.fly.lib/${FLY_RC##*/}" ] && . "$FLY_HOME/.fly.d/.fly.lib/${FLY_RC##*/}"
-    _fly_zsh_glob fix
-    for _fly_plugin in $(\ls -- "$FLY_HOME/.fly.d/plugins"${_fly_p:-.d/*}/*.plugin."$_fly_shell" 2>/dev/null)
-    do
-        . "$_fly_plugin"
-    done
-    unset _fly_p _fly_plugin _fly_shell
-    _fly_zsh_glob reset
+[ "$1" ] && _fly_p="/$1" || _fly_p=""
+_fly_shell="${FLY_SHELL##*/}"
+set --
+[ -r "$FLY_HOME/.fly.d/.flyrc" ] && . "$FLY_HOME/.fly.d/.flyrc"
+[ -r "$FLY_HOME/.fly.d/.${_fly_shell}rc" ] && . "$FLY_HOME/.fly.d/.${_fly_shell}rc"
+$FLY_USER_RC && [ "$FLY_RC" ] && [ -r "$FLY_RC" ] && cp "$FLY_RC" "$_fly_lib"
+[ "$FLY_RC" ] && [ -r "$_fly_lib/${FLY_RC##*/}" ] && . "$_fly_lib/${FLY_RC##*/}"
+_fly_zsh_glob fix
+for _fly_plugin in $(\ls -- "$FLY_HOME/.fly.d/plugins"${_fly_p:-.d/*}/*.plugin."$_fly_shell" 2>/dev/null)
+do
+    . "$_fly_plugin"
+done
+unset _fly_p _fly_plugin _fly_shell
+_fly_zsh_glob reset
 FLY_EOF
 
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/.source_plugins.fish
@@ -234,6 +234,7 @@ alias flysh='_fly shell'
 alias fbash='_fly shell bash'
 alias fzsh='_fly shell zsh'
 alias fksh='_fly shell ksh'
+alias ffish='_fly shell fish'
 
 alias flyto='_fly ssh'
 alias fssh='_fly ssh'
