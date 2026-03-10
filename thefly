@@ -171,6 +171,7 @@ cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/.loginshell
 FLY_HOME="${1:-$FLY_HOME}"
 \cd "$FLY_HOME/.fly.d/.fly.lib"
 . ./.teleport
+echo >.teleport
 . ./.fshell
 [ ! -t 0 ] && [ -t 1 ] && exec <&1
 case "$FLY_SHELL" in
@@ -430,6 +431,7 @@ function _fly_package
 {
     [ "$FLY_RC" ] && [ -r "$FLY_RC" ] && cp "$FLY_RC" "$_fly_lib"
     $_fly_tar -cf - -C "$FLY_HOME" "$_fly_tarz" "${_fly_taropts[@]}" --exclude=README.md --exclude='plugins/*/.*' --exclude '*/*/tests' .fly.d
+    >"$_fly_lib/.teleport" <<<''
 }
 
 function _fly_xpretar
@@ -475,7 +477,6 @@ function _fly_package_zfx
     cat - <<EOF
 $(_fly_xpretar) echo "$(_fly_package |base64 $b64opt)"|base64 -d|$(_fly_xpackage)
 EOF
-
 }
 
 function _fly_pack
@@ -558,7 +559,7 @@ function _fly
         ;;
         pack)
             shift
-            >"$_fly_lib/.teleport"
+            >"$_fly_lib/.teleport" <<<''
             _fly_pack
         ;;
         *) echo "unknown option, use 'fly help'";return 1;;
