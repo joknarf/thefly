@@ -24,7 +24,7 @@ What's the point to have a fine tuned local shell environment if you lose it as 
 
 ![thefly_bzz](https://github.com/user-attachments/assets/1617632b-db08-40d4-a845-841e8ee5c7c6)
 
-Get full new full coherent shell experience using joknarf plugins ! (you may install any other plugins too)
+Get full coherent new shell experience using joknarf plugins ! (you may install any other plugins too)
 
 |link                                                         |description                                                             |
 |-------------------------------------------------------------|------------------------------------------------------------------------|
