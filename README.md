@@ -29,8 +29,8 @@ Get full coherent new shell experience using joknarf plugins ! (you may install 
 |link                                                         |description                                                             |
 |-------------------------------------------------------------|------------------------------------------------------------------------|
 |[joknarf/nerdp](https://github.com/joknarf/nerdp)            |nerd dynamic customizable nice prompt                                   |
-|[joknarf/seedee](https://github.com/joknarf/seedee)          |access/search dir history with ctrl or shift down arrow, and many more  |
-|[joknarf/redo](https://github.com/joknarf/redo)              |access/search shell history command menu with shift-tab, and many more  |
+|[joknarf/seedee](https://github.com/joknarf/seedee)          |access/search dir history with ctrl or shift down arrow, and much more  |
+|[joknarf/redo](https://github.com/joknarf/redo)              |access/search shell history command menu with shift-tab, and much more  |
 |[joknarf/complete-ng](https://github.com/joknarf/complete-ng)|tab completion with interactive menu                                    |
 |[__joknarf/shell-ng__](https://github.com/joknarf/shell-ng)  |__optimized joknarf compilation of the above plugins__                  |
 |[joknarf/pgtree](https://github.com/joknarf/pgtree)          |process search / tree / kill command line                               | 
