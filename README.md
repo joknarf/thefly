@@ -26,16 +26,16 @@ What's the point to have a fine tuned local shell environment if you lose it as 
 
 Get full new shell experience using joknarf plugins ! (you may install any other plugins too)
 
-|link                                                 |description                                                             |
-|-----------------------------------------------------|------------------------------------------------------------------------|
-|[nerdp](https://github.com/joknarf/nerdp)            |nerd dynamic customizable nice prompt                                   |
-|[seedee](https://github.com/joknarf/seedee)          |access/search dir history with ctrl or shift down arrow, and many more  |
-|[redo](https://github.com/joknarf/redo)              |access/search shell history command menu with shift-tab, and many more  |
-|[complete-ng](https://github.com/joknarf/complete-ng)|autocompletion with interactive menu                                    |
-|__[shell-ng](https://github.com/joknarf/shell-ng)__  |__optimized joknarf compilation of the above plugins__                  |
-|[pgtree](https://github.com/joknarf/pgtree)          |process search / tree / kill command line                               | 
-|[lsicon](https://github.com/joknarf/lsicon)          |ls command enhancer (colors/icons)                                      | 
-|[dfbar](https://github.com/joknarf/dfbar)            |df command enhancer (colors/usage bar)                                  | 
+|link                                                         |description                                                             |
+|-------------------------------------------------------------|------------------------------------------------------------------------|
+|[joknarf/nerdp](https://github.com/joknarf/nerdp)            |nerd dynamic customizable nice prompt                                   |
+|[joknarf/seedee](https://github.com/joknarf/seedee)          |access/search dir history with ctrl or shift down arrow, and many more  |
+|[joknarf/redo](https://github.com/joknarf/redo)              |access/search shell history command menu with shift-tab, and many more  |
+|[joknarf/complete-ng](https://github.com/joknarf/complete-ng)|autocompletion with interactive menu                                    |
+|[__joknarf/shell-ng__](https://github.com/joknarf/shell-ng)       |__optimized joknarf compilation of the above plugins__                  |
+|[joknarf/pgtree](https://github.com/joknarf/pgtree)          |process search / tree / kill command line                               | 
+|[joknarf/lsicon](https://github.com/joknarf/lsicon)          |ls command enhancer (colors/icons)                                      | 
+|[joknarf/dfbar](https://github.com/joknarf/dfbar)            |df command enhancer (colors/usage bar)                                  | 
 
 ## features
 
