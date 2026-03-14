@@ -37,6 +37,11 @@ Get full coherent new shell experience using joknarf plugins ! (you may install 
 |[joknarf/lsicon](https://github.com/joknarf/lsicon)          |ls command enhancer (colors/icons/tree)                                 | 
 |[joknarf/dfbar](https://github.com/joknarf/dfbar)            |df command enhancer (colors/usage bar)                                  | 
 
+need to test before adopting thefly ? Just try my own [flypack](https://github.com/joknarf/flypack) (temporary install in `/tmp/.fly.$UID`):
+```
+. <(curl -Ls https://raw.githubusercontent.com/joknarf/flypack/main/fly.pak)
+```
+
 ## features
 
 Keep your full shell environment anywhere you go.
