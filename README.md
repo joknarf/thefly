@@ -34,7 +34,7 @@ Get full new full coherent shell experience using joknarf plugins ! (you may ins
 |[joknarf/complete-ng](https://github.com/joknarf/complete-ng)|autocompletion with interactive menu                                    |
 |[__joknarf/shell-ng__](https://github.com/joknarf/shell-ng)       |__optimized joknarf compilation of the above plugins__             |
 |[joknarf/pgtree](https://github.com/joknarf/pgtree)          |process search / tree / kill command line                               | 
-|[joknarf/lsicon](https://github.com/joknarf/lsicon)          |ls command enhancer (colors/icons)                                      | 
+|[joknarf/lsicon](https://github.com/joknarf/lsicon)          |ls command enhancer (colors/icons/tree)                                 | 
 |[joknarf/dfbar](https://github.com/joknarf/dfbar)            |df command enhancer (colors/usage bar)                                  | 
 
 ## features
