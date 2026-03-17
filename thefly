@@ -441,9 +441,11 @@ function _fly_xpretar
 {
     printf 'FLY_HOME="%s";' "$_fly_tmpdir"
     cat - <<'EOF'
-umask 077;mkdir -p "$FLY_HOME";rm -rf "$FLY_HOME/.fly.d"
+umask 077;mkdir -p "$FLY_HOME"
 ! chmod 700 "$FLY_HOME" && echo "Not owner of $FLY_HOME. Abort" >&2 && exit 1
 type gtar >/dev/null 2>&1 && tar=gtar || tar=tar
+exec 4<>"$FLY_HOME/.fly.lock";flock 4
+rm -rf "$FLY_HOME/.fly.d"
 EOF
 }
 
@@ -573,6 +575,7 @@ function _fly
 }
 
 unset -f _fly_usage
+exec 4<&- # unlock teleportation
 FLY_EOF
 
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/fly.fish
@@ -602,6 +605,7 @@ switch "$argv[1]"
     case login
         . $_fly_lib/.login.fish
         . $_fly_lib/.source_plugins.fish
+        flock -u 4
 end
 
 function fly
