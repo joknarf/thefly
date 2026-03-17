@@ -438,9 +438,11 @@ function _fly_package
 function _fly_xpretar
 {
     printf 'FLY_HOME="%s";' "$_fly_tmpdir"
-    printf 'umask 077;mkdir -p "$FLY_HOME";rm -rf "$FLY_HOME/.fly.d";'
-    printf '! chmod 700 "$FLY_HOME" && echo "Not owner of $FLY_HOME. Abort" >&2 && exit 1;'
-    printf 'type gtar >/dev/null 2>&1 && tar=gtar || tar=tar;'
+    cat - <<'EOF'
+umask 077;mkdir -p "$FLY_HOME";rm -rf "$FLY_HOME/.fly.d"
+! chmod 700 "$FLY_HOME" && echo "Not owner of $FLY_HOME. Abort" >&2 && exit 1
+type gtar >/dev/null 2>&1 && tar=gtar || tar=tar
+EOF
 }
 
 function _fly_xpackage
@@ -476,7 +478,7 @@ function _fly_package_zfx
     typeset b64opt
     base64 -w0 <<<ok >/dev/null 2>&1 && b64opt='-w0'
     cat - <<EOF
-$(_fly_xpretar) echo "$(_fly_package |base64 $b64opt)"|base64 -d|$(_fly_xpackage)
+$(_fly_xpretar);echo "$(_fly_package |base64 $b64opt)"|base64 -d|$(_fly_xpackage)
 EOF
 }
 
@@ -523,7 +525,7 @@ _EOF_
 function _fly_ssh2
 {
     . $_fly_lib/init_fly "$_fly_tmpdir"
-    _fly_package | ssh -o LogLevel=Error "$@" "/bin/sh -c '$(_fly_xpretar) $(_fly_xpackage)'" || return $?
+    _fly_package | ssh -o LogLevel=Error "$@" "/bin/sh -c '$(_fly_xpretar);$(_fly_xpackage)'" || return $?
     ssh "$@" -t "exec /bin/sh -c 'FLY_HOME=\"$_fly_tmpdir\";. \$FLY_HOME/.fly.d/.fly.lib/.loginshell'"
 }
 
