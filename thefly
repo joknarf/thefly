@@ -67,7 +67,8 @@ function _fly_init
         for f in .bashrc .zshrc;do
             ln -s .login $f 2>/dev/null
         done
-        touch .teleport
+        [ -r .teleport ] && rm .teleport
+        [ -r init_fly ] && rm init_fly
     )
     return 0
 }
@@ -171,9 +172,8 @@ FLY_EOF
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/.loginshell
 # /!\ sourced by /bin/sh
 FLY_HOME="${1:-$FLY_HOME}"
+export FLY_HOME FLY_ETC_RC FLY_USER_RC
 \cd "$FLY_HOME/.fly.d/.fly.lib"
-. ./.teleport
-echo >.teleport
 . ./.fshell
 [ ! -t 0 ] && [ -t 1 ] && exec <&1
 case "$FLY_SHELL" in
@@ -269,17 +269,6 @@ alias flypack='_fly pack'
 alias cdfly='cd $FLY_HOME/.fly.d'
 FLY_EOF
 
-cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/init_fly
-cat - <<EOF >"$_fly_lib/.teleport"
-export FLY_HOME="${1:-$FLY_HOME}"
-export FLY_TMPDIR="$FLY_TMPDIR"
-export FLY_USER_RC="$FLY_USER_RC"
-export FLY_ETC_RC="$FLY_ETC_RC"
-export FLY_TARZ="$FLY_TARZ"
-export _fly_destshell="$_fly_destshell"
-EOF
-FLY_EOF
-
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/fly
 ############ fly ##########
 # Author: Franck Jouvanceau
@@ -294,8 +283,6 @@ _fly_loaded=1
 : "${_fly_github:=https://github.com}"
 : "${_fly_githubraw:=https://raw.githubusercontent.com}"
 : "${_fly_gitrepo:=joknarf/thefly}"
-: "${FLY_USER_RC:=true}"
-: "${FLY_ETC_RC:=true}"
 : "${FLY_TMPDIR:=/tmp}"
 : "${FLY_TARZ:=-z}"
 : "${_fly_uuid:=$(cat "$FLY_HOME/.fly.d/.flyuuid" 2>/dev/null || uuidgen)}"
@@ -368,11 +355,10 @@ case "$1" in
         shift 
         . "$_fly_lib/.login.${FLY_SHELL##*/}"
         . "$_fly_lib/.source_plugins"
-        unset _fly_destshell
+        unset _fly_destshell FLY_ETC_RC FLY_USER_RC
     ;;
     loginshell|install)
         shift
-        . "$_fly_lib/init_fly"
         . "$_fly_lib/.loginshell" "$FLY_HOME" 
     ;;
     source|activate)
@@ -434,16 +420,18 @@ function _fly_package
 {
     [ "$FLY_RC" ] && [ -r "$FLY_RC" ] && cp "$FLY_RC" "$_fly_lib"
     $_fly_tar -cf - -C "$FLY_HOME" "$_fly_tarz" "${_fly_taropts[@]}" --exclude=README.md --exclude='plugins/*/.*' --exclude '*/*/tests' .fly.d
-    >"$_fly_lib/.teleport" <<<''
 }
 
 function _fly_xpretar
 {
     printf 'FLY_HOME="%s";' "$_fly_tmpdir"
     cat - <<'EOF'
-umask 077;mkdir -p "$FLY_HOME";rm -rf "$FLY_HOME/.fly.d"
+umask 077;mkdir -p "$FLY_HOME"
 ! chmod 700 "$FLY_HOME" && echo "Not owner of $FLY_HOME. Abort" >&2 && exit 1
 type gtar >/dev/null 2>&1 && tar=gtar || tar=tar
+exec 4<>"$FLY_HOME/.fly.lock";flock 4 2>/dev/null
+export _fly_lock=1
+rm -rf "$FLY_HOME/.fly.d"
 EOF
 }
 
@@ -455,7 +443,6 @@ function _fly_xpackage
 function _fly_sudo
 {
     typeset user="${1:-root}"
-    . "$_fly_lib/init_fly" "$_fly_tmpdir"
     \cd /
     _fly_pkg_warp| sudo -Hu "$user" '/bin/sh'
     \cd "$OLDPWD"
@@ -493,11 +480,21 @@ function _fly_pack
 EOF
 }
 
+function _fly_pkg_login
+{
+    cat - <<EOF
+_fly_destshell="$_fly_destshell"
+FLY_ETC_RC="${FLY_ETC_RC:-true}"
+FLY_USER_RC="${FLY_USER_RC:-true}"
+. "\$FLY_HOME/.fly.d/.fly.lib/.loginshell"
+EOF
+}
+
 function _fly_pkg_warp
 {
     cat - <<EOF
 $(_fly_package_zfx)
-. "\$FLY_HOME/.fly.d/.fly.lib/.loginshell"
+$(_fly_pkg_login)
 EOF
 }
 
@@ -505,7 +502,6 @@ function _fly_ssh
 {
     ! $_fly_ssh_ok && { _fly_ssh2 "$@"; return $?; } 
     typeset ssh_config cmd c i
-    . "$_fly_lib/init_fly" "$_fly_tmpdir"
     cmd="exec /bin/sh -c '$(_fly_pkg_warp)'"
     [ ${#cmd} -gt 130000 ] && { _fly_ssh2 "$@"; return $?; }
     for i in "$@";do
@@ -526,9 +522,8 @@ _EOF_
 
 function _fly_ssh2
 {
-    . $_fly_lib/init_fly "$_fly_tmpdir"
     _fly_package | ssh -o LogLevel=Error "$@" "/bin/sh -c '$(_fly_xpretar);$(_fly_xpackage)'" || return $?
-    ssh "$@" -t "exec /bin/sh -c 'FLY_HOME=\"$_fly_tmpdir\";. \$FLY_HOME/.fly.d/.fly.lib/.loginshell'"
+    ssh "$@" -t "exec /bin/sh -c 'FLY_HOME=\"$_fly_tmpdir\";$(_fly_pkg_login)'"
 }
 
 function _fly
@@ -547,7 +542,6 @@ function _fly
             [ "$1" ] && ! type "$1" >/dev/null 2>&1 && echo "Cannot find shell $1" >&2 && return 1
             unset _fly_fish
             _fly_destshell="${1:-$FLY_SHELL}"
-            . "$_fly_lib/init_fly" "$FLY_HOME"
             . "$_fly_lib/.loginshell" "$FLY_HOME"
         ;;
         ssh|to) 
@@ -564,7 +558,6 @@ function _fly
         ;;
         pack)
             shift
-            >"$_fly_lib/.teleport" <<<''
             _fly_pack
         ;;
         *) echo "unknown option, use 'fly help'";return 1;;
@@ -573,17 +566,16 @@ function _fly
 }
 
 unset -f _fly_usage
+[ "$_fly_lock" ] && exec 4<&- # unlock teleportation
+unset _fly_lock
 FLY_EOF
 
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/fly.fish
 if test (count $argv) -gt 0 -a "$argv[1]" != source
     set -e _fly_loaded
 end
-# if set -q _fly_loaded
-#     return
-# end
+if not set -q _fly_loaded
 
-# default values ----------------------------------------------------------------
 not set -q FLY_MSG && set -x FLY_MSG "Bzzz Bzzz !!!"
 echo $FLY_MSG >&2
 set -x _fly_loaded 1
@@ -602,6 +594,8 @@ switch "$argv[1]"
     case login
         . $_fly_lib/.login.fish
         . $_fly_lib/.source_plugins.fish
+        test -n "$_fly_lock" && flock -u 4 2>/dev/null #fish cannot close fd...
+        set -e _fly_lock
 end
 
 function fly
@@ -615,6 +609,7 @@ end
 alias fly.fish='. $FLY_HOME/.fly.d/fly.fish'
 
 . $_fly_lib/aliases
+end # fish cannot return...
 FLY_EOF
 
 )
