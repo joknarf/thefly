@@ -290,6 +290,8 @@ _fly_lib="$FLY_HOME/.fly.d/.fly.lib"
 alias fly=". $FLY_HOME/.fly.d/fly"
 . "$_fly_lib/aliases"
 
+[ "$_fly_lock" ] && trap 'flock -u 4' INT TERM EXIT
+
 type gtar >/dev/null 2>&1 && _fly_tar=gtar || _fly_tar=tar
 [[ "$($_fly_tar --version 2>/dev/null)" = *busybox* ]] && {
     _fly_taropts=( --exclude=.git --exclude=.github --exclude=.gitignore )
@@ -356,6 +358,7 @@ case "$1" in
         . "$_fly_lib/.login.${FLY_SHELL##*/}"
         . "$_fly_lib/.source_plugins"
         unset _fly_destshell FLY_ETC_RC FLY_USER_RC
+        trap - INT TERM EXIT
     ;;
     loginshell|install)
         shift
@@ -566,7 +569,7 @@ function _fly
 }
 
 unset -f _fly_usage
-[ "$_fly_lock" ] && exec 4<&- # unlock teleportation
+[ "$_fly_lock" ] && trap - INT TERM EXIT && flock -u 4 && exec 4<&- # unlock teleportation
 unset _fly_lock
 FLY_EOF
 
@@ -588,15 +591,17 @@ set -x _fly_lib $FLY_HOME/.fly.d/.fly.lib
 set -x FLY_SHELL fish 
 set -x _fly_fish true
 
+test -n "$_fly_lock" && trap 'flock -u 4 2>/dev/null' INT TERM EXIT
+
 switch "$argv[1]"
     case source activate
         source $_fly_lib/.source_plugins.fish
     case login
         . $_fly_lib/.login.fish
         . $_fly_lib/.source_plugins.fish
-        test -n "$_fly_lock" && flock -u 4 2>/dev/null #fish cannot close fd...
-        set -e _fly_lock
 end
+test -n "$_fly_lock" && trap - INT TERM EXIT && flock -u 4 2>/dev/null #fish cannot close fd...
+set -e _fly_lock
 
 function fly
    FLY_HOME="$FLY_HOME" bash -c 'args=("$@");. $FLY_HOME/.fly.d/fly "${args[@]}"' _ $argv
