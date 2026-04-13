@@ -53,6 +53,7 @@ Keep your full shell environment anywhere you go.
 * teleport dotfiles and plugins through sudo (`flyas`)
 * teleport dotfiles and plugins through ssh (`flyto`)
 * no configuration modification on target user/host when teleporting, resides on `/tmp`
+* automatic cleaning of tmp teleportation directory when last fly session exits
 * force specific destination shell when sudo or ssh (not using target user shell)
 * lightweight/fast, only few KB / pure shell
 * create a single pak env file including dotfiles and plugins to be used anywhere (`flypack >pak`, `. ./pak`)
@@ -282,8 +283,6 @@ $ fly add joknarf/dfbar        # df enhancer (colors/usage bar)
 ## Don't teleport a human with your fly !
 
 Remember that `~/.fly.d` directory will be duplicated in `/tmp` when teleporting, don't put huge data in your `~/.fly.d` directory, the consequences could be dramatic ! (ask Jeff G. ;-)
-
-By choice, the `/tmp/.fly.$UID` is not removed at end of shell session, as multiple session may use the same fly env (other choice would be to duplicate same .fly.d for each session but can be overkill)
 
 The files will remain and will be only be cleared by OS tmpfiles mechanism, the ideal size is to stay below 128K.
 
