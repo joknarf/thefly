@@ -171,15 +171,13 @@ FLY_EOF
 
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/.loginshell
 # /!\ sourced by /bin/sh
-FLY_HOME="${1:-$FLY_HOME}"
 export _fly_lock FLY_HOME FLY_ETC_RC FLY_USER_RC
 \cd "$FLY_HOME/.fly.d/.fly.lib"
 . ./.fshell
 [ ! -t 0 ] && [ -t 1 ] && exec <&1
 [ "$FLY_HOME" = "$HOME" ] || {
   exec 5<>$FLY_HOME/.fly.share
-  flock -s 5
-  export _fly_share=1
+  flock -s 5 2>/dev/null && export _fly_share=1
 }
 case "$FLY_SHELL" in
     *bash) PS1="" exec $FLY_SHELL --rcfile ".bashrc";;
@@ -283,6 +281,7 @@ cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/fly
 : "${FLY_MSG:=Bzzz Bzzz !!!}"
 _fly_loaded=1
 : "${FLY_HOME:=$HOME}"
+export FLY_HOME
 : "${FLY_RC:=$HOME/.flyrc}"
 : "${_fly_github:=https://github.com}"
 : "${_fly_githubraw:=https://raw.githubusercontent.com}"
@@ -365,7 +364,7 @@ case "$1" in
         unset _fly_destshell FLY_ETC_RC FLY_USER_RC
     ;;
     loginshell|install)
-        . "$_fly_lib/.loginshell" "$FLY_HOME"
+        . "$_fly_lib/.loginshell"
     ;;
     source|activate)
         shift
@@ -435,8 +434,8 @@ function _fly_xpretar
 umask 077;mkdir -p "$FLY_HOME"
 ! chmod 700 "$FLY_HOME" && echo "Not owner of $FLY_HOME. Abort" >&2 && exit 1
 type gtar >/dev/null 2>&1 && tar=gtar || tar=tar
-exec 4<>"$FLY_HOME/.fly.lock";flock 4 2>/dev/null
-_fly_lock=1
+exec 4<>"$FLY_HOME/.fly.lock"
+flock 4 2>/dev/null && _fly_lock=1
 rm -rf "$FLY_HOME/.fly.d"
 EOF
 }
@@ -547,7 +546,7 @@ function _fly
             shift
             [ "$1" ] && ! type "$1" >/dev/null 2>&1 && echo "Cannot find shell $1" >&2 && return 1
             unset _fly_fish
-            _fly_destshell="${1:-$FLY_SHELL}" exec sh -c ". '$_fly_lib/.loginshell' '$FLY_HOME'"
+            _fly_destshell="${1:-$FLY_SHELL}" exec sh "$_fly_lib/.loginshell"
         ;;
         ssh|to) 
             shift
