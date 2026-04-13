@@ -171,7 +171,7 @@ FLY_EOF
 
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/.loginshell
 # /!\ sourced by /bin/sh
-export _fly_lock FLY_HOME FLY_ETC_RC FLY_USER_RC
+export FLY_HOME FLY_ETC_RC FLY_USER_RC
 \cd "$FLY_HOME/.fly.d/.fly.lib"
 . ./.fshell
 [ ! -t 0 ] && [ -t 1 ] && exec <&1
@@ -364,7 +364,7 @@ case "$1" in
         unset _fly_destshell FLY_ETC_RC FLY_USER_RC
     ;;
     loginshell|install)
-        export _fly_destshell
+        export _fly_destshell FLY_ETC_RC FLY_USER_RC
         exec sh "$_fly_lib/.loginshell"
     ;;
     source|activate)
@@ -436,7 +436,7 @@ umask 077;mkdir -p "$FLY_HOME"
 ! chmod 700 "$FLY_HOME" && echo "Not owner of $FLY_HOME. Abort" >&2 && exit 1
 type gtar >/dev/null 2>&1 && tar=gtar || tar=tar
 exec 4<>"$FLY_HOME/.fly.lock"
-flock 4 2>/dev/null && _fly_lock=1
+flock 4 2>/dev/null && export _fly_lock=1
 rm -rf "$FLY_HOME/.fly.d"
 EOF
 }
@@ -573,7 +573,7 @@ function _fly
 unset -f _fly_usage
 [ "$_fly_lock" ] && trap - INT TERM HUP && flock -u 4 && exec 4<&- # unlock teleportation
 unset _fly_lock
-[ "$_fly_share" ] && trap 'flock -n 5 && flock "$FLY_HOME/.fly.lock" rm -rf "$FLY_HOME"/.fly.* && rmdir "$FLY_HOME" "${FLY_HOME%/*}" 2>/dev/null' HUP EXIT
+[ "$_fly_share" ] && trap 'flock -n 5 && flock -n "$FLY_HOME/.fly.lock" rm -rf "$FLY_HOME"/.fly.* && rmdir "$FLY_HOME" "${FLY_HOME%/*}" 2>/dev/null' HUP EXIT
 unset _fly_share
 :
 FLY_EOF
