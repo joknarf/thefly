@@ -47,7 +47,7 @@ need to test before adopting thefly ? Just try my own [flypack](https://github.c
 Keep your full shell environment anywhere you go.
 
 * supports bash / zsh / ksh / fish (on Linux / MacOS / ...)
-  * fish needs a bash installed on hosts (teleport code relies on POSIX+)
+  * fish needs a bash installed on hosts (teleport code relies on POSIX+) and has limitations
 * multi-shell plugin manager to install / update / uninstall shell plugins
 * multi-shell dotfiles manager
 * teleport dotfiles and plugins through sudo (`flyas`)
