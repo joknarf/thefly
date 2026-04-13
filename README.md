@@ -235,7 +235,7 @@ Then use your fly.pak anywhere :
 
 `. ./fly.pak install` : to extract in ~/.fly.d and activate
 
-under `fish` shell, do not source as not fish code, you can do `sh fly.pak [install]` then source the `fly.fish`
+under `fish` shell, do not source as not fish code, you can do `bash fly.pak [install]` then source the `fly.fish`
 
 To activate from url:
 ```
