@@ -1,5 +1,4 @@
 #!/usr/bin/env sh
-set -vx
 ########## thefly #########
 # Author: Franck Jouvanceau
 ###########################
@@ -273,6 +272,41 @@ alias flypack='_fly pack'
 alias cdfly='cd $FLY_HOME/.fly.d'
 FLY_EOF
 
+cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/usage
+usage: fly <action> <options>
+$ fly add <gituser/reponame>    # add plugin from github repository
+$ fly del <plugin>              # remove plugin with name <plugin> (repo)
+$ fly update <plugin>           # update plugin from github
+$ fly updateall                 # update all plugins from github
+$ fly source                    # source the plugins for current shell (*.plugin.<shell>)
+$ fly upgrade                   # upgrade fly from github joknarf/thefly
+$ flyls                         # list plugins for current shell
+$ flysh <shell>                 # change current shell with fly env
+$ flyas [<user>] [<shell>]      # change user with your fly env (default <user>: root,<shell>: <user> shell)
+$ flyto <ssh options>           # connect to server through ssh with your fly env
+
+aliases:
+$ fbash                         # flysh bash
+$ fksh                          # flysh ksh
+$ fzsh                          # flysh zsh
+
+$ fsudo                         # flyas
+$ fsudob                        # flyas with bash
+$ fsudok                        # flyas with ksh
+$ fusdoz                        # flyas with zsh
+
+$ fssh                          # flyto
+$ fsshb                         # flyto with bash
+$ fsshk                         # flyto with ksh
+$ fsshz                         # flyto with zsh
+
+# fly environment files:
+~/.fly.d/.flyrc                 # common environment
+~/.fly.d/.bashrc                # specific bash environment
+~/.fly.d/.kshrc                 # specific ksh environment
+~/.fly.d/.zshrc                 # specific zsh environment
+FLY_EOF
+
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/fly
 ############ fly ##########
 # Author: Franck Jouvanceau
@@ -302,48 +336,6 @@ type gtar >/dev/null 2>&1 && _fly_tar=gtar || _fly_tar=tar
     _fly_taropts=( --exclude=.git --exclude=.github --exclude=.gitignore )
 } || _fly_taropts=( --no-xattrs --exclude-vcs )
 
-function _fly_usage
-{
-    cat - <<'EOF'
-usage: fly <action> <options>
-$ fly add <gituser/reponame>    # add plugin from github repository
-$ fly del <plugin>              # remove plugin with name <plugin> (repo)
-$ fly update <plugin>           # update plugin from github
-$ fly updateall                 # update all plugins from github
-$ fly source                    # source the plugins for current shell (*.plugin.<shell>)
-$ fly upgrade                   # upgrade fly from github joknarf/thefly
-$ flyls                         # list plugins for current shell
-$ flysh <shell>                 # change current shell with fly env
-$ flyas [<user>] [<shell>]      # change user with your fly env (default <user>: root,<shell>: <user> shell)
-$ flyto <ssh options>           # connect to server through ssh with your fly env
-$ flysuto <user> <ssh options>  # use sudo <user> to connect to server through ssh with your fly env
-
-aliases:
-$ fbash                         # flysh bash
-$ fksh                          # flysh ksh
-$ fzsh                          # flysh zsh
-
-$ fsudo                         # flyas
-$ fsudob                        # flyas with bash
-$ fsudok                        # flyas with ksh
-$ fusdoz                        # flyas with zsh
-
-$ fssh                          # flyto
-$ fsshb                         # flyto with bash
-$ fsshk                         # flyto with ksh
-$ fsshz                         # flyto with zsh
-
-$ fsuto                        # flysuto
-$ fsussh                       # flysuto
-
-# fly environment files:
-~/.fly.d/.flyrc                 # common environment
-~/.fly.d/.bashrc                # specific bash environment
-~/.fly.d/.kshrc                 # specific ksh environment
-~/.fly.d/.zshrc                 # specific zsh environment
-EOF
-}
-
 function _fly_zsh_glob
 {
     [ "${FLY_SHELL##*/}" = "zsh" ] || return 0
@@ -355,7 +347,7 @@ function _fly_zsh_glob
 
 case "$1" in
     help)
-        _fly_usage
+        cat $_fly_lib/usage
     ;;
     login)      
         shift 
@@ -571,11 +563,9 @@ function _fly
     unset _fly_destshell
 }
 
-unset -f _fly_usage
 [ "$_fly_lock" ] && trap - TERM && flock -u 4 && exec 4<&- # unlock teleportation
-unset _fly_lock
 [ "$_fly_share" ] && trap "flock -n 5 && flock '$_fly_share/.fly.lock' rm -rf '$_fly_share'/.fly.* && rmdir '$_fly_share' '${_fly_share%/*}' 2>/dev/null" EXIT
-unset _fly_share
+unset _fly_share _fly_lock
 :
 FLY_EOF
 
