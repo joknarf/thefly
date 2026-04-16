@@ -1,4 +1,5 @@
 #!/usr/bin/env sh
+set -vx
 ########## thefly #########
 # Author: Franck Jouvanceau
 ###########################
@@ -596,7 +597,7 @@ set -x _fly_lib $FLY_HOME/.fly.d/.fly.lib
 set -x FLY_SHELL fish 
 set -x _fly_fish true
 
-test -n "$_fly_lock" && trap 'flock -u 4 2>/dev/null' INT TERM EXIT
+test -n "$_fly_lock" && trap 'flock -u 4 2>/dev/null' TERM
 
 switch "$argv[1]"
     case source activate
@@ -605,9 +606,9 @@ switch "$argv[1]"
         . $_fly_lib/.login.fish
         . $_fly_lib/.source_plugins.fish
 end
-test -n "$_fly_lock" && trap - INT TERM EXIT && flock -u 4 2>/dev/null #fish cannot close fd...
+test -n "$_fly_lock" && trap - TERM && flock -u 4 2>/dev/null #fish cannot close fd...
 set -e _fly_lock
-test -n "$_fly_share" && trap 'flock -n 5 && flock "$FLY_HOME/.fly.lock" rm -rf "$FLY_HOME"/.fly.* && rmdir "$FLY_HOME" 2>/dev/null' HUP EXIT
+test -n "$_fly_share" && trap "flock -n 5 && flock '$_fly_share/.fly.lock' rm -rf '$_fly_share'/.fly.* && rmdir '$_fly_share' 2>/dev/null" EXIT
 set -e _fly_share
 
 function fly
