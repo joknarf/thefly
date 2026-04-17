@@ -171,7 +171,7 @@ FLY_EOF
 
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/.loginshell
 # /!\ sourced by /bin/sh
-export FLY_HOME FLY_ETC_RC FLY_USER_RC
+export FLY_HOME FLY_ETC_RC FLY_USER_RC _fly_cmd
 \cd "$FLY_HOME/.fly.d/.fly.lib"
 . ./.fshell
 [ ! -t 0 ] && [ -t 1 ] && exec <&1
@@ -417,7 +417,7 @@ function _fly_pkg_login
 _fly_destshell="$_fly_destshell"
 FLY_ETC_RC="${FLY_ETC_RC:-true}"
 FLY_USER_RC="${FLY_USER_RC:-true}"
-export _fly_cmd="$([ "$1" ] && printf '%q ' "$@" |base64 -w 0)"
+_fly_cmd="$([ "$1" ] && printf '%q ' "$@" |base64 -w 0)"
 . "\$FLY_HOME/.fly.d/.fly.lib/.loginshell"
 EOF
 }
