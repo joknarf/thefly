@@ -510,7 +510,7 @@ case "$1" in
         [ "$_fly_cmd" ] && {
           _fly_cmd="$(base64 -d <<<"$_fly_cmd")" || exit 1
           eval "cmd=($_fly_cmd)"
-          [ "${#cmd[@]}" = 1 ] && ! type $cmd >/dev/null 2>&1 && { . <(printf %s "$cmd"); e=$?; } || { eval "${cmd[@]}"; e=$?; }
+          [ "${#cmd[@]}" = 1 ] && ! type "$cmd" >/dev/null 2>&1 && { . <(printf %s "$cmd"); e=$?; } || { eval "${cmd[@]}"; e=$?; }
           [ "$_fly_lock" ] && flock -u 4
           _fly_cleanup "$_fly_share"
           exit "$e"
