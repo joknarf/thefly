@@ -434,10 +434,12 @@ function _fly_ssh
 {
     typeset cmd ssh_args=() ssh_config ssh_argc=()
     while [ "$1" ];do
-        [ "$1" = -F ] && shift && ssh_config="Include $1" && ssh_argc=(-F "$1") && shift && continue
-        [[ "$1" = -F* ]] && ssh_config="Include ${1#-F}" && ssh_argc=("$1") && shift && continue
-        [ "$1" = -- ] && shift && fly_cmd=("$@") && break
-        ssh_args+=("$1")
+        case "$1" in
+        -F)  shift && ssh_config="Include $1" && ssh_argc=(-F "$1");;
+        -F*) ssh_config="Include ${1#-F}" && ssh_argc=("$1");;
+        --)  shift && fly_cmd=("$@") && break;;
+        *)   ssh_args+=("$1");;
+        esac
         shift
     done
     cmd="exec /bin/sh -c '$(_fly_pkg_warp "${fly_cmd[@]}")'"
