@@ -345,16 +345,179 @@ function _fly_zsh_glob
     esac
 }
 
+function _fly_package
+{
+    [ "$FLY_RC" ] && [ -r "$FLY_RC" ] && cp "$FLY_RC" "$_fly_lib"
+    $_fly_tar -cf - -C "$FLY_HOME" "$_fly_tarz" "${_fly_taropts[@]}" --exclude=README.md --exclude='plugins/*/.*' --exclude '*/*/tests' .fly.d
+}
+
+function _fly_xpretar
+{
+    printf 'FLY_HOME="%s";' "$_fly_tmpdir"
+    cat - <<'EOF'
+umask 077;mkdir -p "$FLY_HOME"
+! chmod 700 "$FLY_HOME" && echo "Not owner of $FLY_HOME. Abort" >&2 && exit 1
+type gtar >/dev/null 2>&1 && tar=gtar || tar=tar
+exec 4<>"$FLY_HOME/.fly.lock"
+flock 4 2>/dev/null && export _fly_lock=1
+rm -rf "$FLY_HOME/.fly.d"
+EOF
+}
+
+function _fly_xpackage
+{   
+    printf '$tar -xmf - -C "$FLY_HOME" %s --no-same-owner' "$_fly_tarz"
+}
+
+function _fly_sudo
+{
+    typeset user="${1:-root}"
+    [ "$user" = '-' ] && user='root'
+    [ "$1" ] && shift
+    \cd /
+    sudo -Hu "$user" '/bin/sh' <<<"$(_fly_pkg_warp "$@")"
+    \cd "$OLDPWD"
+}
+
+function _fly_ssh_ok
+{
+    typeset ssh_ver ssh_maj ssh_min r
+    _fly_ssh_ok=false
+    type ssh >/dev/null 2>&1 || return
+    read -r ssh_ver r <<<"$(ssh -V 2>&1)"
+    ssh_ver="${ssh_ver#*_}";ssh_ver="${ssh_ver%p*}"
+    IFS='.' read -r ssh_maj ssh_min r <<<"$ssh_ver"
+    [ "$ssh_maj" -gt 8 ] && _fly_ssh_ok=true && return
+    # ssh 8.0 RemoteCommand buffer too short
+    [ "$ssh_maj" = 8 ] && [ "$ssh_min" -gt 0 ] && _fly_ssh_ok=true
+    return 0
+}
+
+function _fly_package_zfx
+{
+    typeset b64opt
+    base64 -w0 <<<ok >/dev/null 2>&1 && b64opt='-w0'
+    cat - <<EOF
+$(_fly_xpretar);echo "$(_fly_package |base64 $b64opt)"|base64 -d|$(_fly_xpackage)
+EOF
+}
+
+function _fly_pack
+{
+    cat - <<EOF
+[ "\$1" = install ] && FLY_HOME="\$HOME" || $(_fly_package_zfx)
+[[ "\$1" = *sh ]] && _fly_destshell="\$1" && shift
+. "\$FLY_HOME/.fly.d/fly" \${1:-loginshell}
+EOF
+}
+
+function _fly_pkg_login
+{
+    cat - <<EOF
+_fly_destshell="$_fly_destshell"
+FLY_ETC_RC="${FLY_ETC_RC:-true}"
+FLY_USER_RC="${FLY_USER_RC:-true}"
+export _fly_cmd="$([ "$1" ] && printf '%q ' "$@" |base64 -w 0)"
+. "\$FLY_HOME/.fly.d/.fly.lib/.loginshell"
+EOF
+}
+
+function _fly_pkg_warp
+{
+    cat - <<EOF
+$(_fly_package_zfx)
+$(_fly_pkg_login "$@")
+EOF
+}
+
+function _fly_ssh
+{
+    typeset cmd ssh_args=() ssh_config ssh_argc=()
+    while [ "$1" ];do
+        [ "$1" = -F ] && shift && ssh_config="Include $1" && ssh_argc=(-F "$1") && shift && continue
+        [ "$1" = -- ] && shift && fly_cmd=("$@") && break
+        ssh_args+=("$1")
+        shift
+    done
+    cmd="exec /bin/sh -c '$(_fly_pkg_warp "${fly_cmd[@]}")'"
+    cmd="${cmd//$'\n'/;}"
+    ! $_fly_ssh_ok && { _fly_ssh2 "${ssh_args[@]}" "${ssh_argc[@]}"; return $?; } 
+    [ ${#cmd} -gt 130000 ] && { _fly_ssh2 "${ssh_args[@]}" "${ssh_argc[@]}"; return $?; }
+    [ ! "$ssh_config" ] && [ -f ~/.ssh/config ] && ssh_config="Include $HOME/.ssh/config"
+    cat - <<_EOF_ >"$FLY_HOME/.fly.ssh"
+RequestTTY yes
+RemoteCommand $cmd
+$ssh_config
+_EOF_
+    \cd "$FLY_HOME";ssh -F .fly.ssh "${ssh_args[@]}";\cd "$OLDPWD"
+    unset fly_cmd
+}
+
+function _fly_ssh2
+{
+    _fly_package | ssh -o LogLevel=Error "$@" "/bin/sh -c '$(_fly_xpretar);$(_fly_xpackage)'" || return $?
+    ssh "$@" -t "exec /bin/sh -c 'FLY_HOME=\"$_fly_tmpdir\";$(_fly_pkg_login "${fly_cmd[@]}")'"
+    unset fly_cmd
+}
+
+function _fly
+{
+    typeset plugin submodule
+    _fly_tmpdir="$FLY_TMPDIR/.fly.\`id -u\`/$_fly_uuid"
+    _fly_tarz="$FLY_TARZ"
+    case "$1" in
+        list)
+            _fly_zsh_glob fix
+            (\cd "$FLY_HOME/.fly.d/plugins" && ls -1 -- */*.plugin.${FLY_SHELL##*/})
+            _fly_zsh_glob reset
+        ;;
+        shell)
+            shift
+            [ "$1" ] && ! type "$1" >/dev/null 2>&1 && echo "Cannot find shell $1" >&2 && return 1
+            unset _fly_fish
+            _fly_destshell="${1:-$FLY_SHELL}" exec sh "$_fly_lib/.loginshell"
+        ;;
+        ssh|to) 
+            shift
+            [ "$_fly_ssh_ok" ] || _fly_ssh_ok
+            [ ! "$1" ] && echo "fly: error: missing destination/ssh params" && return 1
+            _fly_ssh "$@"
+        ;;
+        sudo|as) 
+            shift;
+            [ "$_fly_destshell" ] && ! type "$_fly_destshell" >/dev/null 2>&1 && echo "Cannot find shell $2" >&2 && return 1
+            _fly_sudo "$@"
+        ;;
+        pack)
+            shift
+            _fly_pack
+        ;;
+        *) echo "unknown option, use 'fly help'";return 1;;
+    esac
+    unset _fly_destshell
+}
+function _fly_cleanup
+{
+    [ "$1" ] && flock -n 5 && flock "$1/.fly.lock" rm -rf "$1"/.fly.* && rmdir "$1" "${1%/*}" 2>/dev/null
+}
 case "$1" in
-    help)
-        cat $_fly_lib/usage
-    ;;
+    help)  cat "$_fly_lib/usage";;
     login)      
         shift 
         echo "$FLY_MSG" >&2
         . "$_fly_lib/.login.${FLY_SHELL##*/}"
         . "$_fly_lib/.source_plugins"
-        unset _fly_destshell FLY_ETC_RC FLY_USER_RC
+        [ "$_fly_cmd" ] && {
+          _fly_cmd="$(base64 -d <<<"$_fly_cmd")" || exit 1
+          eval "cmd=($_fly_cmd)"
+          eval=eval
+          [ "${#cmd[@]}" = 1 ] && ! type $cmd >/dev/null 2>&1 && cmd=("$FLY_SHELL" -c "$cmd") && eval=''
+          $eval "${cmd[@]}" ; e=$?
+          [ "$_fly_lock" ] && flock -u 4
+          _fly_cleanup "$_fly_share"
+          exit "$e"
+        }
+        unset _fly_destshell FLY_ETC_RC FLY_USER_RC 
     ;;
     loginshell|install)
         export _fly_destshell FLY_ETC_RC FLY_USER_RC
@@ -415,156 +578,8 @@ case "$1" in
     ;;
 esac
 
-function _fly_package
-{
-    [ "$FLY_RC" ] && [ -r "$FLY_RC" ] && cp "$FLY_RC" "$_fly_lib"
-    $_fly_tar -cf - -C "$FLY_HOME" "$_fly_tarz" "${_fly_taropts[@]}" --exclude=README.md --exclude='plugins/*/.*' --exclude '*/*/tests' .fly.d
-}
-
-function _fly_xpretar
-{
-    printf 'FLY_HOME="%s";' "$_fly_tmpdir"
-    cat - <<'EOF'
-umask 077;mkdir -p "$FLY_HOME"
-! chmod 700 "$FLY_HOME" && echo "Not owner of $FLY_HOME. Abort" >&2 && exit 1
-type gtar >/dev/null 2>&1 && tar=gtar || tar=tar
-exec 4<>"$FLY_HOME/.fly.lock"
-flock 4 2>/dev/null && export _fly_lock=1
-rm -rf "$FLY_HOME/.fly.d"
-EOF
-}
-
-function _fly_xpackage
-{   
-    printf '$tar -xmf - -C "$FLY_HOME" %s --no-same-owner' "$_fly_tarz"
-}
-
-function _fly_sudo
-{
-    typeset user="${1:-root}"
-    \cd /
-    sudo -Hu "$user" '/bin/sh' <<<"$(_fly_pkg_warp)"
-    \cd "$OLDPWD"
-}
-
-function _fly_ssh_ok
-{
-    typeset ssh_ver ssh_maj ssh_min r
-    _fly_ssh_ok=false
-    type ssh >/dev/null 2>&1 || return
-    read -r ssh_ver r <<<"$(ssh -V 2>&1)"
-    ssh_ver="${ssh_ver#*_}";ssh_ver="${ssh_ver%p*}"
-    IFS='.' read -r ssh_maj ssh_min r <<<"$ssh_ver"
-    [ "$ssh_maj" -gt 8 ] && _fly_ssh_ok=true && return
-    # ssh 8.0 RemoteCommand buffer too short
-    [ "$ssh_maj" = 8 ] && [ "$ssh_min" -gt 0 ] && _fly_ssh_ok=true
-    return 0
-}
-
-function _fly_package_zfx
-{
-    typeset b64opt
-    base64 -w0 <<<ok >/dev/null 2>&1 && b64opt='-w0'
-    cat - <<EOF
-$(_fly_xpretar);echo "$(_fly_package |base64 $b64opt)"|base64 -d|$(_fly_xpackage)
-EOF
-}
-
-function _fly_pack
-{
-    cat - <<EOF
-[ "\$1" = install ] && FLY_HOME="\$HOME" || $(_fly_package_zfx)
-[[ "\$1" = *sh ]] && _fly_destshell="\$1" && shift
-. "\$FLY_HOME/.fly.d/fly" \${1:-loginshell}
-EOF
-}
-
-function _fly_pkg_login
-{
-    cat - <<EOF
-_fly_destshell="$_fly_destshell"
-FLY_ETC_RC="${FLY_ETC_RC:-true}"
-FLY_USER_RC="${FLY_USER_RC:-true}"
-. "\$FLY_HOME/.fly.d/.fly.lib/.loginshell"
-EOF
-}
-
-function _fly_pkg_warp
-{
-    cat - <<EOF
-$(_fly_package_zfx)
-$(_fly_pkg_login)
-EOF
-}
-
-function _fly_ssh
-{
-    ! $_fly_ssh_ok && { _fly_ssh2 "$@"; return $?; } 
-    typeset ssh_config cmd c i
-    cmd="exec /bin/sh -c '$(_fly_pkg_warp)'"
-    [ ${#cmd} -gt 130000 ] && { _fly_ssh2 "$@"; return $?; }
-    for i in "$@";do
-       [ "$i" = -F ] && shift && c=1 && continue
-       [ "$c" ] && unset c && ssh_config="Include $i" && shift && continue
-       shift
-       set -- "$@" "$i"
-    done
-    [ ! "$ssh_config" ] && [ -f ~/.ssh/config ] && ssh_config="Include $HOME/.ssh/config"
-    cmd="${cmd//$'\n'/;}"
-    cat - <<_EOF_ >"$FLY_HOME/.fly.ssh"
-RequestTTY yes
-RemoteCommand $cmd
-$ssh_config
-_EOF_
-    \cd $FLY_HOME;ssh -F .fly.ssh "$@";\cd $OLDPWD
-}
-
-function _fly_ssh2
-{
-    _fly_package | ssh -o LogLevel=Error "$@" "/bin/sh -c '$(_fly_xpretar);$(_fly_xpackage)'" || return $?
-    ssh "$@" -t "exec /bin/sh -c 'FLY_HOME=\"$_fly_tmpdir\";$(_fly_pkg_login)'"
-}
-
-function _fly
-{
-    typeset plugin submodule
-    _fly_tmpdir="$FLY_TMPDIR/.fly.\`id -u\`/$_fly_uuid"
-    _fly_tarz="$FLY_TARZ"
-    case "$1" in
-        list)
-            _fly_zsh_glob fix
-            (\cd "$FLY_HOME/.fly.d/plugins" && ls -1 -- */*.plugin.${FLY_SHELL##*/})
-            _fly_zsh_glob reset
-        ;;
-        shell)
-            shift
-            [ "$1" ] && ! type "$1" >/dev/null 2>&1 && echo "Cannot find shell $1" >&2 && return 1
-            unset _fly_fish
-            _fly_destshell="${1:-$FLY_SHELL}" exec sh "$_fly_lib/.loginshell"
-        ;;
-        ssh|to) 
-            shift
-            [ "$_fly_ssh_ok" ] || _fly_ssh_ok
-            [ ! "$1" ] && echo "fly: error: missing destination/ssh params" && return 1
-            _fly_ssh "$@"
-        ;;
-        sudo|as) 
-            shift;
-            [ "$2" ] && ! type "$2" >/dev/null 2>&1 && echo "Cannot find shell $2" >&2 && return 1
-            _fly_destshell="${2:-$_fly_destshell}"
-            _fly_sudo "$1"
-        ;;
-        pack)
-            shift
-            _fly_pack
-        ;;
-        *) echo "unknown option, use 'fly help'";return 1;;
-    esac
-    unset _fly_destshell
-}
-
 [ "$_fly_lock" ] && trap - TERM && flock -u 4 && exec 4<&- # unlock teleportation
-[ "$_fly_share" ] && trap "flock -n 5 && flock '$_fly_share/.fly.lock' rm -rf '$_fly_share'/.fly.* && rmdir '$_fly_share' '${_fly_share%/*}' 2>/dev/null" EXIT
+[ "$_fly_share" ] && trap "_fly_cleanup '$_fly_share'" EXIT
 unset _fly_share _fly_lock
 :
 FLY_EOF
