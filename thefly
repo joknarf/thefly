@@ -499,7 +499,6 @@ function _fly
         ;;
         *) echo "unknown option, use 'fly help'";return 1;;
     esac
-    unset _fly_destshell
 }
 function _fly_cleanup
 {
