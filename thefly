@@ -371,12 +371,13 @@ function _fly_xpackage
 
 function _fly_sudo
 {
-    typeset user="${1:-root}"
+    typeset user="${1:-root}" e
     [ "$user" = '-' ] && user='root'
     [ "$1" ] && shift
     \cd /
-    sudo -Hu "$user" '/bin/sh' <<<"$(_fly_pkg_warp "$@")"
+    sudo -Hu "$user" '/bin/sh' <<<"$(_fly_pkg_warp "$@")"; e=$?
     \cd "$OLDPWD"
+    return $e
 }
 
 function _fly_ssh_ok
@@ -432,7 +433,12 @@ EOF
 
 function _fly_ssh
 {
-    typeset cmd ssh_args=() ssh_config ssh_argc=() fly_cmd
+    _ssh2()
+    {
+        _fly_package | ssh -o LogLevel=Error "$@" "/bin/sh -c '$(_fly_xpretar);$(_fly_xpackage)'" || return $?
+        ssh "$@" -t "exec /bin/sh -c 'FLY_HOME=\"$_fly_tmpdir\";$(_fly_pkg_login "${fly_cmd[@]}")'"
+    }
+    typeset cmd ssh_args=() ssh_config ssh_argc=() fly_cmd e
     while [ "$1" ];do
         case "$1" in
         -F)  shift && ssh_config="Include $1" && ssh_argc=(-F "$1");;
@@ -444,8 +450,8 @@ function _fly_ssh
     done
     cmd="exec /bin/sh -c '$(_fly_pkg_warp "${fly_cmd[@]}")'"
     cmd="${cmd//$'\n'/;}"
-    ! $_fly_ssh_ok && { _fly_ssh2 "${ssh_args[@]}" "${ssh_argc[@]}"; return $?; } 
-    [ ${#cmd} -gt 130000 ] && { _fly_ssh2 "${ssh_args[@]}" "${ssh_argc[@]}"; return $?; }
+    ! $_fly_ssh_ok && { _ssh2 "${ssh_args[@]}" "${ssh_argc[@]}"; return $?; } 
+    [ ${#cmd} -gt 130000 ] && { _ssh2 "${ssh_args[@]}" "${ssh_argc[@]}"; return $?; }
     [ ! "$ssh_config" ] && [ -f ~/.ssh/config ] && ssh_config="Include $HOME/.ssh/config"
     cat - <<_EOF_ >"$FLY_HOME/.fly.ssh"
 RequestTTY yes
@@ -456,11 +462,6 @@ _EOF_
     return $e
 }
 
-_fly_ssh2()
-{
-    _fly_package | ssh -o LogLevel=Error "$@" "/bin/sh -c '$(_fly_xpretar);$(_fly_xpackage)'" || return $?
-    ssh "$@" -t "exec /bin/sh -c 'FLY_HOME=\"$_fly_tmpdir\";$(_fly_pkg_login "${fly_cmd[@]}")'";e=$?
-}
 
 function _fly
 {
@@ -490,6 +491,7 @@ function _fly
             shift;
             [ "$_fly_destshell" ] && ! type "$_fly_destshell" >/dev/null 2>&1 && echo "Cannot find shell $2" >&2 && return 1
             _fly_sudo "$@"
+            return $?
         ;;
         pack)
             shift
