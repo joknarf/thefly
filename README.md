@@ -55,6 +55,7 @@ Keep your full shell environment anywhere you go.
 * no configuration modification on target user/host when teleporting, resides on `/tmp`
 * automatic cleaning of tmp teleportation directory when last fly session exits
 * force specific destination shell when sudo or ssh (not using target user shell)
+* directly execute commands using teleported env (fish excluded)
 * lightweight/fast, only few KB / pure shell
 * create a single pak env file including dotfiles and plugins to be used anywhere (`flypack >pak`, `. ./pak`)
 * get a full coherent nice/powerfull environment with joknarf plugins: visit [Joknarf Tools](https://joknarf.github.io/joknarf-tools)
@@ -161,22 +162,28 @@ sudo login interactive shell to another user with your env
 (current user need to have sudo privilege to target user)
 
 ```
-$ flyas <user> [shell]
+$ flyas <user> [<command> [<arg>]...]
 or
-$ fsu <user> [shell]
+$ fsu <user> [<command> [<arg>]...]
 ```
 By default uses `<user>`'s shell.
+To force destination shell, use `bsu` (bash) `zsu` (zsh) `ksu` (ksh)
+
+shellcode/command executed using PATH of your fly env, and can use any function/alias defined.
 
 ### To another host
 
 ssh connect with interactive shell to another host with your env
 ```
-$ flyto [<ssh opts>] <user>[<@host>]
+$ flyto [<ssh opts>] <user>[<@host>] [-- <shellcode>|<command> [<arg>]...] 
 or
-$ fssh [<ssh opts>] <user>[<@host>]
+$ fssh [<ssh opts>] <user>[<@host>] [-- <shellcode>|<command> [<arg>]...]
 ```
 
 by default uses `<user>` shell, to force your favorite shell use `fsshb` (bash) - `fsshz` (zsh) - `fsshk` (ksh)
+
+shellcode/command executed using PATH of your fly env, and can use any function/alias defined.
+
 
 ### To another shell
 
