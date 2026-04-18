@@ -432,7 +432,7 @@ EOF
 
 function _fly_ssh
 {
-    typeset cmd ssh_args=() ssh_config ssh_argc=()
+    typeset cmd ssh_args=() ssh_config ssh_argc=() fly_cmd
     while [ "$1" ];do
         case "$1" in
         -F)  shift && ssh_config="Include $1" && ssh_argc=(-F "$1");;
@@ -452,15 +452,14 @@ RequestTTY yes
 RemoteCommand $cmd
 $ssh_config
 _EOF_
-    \cd "$FLY_HOME";ssh -F .fly.ssh "${ssh_args[@]}";\cd "$OLDPWD"
-    unset fly_cmd
+    \cd "$FLY_HOME";ssh -F .fly.ssh "${ssh_args[@]}";e=$?;\cd "$OLDPWD"
+    return $e
 }
 
-function _fly_ssh2
+_fly_ssh2()
 {
     _fly_package | ssh -o LogLevel=Error "$@" "/bin/sh -c '$(_fly_xpretar);$(_fly_xpackage)'" || return $?
-    ssh "$@" -t "exec /bin/sh -c 'FLY_HOME=\"$_fly_tmpdir\";$(_fly_pkg_login "${fly_cmd[@]}")'"
-    unset fly_cmd
+    ssh "$@" -t "exec /bin/sh -c 'FLY_HOME=\"$_fly_tmpdir\";$(_fly_pkg_login "${fly_cmd[@]}")'";e=$?
 }
 
 function _fly
@@ -485,6 +484,7 @@ function _fly
             [ "$_fly_ssh_ok" ] || _fly_ssh_ok
             [ ! "$1" ] && echo "fly: error: missing destination/ssh params" && return 1
             _fly_ssh "$@"
+            return $?
         ;;
         sudo|as) 
             shift;
