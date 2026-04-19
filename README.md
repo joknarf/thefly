@@ -184,6 +184,10 @@ by default uses `<user>` shell, to force your favorite shell use `fsshb` (bash) 
 
 shellcode/command executed using PATH of your fly env, and can use any function/alias defined.
 
+you can, for example, cumulate multiple teleportations:
+```
+fsu user1 fto host1 -- fsu user2 fto host2
+```
 
 ### To another shell
 
