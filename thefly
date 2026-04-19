@@ -348,7 +348,7 @@ function _fly_package
 
 function _fly_xpretar
 {
-    printf 'FLY_HOME="%s";' "$_fly_tmpdir"
+    printf 'FLY_HOME="%s"\n' "$_fly_tmpdir"
     cat - <<'EOF'
 umask 077;mkdir -p "$FLY_HOME"
 ! chmod 700 "$FLY_HOME" && echo "Not owner of $FLY_HOME. Abort" >&2 && exit 1
@@ -512,8 +512,8 @@ case "$1" in
         [ "$_fly_cmd" ] && {
           _fly_cmd="$(base64 -d <<<"$_fly_cmd")" || exit 1
           eval "cmd=($_fly_cmd)"
-          [ "${#cmd[@]}" = 1 ] && ! type "$cmd" >/dev/null 2>&1 && { . <(printf %s "$cmd"); e=$?; } || { eval "${cmd[@]}"; e=$?; }
           [ "$_fly_lock" ] && flock -u 4
+          [ "${#cmd[@]}" = 1 ] && ! type "$cmd" >/dev/null 2>&1 && { . <(printf %s "$cmd"); e=$?; } || { eval "${cmd[@]}"; e=$?; }
           _fly_cleanup "$_fly_share"
           exit "$e"
         }
