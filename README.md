@@ -53,7 +53,7 @@ Keep your full shell environment anywhere you go.
 * teleport dotfiles and plugins through sudo (`flyas`)
 * teleport dotfiles and plugins through ssh (`flyto`)
 * no configuration modification on target user/host when teleporting, resides on `/tmp`
-* automatic cleaning of tmp teleportation directory when last fly session exits
+* automatic cleaning of tmp teleportation directory when last fly session exits (`flock` needed)
 * force specific destination shell when sudo or ssh (not using target user shell)
 * directly execute commands using teleported env (fish excluded)
 * lightweight/fast, only few KB / pure shell
