@@ -102,16 +102,14 @@ FLY_EOF
 
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/.fshell
 FLY_SHELL="$_fly_destshell"
-[ ! "$FLY_SHELL" ] && [ "$0" != /bin/sh ] && [ ! "$POSIXLY_CORRECT" ] && case "$BASH_VERSION$ZSH_VERSION$KSH_VERSION" in
-    "");;
-    "$BASH_VERSION") FLY_SHELL="bash";;
-    "$ZSH_VERSION") FLY_SHELL="zsh";;
-    "$KSH_VERSION") FLY_SHELL="ksh";;
-esac
+[ "$0" != "/bin/sh" ] && {
+  : "${FLY_SHELL:=$ZSH_ARGZERO}"
+  : "${FLY_SHELL:=$0}"
+}
 : "${FLY_SHELL:=$SHELL}"
 case "$FLY_SHELL" in 
     *bash|*ksh|*zsh|*fish) return;;
-    *) FLY_SHELL=bash;
+    *) FLY_SHELL=bash;;
 esac
 FLY_EOF
 
@@ -475,7 +473,7 @@ function _fly
             shift
             [ "$1" ] && ! type "$1" >/dev/null 2>&1 && echo "Cannot find shell $1" >&2 && return 1
             unset _fly_fish
-            _fly_destshell="${1:-$FLY_SHELL}" exec /bin/sh "$_fly_lib/.loginshell"
+            _fly_destshell="${1:-$FLY_SHELL}" exec /bin/sh -c ". $_fly_lib/.loginshell"
         ;;
         ssh|to) 
             shift
@@ -521,7 +519,7 @@ case "$1" in
     ;;
     loginshell|install)
         export _fly_destshell FLY_ETC_RC FLY_USER_RC
-        exec /bin/sh "$_fly_lib/.loginshell"
+        exec /bin/sh -c ". $_fly_lib/.loginshell"
     ;;
     source|activate)
         shift
