@@ -52,6 +52,7 @@ Keep your full shell environment anywhere you go.
 * multi-shell dotfiles manager
 * teleport dotfiles and plugins through sudo (`flyas`)
 * teleport dotfiles and plugins through ssh (`flyto`)
+* chain env teleportations though sudo and ssh (`flyto <host> -- flyas <user>...`)
 * no configuration modification on target user/host when teleporting, resides on `/tmp`
 * automatic cleaning of tmp teleportation directory when last fly session exits (`flock` needed)
 * force specific destination shell when sudo or ssh (not using target user shell)
