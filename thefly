@@ -102,10 +102,9 @@ FLY_EOF
 
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/.fshell
 FLY_SHELL="$_fly_destshell"
-[ "$0" != "/bin/sh" ] && {
+[ "$0" != "/bin/sh" ] && [[ "$0" != -* ]] && {
   : "${FLY_SHELL:=$ZSH_NAME}"
   : "${FLY_SHELL:=$0}"
-  [[ $FLY_SHELL = -* ]] && unset FLY_SHELL
 }
 : "${FLY_SHELL:=$SHELL}"
 case "$FLY_SHELL" in 
