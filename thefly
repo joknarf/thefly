@@ -399,6 +399,7 @@ EOF
 function _fly_pack
 {
     cat - <<EOF
+[ "\$_fly_lock" ] && return
 [ "\$1" = install ] && FLY_HOME="\$HOME" || $(_fly_package_zfx)
 [[ "\$1" = *sh ]] && _fly_destshell="\$1" && shift
 . "\$FLY_HOME/.fly.d/fly" \${1:-loginshell}
