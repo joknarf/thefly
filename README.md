@@ -121,7 +121,7 @@ fly help
 ```
 ## Plugins management
 
-* add plugin
+* add plugin from github repo `fly add <githubuser>/<repo>`, example:
 ```
 fly add joknarf/redo
 ```
