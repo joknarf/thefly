@@ -44,7 +44,7 @@ need to test before adopting thefly ? Just try my own [flypack](https://github.c
 
 ## features
 
-Keep your full shell environment anywhere you go.
+Keep your full shell environment anywhere you go, just maintain it once and teleport it !
 
 * supports bash / zsh / ksh / fish (on Linux / MacOS / ...)
   * fish needs a bash installed on hosts (teleport code relies on POSIX+) and has limitations
@@ -53,6 +53,7 @@ Keep your full shell environment anywhere you go.
 * teleport dotfiles and plugins through sudo (`flyas`)
 * teleport dotfiles and plugins through ssh (`flyto`)
 * chain env teleportations though sudo and ssh (`flyto <host> -- flyas <user>...`)
+* nothing to install on remote servers (standard gnu/unix tools only)
 * no configuration modification on target user/host when teleporting, resides on `/tmp`
 * automatic cleaning of tmp teleportation directory when last fly session exits (`flock` needed)
 * force specific destination shell when sudo or ssh (not using target user shell)
