@@ -520,7 +520,7 @@ case "$1" in
           _fly_cleanup "$_fly_share"
           exit "$e"
         }
-        unset _fly_destshell FLY_ETC_RC FLY_USER_RC
+        unset FLY_ETC_RC FLY_USER_RC
     ;;
     loginshell|install)
         export _fly_destshell FLY_ETC_RC FLY_USER_RC
@@ -583,7 +583,7 @@ esac
 
 [ "$_fly_lock" ] && trap - TERM && flock -u 4 && exec 4<&- # unlock teleportation
 [ "$_fly_share" ] && trap "_fly_cleanup '$_fly_share'" EXIT
-unset _fly_share _fly_lock
+unset _fly_share _fly_lock _fly_destshell
 :
 FLY_EOF
 
