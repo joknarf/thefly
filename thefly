@@ -467,7 +467,7 @@ function _fly
     case "$1" in
         list)
             _fly_zsh_glob fix
-            (\cd "$FLY_HOME/.fly.d/plugins" && ls -1 -- */*.plugin.${FLY_SHELL##*/})
+            (\cd "$FLY_HOME/.fly.d/plugins" && ls -1 -- */*.plugin."${FLY_SHELL##*/}")
             _fly_zsh_glob reset
         ;;
         shell)
@@ -537,7 +537,7 @@ case "$1" in
             (\cd "$FLY_HOME/.fly.d" && git submodule add "$_fly_github/$1" "plugins/${1##*/}" 2>/dev/null)
         } || (\cd "$FLY_HOME/.fly.d/plugins" && git clone "$_fly_github/$1" -q >/dev/null)
         (\cd "$FLY_HOME/.fly.d" && git config -f ".gitmodules submodule.plugins/${1##*/}.shallow" true >/dev/null 2>/dev/null)
-        ln -s ../plugins/${1##*/} $FLY_HOME/.fly.d/plugins.d/50-${1##*/}
+        ln -s "../plugins/${1##*/}" "$FLY_HOME/.fly.d/plugins.d/50-${1##*/}"
         set --
         [ "$_fly_fish" ] || . "$_fly_lib/.source_plugins" "${1#*/}"
         :
@@ -568,7 +568,7 @@ case "$1" in
             [ -d "$plugin" ] && (\cd "$plugin/.." && git pull origin "$(git rev-parse --abbrev-ref HEAD)")
             [ -s "$plugin" ] && submodule=1
         done
-        [ "$submodule" ] && (\cd $FLY_HOME/.fly.d && { 
+        [ "$submodule" ] && (\cd "$FLY_HOME/.fly.d" && {
             git submodule update --remote --merge 2>/dev/null
             git submodule foreach git pull 2>/dev/null
         })
