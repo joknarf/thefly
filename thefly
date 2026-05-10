@@ -436,7 +436,7 @@ _fly_hist_init()
 
 _fly_hist(){
     _fly_hist_init || return
-    sqlite3 -batch -header -column "$FLY_HISTFILE" "SELECT params, strftime('%Y-%m-%d %H:%M',begin) AS begin, user||'@'||hostname AS host, exit_code AS e, sudo_user AS s FROM flyto WHERE params LIKE '%$1%' ORDER BY begin DESC" | awk '
+    sqlite3 -batch -header -column "$FLY_HISTFILE" "SELECT params, strftime('%Y-%m-%d %H:%M',begin) AS begin, user||'@'||hostname AS host, exit_code AS e, sudo_user AS s FROM flyto WHERE params LIKE '$1%' ORDER BY begin DESC" | awk '
       NR==1{l=index($0,"begin")}
       NR>2{i=substr($0,1,l-1);sub(" *$","",i);print i"\t" substr($0,l)}
     '
