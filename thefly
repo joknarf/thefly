@@ -234,18 +234,18 @@ alias fzsh='_fly shell zsh'
 alias fksh='_fly shell ksh'
 alias ffish='_fly shell fish'
 
-alias flyto='_fly ssh'
-alias fssh='_fly ssh'
-alias fsshb='_fly_destshell=bash _fly ssh'
-alias fsshz='_fly_destshell=zsh _fly ssh'
-alias fsshk='_fly_destshell=ksh _fly ssh'
-alias fsshf='_fly_destshell=fish _fly ssh'
+flyto() { _fly ssh "$@"; }
+fssh() { flyto "$@"; }
+fsshb() { _fly_destshell=bash flyto "$@"; }
+fsshz() { _fly_destshell=zsh flyto "$@"; }
+fsshk() { _fly_destshell=ksh flyto "$@"; }
+fsshf() { _fly_destshell=fish flyto "$@"; }
 
-alias fto='_fly ssh'
-alias bto='_fly_destshell=bash _fly ssh'
-alias zto='_fly_destshell=zsh _fly ssh'
-alias kto='_fly_destshell=ksh _fly ssh'
-alias ftof='_fly_destshell=fish _fly ssh'
+fto() { flyto "$@"; }
+bto() { fsshb "$@"; }
+zto() { fsshz "$@"; }
+kto() { fsshk "$@"; }
+ftof() { fsshf "$@"; }
 
 alias flyas='_fly sudo'
 alias fsudo='_fly sudo'
@@ -315,6 +315,7 @@ export FLY_HOME
 : "${_fly_githubraw:=https://raw.githubusercontent.com}"
 : "${_fly_gitrepo:=joknarf/thefly}"
 : "${FLY_TMPDIR:=/tmp}"
+: "${FLY_HISTFILE:=$HOME/.fly_history}"
 : "${FLY_TARZ:=-z}"
 : "${_fly_uuid:=$(cat "$FLY_HOME/.fly.d/.flyuuid" 2>/dev/null || uuidgen)}"
 _fly_lib="$FLY_HOME/.fly.d/.fly.lib"
@@ -419,22 +420,59 @@ EOF
 
 function _fly_pkg_warp
 {
-    cat - <<EOF
-$(_fly_package_zfx)
-$(_fly_pkg_login "$@")
-EOF
+    _fly_package_zfx
+    _fly_pkg_login "$@"
+}
+
+_fly_hist_init()
+{
+    [ "$FLY_HISTFILE" ] || return 1
+    type sqlite3 >/dev/null 2>&1 || return 1
+    [ -f "$FLY_HISTFILE" ] || (
+        umask 0077
+        sqlite3 "$FLY_HISTFILE" 'CREATE TABLE flyto (params PRIMARY KEY, begin datetime, end datetime, sudo_user, exit_code INTEGER, hostname, user)' 2>/dev/null
+    ) || return 1
+}
+
+_fly_hist(){
+    _fly_hist_init || return
+    sqlite3 -batch -header -column "$FLY_HISTFILE" "SELECT params, strftime('%Y-%m-%d %H:%M',begin) AS begin, user||'@'||hostname AS host, exit_code AS e, sudo_user AS s FROM flyto WHERE params LIKE '%$1%' ORDER BY begin DESC" | awk '
+      NR==1{l=index($0,"begin")}
+      NR>2{i=substr($0,1,l-1);sub(" *$","",i);print i"\t" substr($0,l)}
+    '
+}
+
+_fly_hist_del() {
+    _fly_hist_init || return
+    typeset params="${1//$'\''/$'\\\''}"
+    sqlite3 "$FLY_HISTFILE" "DELETE FROM flyto WHERE params='$params'"
 }
 
 function _fly_ssh
 {
+    _fly_hist_add()
+    {
+        typeset hostname user
+        _fly_hist_init || return
+        read hostname user <<<"$(ssh -G "${ssh_args[@]}" "${ssh_argc[@]}" 2>/dev/null | awk '/^hostname /{h=$2} /^user /{u=$2} h && u {exit} END{print h, u}')"
+        sqlite3 "$FLY_HISTFILE" "INSERT OR REPLACE INTO flyto (params, begin, sudo_user, hostname, user) VALUES ('$params', datetime('now','localtime'), '$SUDO_USER', '$hostname', '$user')"
+    }
+    _fly_hist_end()
+    {
+        _fly_hist_init || return
+        sqlite3 "$FLY_HISTFILE" "UPDATE flyto SET end=datetime('now','localtime'), exit_code=$e WHERE params='$params'"
+    }
     _ssh2()
     {
-        _fly_package | ssh -o LogLevel=Error "$@" "/bin/sh -c '$(_fly_xpretar);$(_fly_xpackage)'" || return $?
-        ssh "$@" -t "exec /bin/sh -c 'FLY_HOME=\"$_fly_tmpdir\";$(_fly_pkg_login "${fly_cmd[@]}")'"
+        _fly_package | ssh -o LogLevel=Error "${ssh_args[@]}" "${ssh_argc[@]}" "/bin/sh -c '$(_fly_xpretar);$(_fly_xpackage)'" || return $?
+        ssh "${ssh_args[@]}" "${ssh_argc[@]}" -t "exec /bin/sh -c 'FLY_HOME=\"$_fly_tmpdir\";$(_fly_pkg_login "${fly_cmd[@]}")'"
+        e=$?
+        _fly_hist_end
     }
-    typeset cmd ssh_args=() ssh_config ssh_argc=() fly_cmd e
+    typeset cmd ssh_args=() ssh_config ssh_argc=() fly_cmd e params
     while [ "$1" ];do
         case "$1" in
+        --usage|-V) ssh "$1"; return $?;;
         -F)  shift; ssh_config="Include $1"; ssh_argc=(-F "$1");;
         -*F) ssh_args+=("${1%F}");shift;ssh_config="Include $1";ssh_argc=(-F "$1");;
         -F*) ssh_config="Include ${1#-F}"; ssh_argc=("$1");;
@@ -444,10 +482,11 @@ function _fly_ssh
         esac
         shift
     done
+    printf -v params '%q ' "${ssh_args[@]}" "${ssh_argc[@]}";params="${params% }";params="${params//$'\''/$'\\\''}"
+    _fly_hist_add
     cmd="exec /bin/sh -c '$(_fly_pkg_warp "${fly_cmd[@]}")'"
     cmd="${cmd//$'\n'/;}"
-    ! $_fly_ssh_ok && { _ssh2 "${ssh_args[@]}" "${ssh_argc[@]}"; return $?; } 
-    [ ${#cmd} -gt 130000 ] && { _ssh2 "${ssh_args[@]}" "${ssh_argc[@]}"; return $?; }
+    $_fly_ssh_ok && [ ${#cmd} -lt 130000 ] || { _ssh2 ; return $e; } 
     [ ! "$ssh_config" ] && [ -f ~/.ssh/config ] && ssh_config="Include $HOME/.ssh/config"
     cat - <<_EOF_ >"$FLY_HOME/.fly.ssh"
 RequestTTY yes
@@ -455,6 +494,7 @@ RemoteCommand $cmd
 $ssh_config
 _EOF_
     \cd "$FLY_HOME";ssh -F .fly.ssh "${ssh_args[@]}";e=$?;\cd "$OLDPWD"
+    _fly_hist_end
     return $e
 }
 
@@ -631,6 +671,19 @@ alias fly.fish='. $FLY_HOME/.fly.d/fly.fish'
 
 . $_fly_lib/aliases
 end # fish cannot return...
+FLY_EOF
+
+cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/plugins/fly-hist/fly-hist.plugin.bash
+_flyto() {
+    COMP_SORT=''
+    COMP_DELFUNC=_fly_hist_del
+    FLY_HIST=()
+    _arrayread FLY_HIST <<<"$(_fly_hist "${COMP_WORDS[1]}")"
+    [ "$_compfunc_ssh" ] && $_compfunc_ssh "$@"
+    COMPREPLY=( "${FLY_HIST[@]}" "${COMPREPLY[@]}" )
+}
+declare -F _completion_loader >/dev/null && _completion_loader ssh
+complete -F _flyto flyto fto fssh bto kto zto fsshb fsshk fsshz
 FLY_EOF
 
 )
