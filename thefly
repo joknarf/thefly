@@ -189,7 +189,7 @@ set --
 $FLY_USER_RC && [ "$FLY_RC" ] && [ -r "$FLY_RC" ] && cp "$FLY_RC" "$_fly_lib"
 [ "$FLY_RC" ] && [ -r "$_fly_lib/${FLY_RC##*/}" ] && . "$_fly_lib/${FLY_RC##*/}"
 _fly_zsh_glob fix
-for _fly_plugin in $(\ls -- "$FLY_HOME/.fly.d/plugins"${_fly_p:-.d/*}/*.plugin."$_fly_shell" 2>/dev/null)
+for _fly_plugin in $(\ls -- "$FLY_HOME/.fly.d/plugins"${_fly_p:-.d/*}/*.plugin."$_fly_shell" "$FLY_HOME/.fly.d/completions"/*."$_fly_shell" 2>/dev/null)
 do
     . "$_fly_plugin"
 done
@@ -234,18 +234,18 @@ alias fzsh='_fly shell zsh'
 alias fksh='_fly shell ksh'
 alias ffish='_fly shell fish'
 
-flyto() { _fly ssh "$@"; }
-fssh() { flyto "$@"; }
-fsshb() { _fly_destshell=bash flyto "$@"; }
-fsshz() { _fly_destshell=zsh flyto "$@"; }
-fsshk() { _fly_destshell=ksh flyto "$@"; }
-fsshf() { _fly_destshell=fish flyto "$@"; }
+alias flyto='_fly ssh'
+alias fssh='_fly ssh'
+alias fsshb='_fly_destshell=bash _fly ssh'
+alias fsshz='_fly_destshell=zsh _fly ssh'
+alias fsshk='_fly_destshell=ksh _fly ssh'
+alias fsshf='_fly_destshell=fish _fly ssh'
 
-fto() { flyto "$@"; }
-bto() { fsshb "$@"; }
-zto() { fsshz "$@"; }
-kto() { fsshk "$@"; }
-ftof() { fsshf "$@"; }
+alias fto='_fly ssh'
+alias bto='_fly_destshell=bash _fly ssh'
+alias zto='_fly_destshell=zsh _fly ssh'
+alias kto='_fly_destshell=ksh _fly ssh'
+alias ftof='_fly_destshell=fish _fly ssh'
 
 alias flyas='_fly sudo'
 alias fsudo='_fly sudo'
@@ -325,7 +325,9 @@ alias fly=". $FLY_HOME/.fly.d/fly"
 
 [ "$_fly_lock" ] && trap 'flock -u 4' TERM
 
-type gtar >/dev/null 2>&1 && _fly_tar=gtar || _fly_tar=tar
+type whence >/dev/null 2>&1 || whence() { type -p "$@"; }
+read _fly_sqlite <<<"$(whence sqlite3 sqlite)"
+read _fly_tar <<<"$(whence gtar gnutar tar)"
 [[ "$($_fly_tar --version 2>/dev/null)" = *busybox* ]] && {
     _fly_taropts=( --exclude=.git --exclude=.github --exclude=.gitignore )
 } || _fly_taropts=( --no-xattrs --exclude-vcs )
@@ -427,25 +429,26 @@ function _fly_pkg_warp
 _fly_hist_init()
 {
     [ "$FLY_HISTFILE" ] || return 1
-    type sqlite3 >/dev/null 2>&1 || return 1
+    [ "$_fly_sqlite" ] || return 1
     [ -f "$FLY_HISTFILE" ] || (
         umask 0077
-        sqlite3 "$FLY_HISTFILE" 'CREATE TABLE flyto (params PRIMARY KEY, begin datetime, end datetime, sudo_user, exit_code INTEGER, hostname, user)' 2>/dev/null
+        "$_fly_sqlite" "$FLY_HISTFILE" 'CREATE TABLE flyto (params PRIMARY KEY, begin datetime, end datetime, sudo_user, exit_code INTEGER, hostname, user)' 2>/dev/null
     ) || return 1
 }
 
 _fly_hist(){
+    local sep="${2:-$'\t'}"
     _fly_hist_init || return
-    sqlite3 -batch -header -column "$FLY_HISTFILE" "SELECT params, strftime('%Y-%m-%d %H:%M',begin) AS begin, user||'@'||hostname AS host, exit_code AS e, sudo_user AS s FROM flyto WHERE params LIKE '$1%' ORDER BY begin DESC" | awk '
-      NR==1{l=index($0,"begin")}
-      NR>2{i=substr($0,1,l-1);sub(" *$","",i);print i"\t" substr($0,l)}
-    '
+    "$_fly_sqlite" -header -column "$FLY_HISTFILE" "SELECT params, strftime('%Y-%m-%d %H:%M',begin) AS start, user||'@'||hostname AS host, exit_code AS e, sudo_user AS s FROM flyto WHERE params LIKE '$1%' ORDER BY begin DESC" | awk '
+      NR==2{l=index($0," -")}
+      NR>2{i=substr($0,1,l);sub(" *$","",i);print i sep substr($0,l+1)}
+    ' sep="$sep"
 }
 
 _fly_hist_del() {
     _fly_hist_init || return
     typeset params="${1//$'\''/$'\\\''}"
-    sqlite3 "$FLY_HISTFILE" "DELETE FROM flyto WHERE params='$params'"
+    "$_fly_sqlite" "$FLY_HISTFILE" "DELETE FROM flyto WHERE params='$params'"
 }
 
 function _fly_ssh
@@ -455,12 +458,12 @@ function _fly_ssh
         typeset hostname user
         _fly_hist_init || return
         read hostname user <<<"$(ssh -G "${ssh_args[@]}" "${ssh_argc[@]}" 2>/dev/null | awk '/^hostname /{h=$2} /^user /{u=$2} h && u {exit} END{print h, u}')"
-        sqlite3 "$FLY_HISTFILE" "INSERT OR REPLACE INTO flyto (params, begin, sudo_user, hostname, user) VALUES ('$params', datetime('now','localtime'), '$SUDO_USER', '$hostname', '$user')"
+        "$_fly_sqlite" "$FLY_HISTFILE" "INSERT OR REPLACE INTO flyto (params, begin, sudo_user, hostname, user) VALUES ('$params', datetime('now','localtime'), '$SUDO_USER', '$hostname', '$user')"
     }
     _fly_hist_end()
     {
         _fly_hist_init || return
-        sqlite3 "$FLY_HISTFILE" "UPDATE flyto SET end=datetime('now','localtime'), exit_code=$e WHERE params='$params'"
+        "$_fly_sqlite" "$FLY_HISTFILE" "UPDATE flyto SET end=datetime('now','localtime'), exit_code=$e WHERE params='$params'"
     }
     _ssh2()
     {
@@ -671,19 +674,6 @@ alias fly.fish='. $FLY_HOME/.fly.d/fly.fish'
 
 . $_fly_lib/aliases
 end # fish cannot return...
-FLY_EOF
-
-cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/plugins/fly-hist/fly-hist.plugin.bash
-_flyto() {
-    COMP_SORT=''
-    COMP_DELFUNC=_fly_hist_del
-    FLY_HIST=()
-    _arrayread FLY_HIST <<<"$(_fly_hist "${COMP_WORDS[1]}")"
-    [ "$_compfunc_ssh" ] && $_compfunc_ssh "$@"
-    COMPREPLY=( "${FLY_HIST[@]}" "${COMPREPLY[@]}" )
-}
-declare -F _completion_loader >/dev/null && _completion_loader ssh
-complete -F _flyto flyto fto fssh bto kto zto fsshb fsshk fsshz
 FLY_EOF
 
 )
