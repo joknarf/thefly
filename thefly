@@ -61,7 +61,7 @@ function _fly_init
             [ -f $f ] || touch $f
         done
         [ -s ".flyuuid" ] || uuidgen >".flyuuid"
-        mkdir -p .fly.lib plugins plugins.d plugins.d/{00-pre,99-post}
+        mkdir -p .fly.lib plugins plugins.d plugins.d/{00-pre,99-post} completions
         [ -d .git ] || { git init;git -M main; git checkout -b main; printf '%s\n%s' fly .fly.lib >.gitignore; } >/dev/null 2>&1
         cd .fly.lib
         for f in .bashrc .zshrc;do
@@ -300,6 +300,43 @@ $ fsshz                         # flyto with zsh
 ~/.fly.d/.zshrc                 # specific zsh environment
 FLY_EOF
 
+cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/completions/compdef.zsh
+fpath=("${0%/*}" $fpath)
+autoload -Uz compinit
+compinit
+FLY_EOF
+
+cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/completions/_flyto
+#compdef _fly flyto=_fly fto=fly_ bto=_fly zto=_fly kto=_fly ftof=_fly fssh=fly_ fsshb=fly_ fsshz=fly_ fsshk=fly_ fsshf=fly_ 
+function _flyto {
+  local -a commands
+  local COMPADD_ARGS=(-Q)
+  commands=(
+    "${(@f)$(_fly_hist "$words[$CURRENT]" ':')}"
+  )
+  _describe -t commands 'flyto command' commands
+}
+FLY_EOF
+
+cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/completions/_flyto.bash
+_fly_hist_array() {
+    local IFS=$'\n'
+    set -f; FLY_HIST=($(cat)); set +f
+}
+_flyto() {
+    COMP_SORT=''
+    COMP_DELFUNC=_fly_hist_del
+    local FLY_HIST
+    ((COMP_CWORD)) || return 1
+    ((COMP_CWORD==1)) && _fly_hist_array <<<"$(_fly_hist "${COMP_WORDS[1]}" $'\t')"
+    shift
+    [ "$_compfunc_ssh" ] && $_compfunc_ssh ssh "$@" && COMPREPLY=( "${FLY_HIST[@]}" "${COMPREPLY[@]}" ) && return
+    COMPREPLY=( "${FLY_HIST[@]%%$'\t'*}" )
+}
+declare -F _completion_loader >/dev/null && _completion_loader ssh
+complete -F _flyto flyto fto fssh bto kto zto fsshb fsshk fsshz
+FLY_EOF
+
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/fly
 ############ fly ##########
 # Author: Franck Jouvanceau
@@ -436,19 +473,40 @@ _fly_hist_init()
     ) || return 1
 }
 
-_fly_hist(){
-    local sep="${2:-$'\t'}"
+_fly_hist_list() {
     _fly_hist_init || return
-    "$_fly_sqlite" -header -column "$FLY_HISTFILE" "SELECT params, strftime('%Y-%m-%d %H:%M',begin) AS start, user||'@'||hostname AS host, exit_code AS e, sudo_user AS s FROM flyto WHERE params LIKE '$1%' ORDER BY begin DESC" | awk '
-      NR==2{l=index($0," -")}
-      NR>2{i=substr($0,1,l);sub(" *$","",i);print i sep substr($0,l+1)}
-    ' sep="$sep"
+    "$_fly_sqlite" -header -column "$FLY_HISTFILE" "SELECT params, strftime('%Y-%m-%d %H:%M',begin) AS start, user||'@'||hostname AS host, exit_code AS e, sudo_user AS s FROM flyto WHERE params LIKE '$1%' ORDER BY begin DESC"
 }
 
 _fly_hist_del() {
     _fly_hist_init || return
     typeset params="${1//$'\''/$'\\\''}"
     "$_fly_sqlite" "$FLY_HISTFILE" "DELETE FROM flyto WHERE params='$params'"
+}
+
+_fly_hist() {
+    typeset sep="$2"
+    _fly_hist_list "$1"| awk '
+      NR==2{l=index($0," -")}
+      NR>2{i=substr($0,1,l);sub(" *$","",i);print i sep substr($0,l+1)}
+    ' sep="$sep"
+}
+
+_fly_hist_key() {
+    typeset item="${_aitems[$_nsel]}"
+    # F8 Ctl-D Del
+    case "$1" in
+        '[19~'|$'\x04'|'[3~') _fly_hist_del "${item%%$'\t'*}";;
+    esac
+    return 2
+}
+
+flyto_history() {
+    [ "$SELECTOR_CASEI" ] && {
+        selector -i "$(_fly_hist "$1" $'\t')" -m 10 -k _fly_hist_key >/dev/null || return 0
+        _fly_ssh $selected; return $?
+    }
+    _fly_hist_list "$1"
 }
 
 function _fly_ssh
@@ -521,6 +579,7 @@ function _fly
         ;;
         ssh|to) 
             shift
+            [ "$1" = -H ] && { flyto_history "$2"; return $?; }
             [ "$_fly_ssh_ok" ] || _fly_ssh_ok
             [ ! "$1" ] && echo "fly: error: missing destination/ssh params" && return 1
             _fly_ssh "$@"
