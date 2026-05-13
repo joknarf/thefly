@@ -306,6 +306,17 @@ autoload -Uz compinit
 compinit
 FLY_EOF
 
+cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/completions/_flyas.bash
+_flyas()
+{
+   case "$COMP_CWORD" in
+     1) COMPREPLY=($(compgen -u -- "${COMP_WORDS[$COMP_CWORD]}"));return 0;;
+     *) COMPREPLY=($(compgen -c -- "${COMP_WORDS[$COMP_CWORD]}"));return 0;;
+   esac
+}
+complete -F _flyas flyas fsu bsu zsh ksu flyas fsudo fsub fsuz fsuk fsuf
+FLY_EOF
+
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/completions/_flyto
 #compdef _fly flyto=_fly fto=fly_ bto=_fly zto=_fly kto=_fly ftof=_fly fssh=fly_ fsshb=fly_ fsshz=fly_ fsshk=fly_ fsshf=fly_ 
 function _flyto {
