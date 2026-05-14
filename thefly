@@ -486,7 +486,8 @@ _fly_hist_init()
 
 _fly_hist_list() {
     _fly_hist_init || return
-    "$_fly_sqlite" -header -column "$FLY_HISTFILE" "SELECT params, strftime('%Y-%m-%d %H:%M',begin) AS start, user||'@'||hostname AS host, exit_code AS e, sudo_user AS s FROM flyto WHERE params LIKE '$1%' ORDER BY begin DESC"
+    typeset filter="$1";shift
+    "$_fly_sqlite" "$@" "$FLY_HISTFILE" "SELECT params, strftime('%Y-%m-%d %H:%M',begin) AS start, user||'@'||hostname AS host, exit_code AS e, sudo_user AS s FROM flyto WHERE params LIKE '$filter%' ORDER BY begin DESC"
 }
 
 _fly_hist_del() {
@@ -497,9 +498,15 @@ _fly_hist_del() {
 
 _fly_hist() {
     typeset sep="$2"
-    _fly_hist_list "$1"| awk '
-      NR==2{l=index($0," -")}
-      NR>2{i=substr($0,1,l);sub(" *$","",i);print i sep substr($0,l+1)}
+    _fly_hist_list "$1"| awk -F'|' '
+      {for(i=1;i<=NF;i++) {if (length($i)>mw[i]) mw[i]=length($i);it[NR,i]=$i}}
+      END{ 
+        for(i=1;i<=NR;i++) {
+          printf("%s%s", it[i,1], sep)
+          for(j=2;j<=NF;j++) printf("%-*s ", mw[j], it[i,j])
+          printf("\n")
+        }
+      }
     ' sep="$sep"
 }
 
@@ -514,10 +521,12 @@ _fly_hist_key() {
 
 flyto_history() {
     [ "$SELECTOR_CASEI" ] && {
+        typeset selected
         selector -i "$(_fly_hist "$1" $'\t')" -m 10 -k _fly_hist_key >/dev/null || return 0
-        _fly_ssh $selected; return $?
+        echo "flyto $selected" >&2
+        eval _fly_ssh "$selected"; return $?
     }
-    _fly_hist_list "$1"
+    _fly_hist_list "$1" -column -header
 }
 
 function _fly_ssh
@@ -542,6 +551,7 @@ function _fly_ssh
         _fly_hist_end
     }
     typeset cmd ssh_args=() ssh_config ssh_argc=() fly_cmd e params
+    [ "$KSH_VERSION" ] && { set -A ssh_args --;set -A ssh_argc --; }
     while [ "$1" ];do
         case "$1" in
         --usage|-V) ssh "$1"; return $?;;
@@ -554,10 +564,12 @@ function _fly_ssh
         esac
         shift
     done
-    printf -v params '%q ' "${ssh_args[@]}" "${ssh_argc[@]}";params="${params% }";params="${params//$'\''/$'\\\''}"
+    params="$(printf '%q ' "${ssh_args[@]}" "${ssh_argc[@]}")";params="${params% }"
+    params="${params//$'\''/$'\\\''}";
     _fly_hist_add
     cmd="exec /bin/sh -c '$(_fly_pkg_warp "${fly_cmd[@]}")'"
     cmd="${cmd//$'\n'/;}"
+    [ "$_fly_ssh_ok" ] || _fly_ssh_ok
     $_fly_ssh_ok && [ ${#cmd} -lt 130000 ] || { _ssh2 ; return $e; } 
     [ ! "$ssh_config" ] && [ -f ~/.ssh/config ] && ssh_config="Include $HOME/.ssh/config"
     cat - <<_EOF_ >"$FLY_HOME/.fly.ssh"
@@ -591,7 +603,6 @@ function _fly
         ssh|to) 
             shift
             [ "$1" = -H ] && { flyto_history "$2"; return $?; }
-            [ "$_fly_ssh_ok" ] || _fly_ssh_ok
             [ ! "$1" ] && echo "fly: error: missing destination/ssh params" && return 1
             _fly_ssh "$@"
             return $?
