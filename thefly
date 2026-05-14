@@ -380,7 +380,7 @@ read _fly_tar <<<"$(whence gtar gnutar tar)"
     _fly_taropts=( --exclude=.git --exclude=.github --exclude=.gitignore )
 } || _fly_taropts=( --no-xattrs --exclude-vcs )
 
-function _fly_zsh_glob
+_fly_zsh_glob()
 {
     [ "${FLY_SHELL##*/}" = "zsh" ] || return 0
     case "$1" in
@@ -389,13 +389,13 @@ function _fly_zsh_glob
     esac
 }
 
-function _fly_package
+_fly_package()
 {
     [ "$FLY_RC" ] && [ -r "$FLY_RC" ] && cp "$FLY_RC" "$_fly_lib"
     $_fly_tar -cf - -C "$FLY_HOME" "$_fly_tarz" "${_fly_taropts[@]}" --exclude=README.md --exclude='plugins/*/.*' --exclude '*/*/tests' .fly.d
 }
 
-function _fly_xpretar
+_fly_xpretar()
 {
     printf 'FLY_HOME="%s"\n' "$_fly_tmpdir"
     cat - <<'EOF'
@@ -408,12 +408,12 @@ rm -rf "$FLY_HOME/.fly.d"
 EOF
 }
 
-function _fly_xpackage
+_fly_xpackage()
 {   
     printf '$tar -xmf - -C "$FLY_HOME" %s --no-same-owner' "$_fly_tarz"
 }
 
-function _fly_sudo
+_fly_sudo()
 {
     typeset user="${1:-root}" e
     [ "$user" = '-' ] && user='root'
@@ -424,7 +424,7 @@ function _fly_sudo
     return $e
 }
 
-function _fly_ssh_ok
+_fly_ssh_ok()
 {
     typeset ssh_ver ssh_maj ssh_min r
     _fly_ssh_ok=false
@@ -438,7 +438,7 @@ function _fly_ssh_ok
     return 0
 }
 
-function _fly_package_zfx
+_fly_package_zfx()
 {
     typeset b64opt
     base64 -w0 <<<ok >/dev/null 2>&1 && b64opt='-w0'
@@ -447,7 +447,7 @@ $(_fly_xpretar);echo "$(_fly_package |base64 $b64opt)"|base64 -d|$(_fly_xpackage
 EOF
 }
 
-function _fly_pack
+_fly_pack()
 {
     cat - <<EOF
 [ "\$_fly_lock" ] && return
@@ -457,7 +457,7 @@ function _fly_pack
 EOF
 }
 
-function _fly_pkg_login
+_fly_pkg_login()
 {
     cat - <<EOF
 _fly_destshell="$_fly_destshell"
@@ -468,7 +468,7 @@ _fly_cmd="$([ "$1" ] && printf '%q ' "$@" |base64 -w 0)"
 EOF
 }
 
-function _fly_pkg_warp
+_fly_pkg_warp()
 {
     _fly_package_zfx
     _fly_pkg_login "$@"
@@ -529,7 +529,7 @@ flyto_history() {
     _fly_hist_list "$1" -column -header
 }
 
-function _fly_ssh
+_fly_ssh()
 {
     _fly_hist_add()
     {
@@ -583,7 +583,7 @@ _EOF_
 }
 
 
-function _fly
+_fly()
 {
     typeset plugin submodule
     _fly_tmpdir="$FLY_TMPDIR/.fly.\`id -u\`/$_fly_uuid"
@@ -621,7 +621,7 @@ function _fly
     esac
 }
 
-function _fly_cleanup
+_fly_cleanup()
 {
     [ -d "$1" ] || return 0
     [ "$(\cd "$1";pwd -P)" = "$(\cd "$HOME";pwd -P)" ] && return 0
