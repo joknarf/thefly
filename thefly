@@ -380,7 +380,7 @@ read _fly_tar <<<"$(whence gtar gnutar tar)"
     _fly_taropts=( --exclude=.git --exclude=.github --exclude=.gitignore )
 } || _fly_taropts=( --no-xattrs --exclude-vcs )
 
-_fly_zsh_glob()
+function _fly_zsh_glob
 {
     [ "${FLY_SHELL##*/}" = "zsh" ] || return 0
     case "$1" in
@@ -389,13 +389,13 @@ _fly_zsh_glob()
     esac
 }
 
-_fly_package()
+function _fly_package
 {
     [ "$FLY_RC" ] && [ -r "$FLY_RC" ] && cp "$FLY_RC" "$_fly_lib"
     $_fly_tar -cf - -C "$FLY_HOME" "$_fly_tarz" "${_fly_taropts[@]}" --exclude=README.md --exclude='plugins/*/.*' --exclude '*/*/tests' .fly.d
 }
 
-_fly_xpretar()
+function _fly_xpretar
 {
     printf 'FLY_HOME="%s"\n' "$_fly_tmpdir"
     cat - <<'EOF'
@@ -408,12 +408,12 @@ rm -rf "$FLY_HOME/.fly.d"
 EOF
 }
 
-_fly_xpackage()
+function _fly_xpackage
 {   
     printf '$tar -xmf - -C "$FLY_HOME" %s --no-same-owner' "$_fly_tarz"
 }
 
-_fly_sudo()
+function _fly_sudo
 {
     typeset user="${1:-root}" e
     [ "$user" = '-' ] && user='root'
@@ -424,7 +424,7 @@ _fly_sudo()
     return $e
 }
 
-_fly_ssh_ok()
+function _fly_ssh_ok
 {
     typeset ssh_ver ssh_maj ssh_min r
     _fly_ssh_ok=false
@@ -438,7 +438,7 @@ _fly_ssh_ok()
     return 0
 }
 
-_fly_package_zfx()
+function _fly_package_zfx
 {
     typeset b64opt
     base64 -w0 <<<ok >/dev/null 2>&1 && b64opt='-w0'
@@ -447,7 +447,7 @@ $(_fly_xpretar);echo "$(_fly_package |base64 $b64opt)"|base64 -d|$(_fly_xpackage
 EOF
 }
 
-_fly_pack()
+function _fly_pack
 {
     cat - <<EOF
 [ "\$_fly_lock" ] && return
@@ -457,7 +457,7 @@ _fly_pack()
 EOF
 }
 
-_fly_pkg_login()
+function _fly_pkg_login
 {
     cat - <<EOF
 _fly_destshell="$_fly_destshell"
@@ -468,13 +468,13 @@ _fly_cmd="$([ "$1" ] && printf '%q ' "$@" |base64 -w 0)"
 EOF
 }
 
-_fly_pkg_warp()
+function _fly_pkg_warp
 {
     _fly_package_zfx
     _fly_pkg_login "$@"
 }
 
-_fly_hist_init()
+function _fly_hist_init
 {
     [ "$FLY_HISTFILE" ] || return 1
     [ "$_fly_sqlite" ] || return 1
@@ -484,19 +484,19 @@ _fly_hist_init()
     ) || return 1
 }
 
-_fly_hist_list() {
+function _fly_hist_list {
     _fly_hist_init || return
     typeset filter="$1";shift
     "$_fly_sqlite" "$@" "$FLY_HISTFILE" "SELECT params, strftime('%Y-%m-%d %H:%M',begin) AS start, user||'@'||hostname AS host, exit_code AS e, sudo_user AS s FROM flyto WHERE params LIKE '$filter%' ORDER BY begin DESC"
 }
 
-_fly_hist_del() {
+function _fly_hist_del {
     _fly_hist_init || return
-    typeset params="${1//$'\''/$'\\\''}"
+    typeset params="${1//$'\''/$'\'\''}"
     "$_fly_sqlite" "$FLY_HISTFILE" "DELETE FROM flyto WHERE params='$params'"
 }
 
-_fly_hist() {
+function _fly_hist {
     typeset sep="$2"
     _fly_hist_list "$1"| awk -F'|' '
       {for(i=1;i<=NF;i++) {if (length($i)>mw[i]) mw[i]=length($i);it[NR,i]=$i}}
@@ -519,17 +519,20 @@ _fly_hist_key() {
     return 2
 }
 
-flyto_history() {
+function flyto_history {
     [ "$SELECTOR_CASEI" ] && {
-        typeset selected
-        selector -i "$(_fly_hist "$1" $'\t')" -m 10 -k _fly_hist_key >/dev/null || return 0
-        echo "flyto $selected" >&2
-        eval _fly_ssh "$selected"; return $?
+        typeset s
+        selected=''
+        selector -i "$(_fly_hist "$1" $'\t')" -m 10 -k _fly_hist_key
+        s="$selected";unset selected
+        [ "$s" ] || return 0
+        echo "flyto $s" >&2
+        eval _fly_ssh "$s"; return $?
     }
     _fly_hist_list "$1" -column -header
 }
 
-_fly_ssh()
+function _fly_ssh
 {
     _fly_hist_add()
     {
@@ -551,7 +554,7 @@ _fly_ssh()
         _fly_hist_end
     }
     typeset cmd ssh_args=() ssh_config ssh_argc=() fly_cmd e params
-    [ "$KSH_VERSION" ] && { set -A ssh_args --;set -A ssh_argc --; }
+    set -A ssh_args -- 2>/dev/null;set -A ssh_argc 2>/dev/null
     while [ "$1" ];do
         case "$1" in
         --usage|-V) ssh "$1"; return $?;;
@@ -565,7 +568,7 @@ _fly_ssh()
         shift
     done
     params="$(printf '%q ' "${ssh_args[@]}" "${ssh_argc[@]}")";params="${params% }"
-    params="${params//$'\''/$'\\\''}";
+    params="${params//$'\''/$'\'\''}";
     _fly_hist_add
     cmd="exec /bin/sh -c '$(_fly_pkg_warp "${fly_cmd[@]}")'"
     cmd="${cmd//$'\n'/;}"
@@ -583,7 +586,7 @@ _EOF_
 }
 
 
-_fly()
+function _fly
 {
     typeset plugin submodule
     _fly_tmpdir="$FLY_TMPDIR/.fly.\`id -u\`/$_fly_uuid"
@@ -621,7 +624,7 @@ _fly()
     esac
 }
 
-_fly_cleanup()
+function _fly_cleanup
 {
     [ -d "$1" ] || return 0
     [ "$(\cd "$1";pwd -P)" = "$(\cd "$HOME";pwd -P)" ] && return 0
