@@ -523,7 +523,7 @@ function flyto_history {
     [ "$SELECTOR_CASEI" ] && {
         typeset s
         selected=''
-        selector -i "$(_fly_hist "$1" $'\t')" -m 10 -k _fly_hist_key
+        selector -i "$(_fly_hist "$1" $'\t')" -m 10 -k _fly_hist_key >/dev/null
         s="$selected";unset selected
         [ "$s" ] || return 0
         echo "flyto $s" >&2
@@ -553,8 +553,8 @@ function _fly_ssh
         e=$?
         _fly_hist_end
     }
-    typeset cmd ssh_args=() ssh_config ssh_argc=() fly_cmd e params
-    set -A ssh_args -- 2>/dev/null;set -A ssh_argc 2>/dev/null
+    typeset cmd ssh_args=() ssh_config ssh_argc=() fly_cmd e params q=$'\''
+    set -A ssh_args 2>/dev/null;set -A ssh_argc 2>/dev/null
     while [ "$1" ];do
         case "$1" in
         --usage|-V) ssh "$1"; return $?;;
@@ -568,7 +568,7 @@ function _fly_ssh
         shift
     done
     params="$(printf '%q ' "${ssh_args[@]}" "${ssh_argc[@]}")";params="${params% }"
-    params="${params//$'\''/$'\'\''}";
+    params="${params//$q/$q$q}";
     _fly_hist_add
     cmd="exec /bin/sh -c '$(_fly_pkg_warp "${fly_cmd[@]}")'"
     cmd="${cmd//$'\n'/;}"
