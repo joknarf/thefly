@@ -273,8 +273,9 @@ $ fly source                    # source the plugins for current shell (*.plugin
 $ fly upgrade                   # upgrade fly from github joknarf/thefly
 $ flyls                         # list plugins for current shell
 $ flysh <shell>                 # change current shell with fly env
-$ flyas [<user>] [<shell>]      # change user with your fly env (default <user>: root,<shell>: <user> shell)
-$ flyto <ssh options>           # connect to server through ssh with your fly env
+$ flyas [<user> [<cmd>]]        # change user with your fly env (default <user>: root,<shell>: <user> shell)
+$ flyto <ssh options> [-- cmd]  # connect to server through ssh with your fly env
+$ flyto -H [<search>]           # display flyto history filtered begining with <search>
 
 aliases:
 $ fbash                         # flysh bash
