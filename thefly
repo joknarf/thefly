@@ -188,13 +188,11 @@ set --
 [ -r "$FLY_HOME/.fly.d/.${_fly_shell}rc" ] && . "$FLY_HOME/.fly.d/.${_fly_shell}rc"
 $FLY_USER_RC && [ "$FLY_RC" ] && [ -r "$FLY_RC" ] && cp "$FLY_RC" "$_fly_lib"
 [ "$FLY_RC" ] && [ -r "$_fly_lib/${FLY_RC##*/}" ] && . "$_fly_lib/${FLY_RC##*/}"
-_fly_zsh_glob fix
-for _fly_plugin in $(\ls -- "$FLY_HOME/.fly.d/plugins"${_fly_p:-.d/*}/*.plugin."$_fly_shell" "$FLY_HOME/.fly.d/completions"/*."$_fly_shell" 2>/dev/null)
+for _fly_plugin in "$FLY_HOME/.fly.d/plugins"${_fly_p:-.d/*}/*.plugin."$_fly_shell" "$FLY_HOME/.fly.d/completions"/*."$_fly_shell"
 do
-    . "$_fly_plugin"
+    [ -r "$_fly_plugin" ] && . "$_fly_plugin"
 done
 unset _fly_p _fly_plugin _fly_shell
-_fly_zsh_glob reset
 FLY_EOF
 
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/.source_plugins.fish
@@ -379,15 +377,6 @@ read _fly_tar <<<"$(whence gtar gnutar tar)"
 [[ "$($_fly_tar --version 2>/dev/null)" = *busybox* ]] && {
     _fly_taropts=( --exclude=.git --exclude=.github --exclude=.gitignore )
 } || _fly_taropts=( --no-xattrs --exclude-vcs )
-
-function _fly_zsh_glob
-{
-    [ "${FLY_SHELL##*/}" = "zsh" ] || return 0
-    case "$1" in
-    fix)   [[ ! -o nonomatch ]] && _fly_zsh_nonomatch=1 && setopt nonomatch;;
-    reset) [ "$_fly_zsh_nomatch" ] && unset _fly_zsh_nonomatch && unsetopt nonomatch;;
-    esac
-}
 
 function _fly_package
 {
@@ -592,9 +581,7 @@ function _fly
     _fly_tarz="$FLY_TARZ"
     case "$1" in
         list)
-            _fly_zsh_glob fix
-            (\cd "$FLY_HOME/.fly.d/plugins" && ls -1 -- */*.plugin."${FLY_SHELL##*/}")
-            _fly_zsh_glob reset
+            (\cd "$FLY_HOME/.fly.d/plugins" && printf '%s\n' */*.plugin."${FLY_SHELL##*/}")
         ;;
         shell)
             shift
@@ -689,8 +676,7 @@ case "$1" in
     ;;
     updateall)
         shift
-        _fly_zsh_glob fix
-        for plugin in $(ls -d "$FLY_HOME/.fly.d/plugins"/*/.git) ;do
+        for plugin in "$FLY_HOME/.fly.d/plugins"/*/.git ;do
             [ -d "$plugin" ] && (\cd "$plugin/.." && git pull origin "$(git rev-parse --abbrev-ref HEAD)")
             [ -s "$plugin" ] && submodule=1
         done
@@ -698,7 +684,7 @@ case "$1" in
             git submodule update --remote --merge 2>/dev/null
             git submodule foreach git pull 2>/dev/null
         })
-        _fly_zsh_glob reset
+        unset plugin submodule
         [ "$_fly_fish" ] || . "$_fly_lib/.source_plugins"
     ;;
     upgrade)
