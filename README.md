@@ -58,6 +58,7 @@ Keep your full shell environment anywhere you go, just maintain it once and tele
 * automatic cleaning of tmp teleportation directory when last fly session exits (`flock` needed)
 * force specific destination shell when sudo or ssh (not using target user shell)
 * directly execute commands using teleported env (fish excluded)
+* flyto (ssh) connection history / completion (`sqlite` needed)
 * lightweight/fast, only few KB / pure shell
 * create a single pak env file including dotfiles and plugins to be used anywhere (`flypack >pak`, `. ./pak`)
 * get a full coherent nice/powerfull environment with joknarf plugins: visit [Joknarf Tools](https://joknarf.github.io/joknarf-tools)
@@ -190,6 +191,11 @@ you can, for example, cumulate multiple teleportations:
 ```
 fsu user1 fto host1 -- fsu user2 fto host2
 ```
+
+flyto history located at `~/.fly_history` (`sqlite` package need to be installed)  
+it can be accessed using: `flyto -H <search>`  
+or just using flyto tab completion (bash/zsh)  
+(better rendering with `joknarf/shell-ng` plugin)
 
 ### To another shell
 
