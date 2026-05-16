@@ -522,7 +522,6 @@ _fly_hist_key() {
 function flyto_history {
     [ "$SELECTOR_CASEI" ] && {
         typeset s
-        selected=''
         selector -i "$(_fly_hist "$1" $'\t')" -m 10 -k _fly_hist_key >/dev/null
         s="$selected";unset selected
         [ "$s" ] || return 0
