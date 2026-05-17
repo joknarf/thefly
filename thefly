@@ -317,14 +317,20 @@ complete -F _flyas flyas fsu bsu zsh ksu flyas fsudo fsub fsuz fsuk fsuf
 FLY_EOF
 
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/completions/_flyto
-#compdef _fly flyto=_fly fto=fly_ bto=_fly zto=_fly kto=_fly ftof=_fly fssh=fly_ fsshb=fly_ fsshz=fly_ fsshk=fly_ fsshf=fly_ 
+#compdef _fly 
 function _flyto {
   local -a commands
   local COMPADD_ARGS=(-Q)
-  commands=(
-    "${(@f)$(_fly_hist "$words[$CURRENT]" ':')}"
-  )
-  _describe -t commands 'flyto command' commands
+  case "${words[2]}" in
+    ssh)
+      commands=(
+        "${(@f)$(_fly_hist "$words[$CURRENT]" ':')}"
+      )
+      _describe -t commands 'flyto command' commands
+    ;;
+    sudo) [ "$CURRENT" = 3 ] && _users 
+    ;;
+  esac
 }
 FLY_EOF
 
