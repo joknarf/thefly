@@ -305,24 +305,6 @@ autoload -Uz compinit
 compinit
 FLY_EOF
 
-cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/completions/_fly
-#compdef _fly
-function _flyto {
-  local -a commands
-  local COMPADD_ARGS=(-Q)
-  case "${words[2]}" in
-    ssh)
-      commands=(
-        "${(@f)$(_fly_hist "$words[$CURRENT]" ':')}"
-      )
-      _describe -t commands 'flyto command' commands
-    ;;
-    sudo) [ "$CURRENT" = 3 ] && _users
-    ;;
-  esac
-}
-FLY_EOF
-
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/completions/_flyas.bash
 _flyas()
 {
@@ -351,6 +333,24 @@ _flyto() {
 }
 declare -F _completion_loader >/dev/null && _completion_loader ssh
 complete -F _flyto flyto fto fssh bto kto zto fsshb fsshk fsshz
+FLY_EOF
+
+cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/completions/_fly_
+#compdef _fly
+function _fly_ {
+  local -a commands
+  local COMPADD_ARGS=(-Q)
+  case "${words[2]}" in
+    ssh)
+      commands=(
+        "${(@f)$(_fly_hist "$words[$CURRENT]" ':')}"
+      )
+      _describe -t commands 'flyto command' commands
+    ;;
+    sudo) [ "$CURRENT" = 3 ] && _users
+    ;;
+  esac
+}
 FLY_EOF
 
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/fly
@@ -598,8 +598,7 @@ function _fly
         ;;
         ssh|to) 
             shift
-            [ "$1" = -H ] && { flyto_history "$2"; return $?; }
-            [ ! "$1" ] && echo "fly: error: missing destination/ssh params" && return 1
+            [ "${1:--H}" = -H ] && { flyto_history "$2"; return $?; }
             _fly_ssh "$@"
             return $?
         ;;
