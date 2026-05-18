@@ -306,7 +306,7 @@ compinit
 FLY_EOF
 
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/completions/_fly
-#compdef _fly 
+#compdef _fly
 function _flyto {
   local -a commands
   local COMPADD_ARGS=(-Q)
@@ -317,7 +317,7 @@ function _flyto {
       )
       _describe -t commands 'flyto command' commands
     ;;
-    sudo) [ "$CURRENT" = 3 ] && _users 
+    sudo) [ "$CURRENT" = 3 ] && _users
     ;;
   esac
 }
