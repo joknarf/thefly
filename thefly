@@ -147,23 +147,28 @@ ENV=~/.kshrc
 #alias readonly=typeset
 alias _src_etc_profile_d='true' # rhel
 $FLY_ETC_RC && . /etc/profile
+\cd
 [ -r .profile ] && $FLY_USER_RC && . ./.profile
-[ -r "$ENV" ] && $FLY_USER_RC && . $ENV
+[ -r "$ENV" ] && $FLY_USER_RC && . "$ENV"
 #unalias typeset readonly
 unalias _src_etc_profile_d
 FLY_EOF
 
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/.login.zsh
 ZDOTDIR=~/
+\cd
 for i in zshenv zprofile zshrc;do
-    [ -r /etc/zsh/$i ] && $FLY_ETC_RC && . /etc/zsh/$i
-    [ -r .$i ] && $FLY_USER_RC && . ./.$i
+    [ -r "/etc/zsh/$i" ] && "$FLY_ETC_RC" && . "/etc/zsh/$i"
+    [ -r ".$i" ] && "$FLY_USER_RC" && . "./.$i"
 done
+unset i
 #typeset +r PS1
 FLY_EOF
 
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/.loginshell
 ## /!\ sourced by /bin/sh
+FLY_ETC_RC="${FLY_ETC_RC:-true}"
+FLY_USER_RC="${FLY_USER_RC:-true}"
 export FLY_HOME FLY_ETC_RC FLY_USER_RC _fly_cmd
 \cd "$FLY_HOME/.fly.d/.fly.lib"
 . ./.fshell
@@ -457,8 +462,8 @@ function _fly_pkg_login
 {
     cat - <<EOF
 _fly_destshell="$_fly_destshell"
-FLY_ETC_RC="${FLY_ETC_RC:-true}"
-FLY_USER_RC="${FLY_USER_RC:-true}"
+FLY_ETC_RC="$FLY_ETC_RC"
+FLY_USER_RC="$FLY_USER_RC"
 _fly_cmd="$([ "$1" ] && printf '%q ' "$@" |base64 -w 0)"
 . "\$FLY_HOME/.fly.d/.fly.lib/.loginshell"
 EOF
