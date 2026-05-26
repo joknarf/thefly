@@ -22,7 +22,8 @@ What's the point to have a fine tuned local shell environment if you lose it as 
 
 ## Demo
 
-![thefly_demo](https://github.com/user-attachments/assets/56d636fc-b8f3-4b88-b913-eba1819535b0)
+![thefly_demo](https://github.com/user-attachments/assets/dea536d5-b256-4867-854f-d5d0fcd3e276)
+
 
 Get full coherent new shell experience using joknarf plugins ! (you may install any other plugins too)
 
