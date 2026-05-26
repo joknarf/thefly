@@ -61,7 +61,7 @@ function _fly_init
             [ -f $f ] || touch $f
         done
         [ -s ".flyuuid" ] || uuidgen >".flyuuid"
-        mkdir -p .fly.lib plugins plugins.d plugins.d/{00-pre,99-post}
+        mkdir -p .fly.lib plugins plugins.d plugins.d/{00-pre,99-post} completions
         [ -d .git ] || { git init;git -M main; git checkout -b main; printf '%s\n%s' fly .fly.lib >.gitignore; } >/dev/null 2>&1
         cd .fly.lib
         for f in .bashrc .zshrc;do
@@ -147,23 +147,28 @@ ENV=~/.kshrc
 #alias readonly=typeset
 alias _src_etc_profile_d='true' # rhel
 $FLY_ETC_RC && . /etc/profile
+\cd
 [ -r .profile ] && $FLY_USER_RC && . ./.profile
-[ -r "$ENV" ] && $FLY_USER_RC && . $ENV
+[ -r "$ENV" ] && $FLY_USER_RC && . "$ENV"
 #unalias typeset readonly
 unalias _src_etc_profile_d
 FLY_EOF
 
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/.login.zsh
 ZDOTDIR=~/
+\cd
 for i in zshenv zprofile zshrc;do
-    [ -r /etc/zsh/$i ] && $FLY_ETC_RC && . /etc/zsh/$i
-    [ -r .$i ] && $FLY_USER_RC && . ./.$i
+    [ -r "/etc/zsh/$i" ] && "$FLY_ETC_RC" && . "/etc/zsh/$i"
+    [ -r ".$i" ] && "$FLY_USER_RC" && . "./.$i"
 done
+unset i
 #typeset +r PS1
 FLY_EOF
 
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/.loginshell
 ## /!\ sourced by /bin/sh
+FLY_ETC_RC="${FLY_ETC_RC:-true}"
+FLY_USER_RC="${FLY_USER_RC:-true}"
 export FLY_HOME FLY_ETC_RC FLY_USER_RC _fly_cmd
 \cd "$FLY_HOME/.fly.d/.fly.lib"
 . ./.fshell
@@ -188,13 +193,11 @@ set --
 [ -r "$FLY_HOME/.fly.d/.${_fly_shell}rc" ] && . "$FLY_HOME/.fly.d/.${_fly_shell}rc"
 $FLY_USER_RC && [ "$FLY_RC" ] && [ -r "$FLY_RC" ] && cp "$FLY_RC" "$_fly_lib"
 [ "$FLY_RC" ] && [ -r "$_fly_lib/${FLY_RC##*/}" ] && . "$_fly_lib/${FLY_RC##*/}"
-_fly_zsh_glob fix
-for _fly_plugin in $(\ls -- "$FLY_HOME/.fly.d/plugins"${_fly_p:-.d/*}/*.plugin."$_fly_shell" 2>/dev/null)
+for _fly_plugin in "$FLY_HOME/.fly.d/plugins"${_fly_p:-.d/*}/*.plugin."$_fly_shell" "$FLY_HOME/.fly.d/completions"/*."$_fly_shell"
 do
-    . "$_fly_plugin"
+    [ -r "$_fly_plugin" ] && . "$_fly_plugin"
 done
 unset _fly_p _fly_plugin _fly_shell
-_fly_zsh_glob reset
 FLY_EOF
 
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/.source_plugins.fish
@@ -275,8 +278,9 @@ $ fly source                    # source the plugins for current shell (*.plugin
 $ fly upgrade                   # upgrade fly from github joknarf/thefly
 $ flyls                         # list plugins for current shell
 $ flysh <shell>                 # change current shell with fly env
-$ flyas [<user>] [<shell>]      # change user with your fly env (default <user>: root,<shell>: <user> shell)
-$ flyto <ssh options>           # connect to server through ssh with your fly env
+$ flyas [<user> [<cmd>]]        # change user with your fly env (default <user>: root,<shell>: <user> shell)
+$ flyto <ssh options> [-- cmd]  # connect to server through ssh with your fly env
+$ flyto -H [<search>]           # display flyto history filtered begining with <search>
 
 aliases:
 $ fbash                         # flysh bash
@@ -300,6 +304,60 @@ $ fsshz                         # flyto with zsh
 ~/.fly.d/.zshrc                 # specific zsh environment
 FLY_EOF
 
+cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/completions/compdef.zsh
+fpath=("${0%/*}" $fpath)
+autoload -Uz compinit
+compinit
+FLY_EOF
+
+cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/completions/_flyas.bash
+_flyas()
+{
+   case "$COMP_CWORD" in
+     1) COMPREPLY=($(compgen -u -- "${COMP_WORDS[$COMP_CWORD]}"));return 0;;
+     *) COMPREPLY=($(compgen -c -- "${COMP_WORDS[$COMP_CWORD]}"));return 0;;
+   esac
+}
+complete -F _flyas flyas fsu bsu zsh ksu flyas fsudo fsub fsuz fsuk fsuf
+FLY_EOF
+
+cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/completions/_flyto.bash
+_fly_hist_array() {
+    local IFS=$'\n'
+    set -f; FLY_HIST=($(cat)); set +f
+}
+_flyto() {
+    COMP_SORT=''
+    COMP_DELFUNC=_fly_hist_del
+    local FLY_HIST
+    ((COMP_CWORD)) || return 1
+    ((COMP_CWORD==1)) && _fly_hist_array <<<"$(_fly_hist "${COMP_WORDS[1]}" $'\t')"
+    shift
+    [ "$_compfunc_ssh" ] && $_compfunc_ssh ssh "$@" && COMPREPLY=( "${FLY_HIST[@]}" "${COMPREPLY[@]}" ) && return
+    COMPREPLY=( "${FLY_HIST[@]%%$'\t'*}" )
+}
+declare -F _completion_loader >/dev/null && _completion_loader ssh
+complete -F _flyto flyto fto fssh bto kto zto fsshb fsshk fsshz
+FLY_EOF
+
+cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/completions/_fly_
+#compdef _fly
+function _fly_ {
+  local -a commands
+  local COMPADD_ARGS=(-Q)
+  case "${words[2]}" in
+    ssh)
+      commands=(
+        "${(@f)$(_fly_hist "$words[$CURRENT]" ':')}"
+      )
+      _describe -t commands 'flyto command' commands
+    ;;
+    sudo) [ "$CURRENT" = 3 ] && _users
+    ;;
+  esac
+}
+FLY_EOF
+
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/fly
 ############ fly ##########
 # Author: Franck Jouvanceau
@@ -315,6 +373,7 @@ export FLY_HOME
 : "${_fly_githubraw:=https://raw.githubusercontent.com}"
 : "${_fly_gitrepo:=joknarf/thefly}"
 : "${FLY_TMPDIR:=/tmp}"
+: "${FLY_HISTFILE:=$HOME/.fly_history}"
 : "${FLY_TARZ:=-z}"
 : "${_fly_uuid:=$(cat "$FLY_HOME/.fly.d/.flyuuid" 2>/dev/null || uuidgen)}"
 _fly_lib="$FLY_HOME/.fly.d/.fly.lib"
@@ -324,19 +383,12 @@ alias fly=". $FLY_HOME/.fly.d/fly"
 
 [ "$_fly_lock" ] && trap 'flock -u 4' TERM
 
-type gtar >/dev/null 2>&1 && _fly_tar=gtar || _fly_tar=tar
+type whence >/dev/null 2>&1 || whence() { type -p "$@"; }
+read _fly_sqlite <<<"$(whence sqlite3 sqlite)"
+read _fly_tar <<<"$(whence gtar gnutar tar)"
 [[ "$($_fly_tar --version 2>/dev/null)" = *busybox* ]] && {
     _fly_taropts=( --exclude=.git --exclude=.github --exclude=.gitignore )
 } || _fly_taropts=( --no-xattrs --exclude-vcs )
-
-function _fly_zsh_glob
-{
-    [ "${FLY_SHELL##*/}" = "zsh" ] || return 0
-    case "$1" in
-    fix)   [[ ! -o nonomatch ]] && _fly_zsh_nonomatch=1 && setopt nonomatch;;
-    reset) [ "$_fly_zsh_nomatch" ] && unset _fly_zsh_nonomatch && unsetopt nonomatch;;
-    esac
-}
 
 function _fly_package
 {
@@ -410,8 +462,8 @@ function _fly_pkg_login
 {
     cat - <<EOF
 _fly_destshell="$_fly_destshell"
-FLY_ETC_RC="${FLY_ETC_RC:-true}"
-FLY_USER_RC="${FLY_USER_RC:-true}"
+FLY_ETC_RC="$FLY_ETC_RC"
+FLY_USER_RC="$FLY_USER_RC"
 _fly_cmd="$([ "$1" ] && printf '%q ' "$@" |base64 -w 0)"
 . "\$FLY_HOME/.fly.d/.fly.lib/.loginshell"
 EOF
@@ -419,22 +471,93 @@ EOF
 
 function _fly_pkg_warp
 {
-    cat - <<EOF
-$(_fly_package_zfx)
-$(_fly_pkg_login "$@")
-EOF
+    _fly_package_zfx
+    _fly_pkg_login "$@"
+}
+
+function _fly_hist_init
+{
+    [ "$FLY_HISTFILE" ] || return 1
+    [ "$_fly_sqlite" ] || return 1
+    [ -f "$FLY_HISTFILE" ] || (
+        umask 0077
+        "$_fly_sqlite" "$FLY_HISTFILE" 'CREATE TABLE flyto (params PRIMARY KEY, begin datetime, end datetime, sudo_user, exit_code INTEGER, hostname, user)' 2>/dev/null
+    ) || return 1
+}
+
+function _fly_hist_list {
+    _fly_hist_init || return
+    typeset filter="$1";shift
+    "$_fly_sqlite" "$@" "$FLY_HISTFILE" "SELECT params, strftime('%Y-%m-%d %H:%M',begin) AS start, user||'@'||hostname AS host, exit_code AS e, sudo_user AS s FROM flyto WHERE params LIKE '$filter%' ORDER BY begin DESC"
+}
+
+function _fly_hist_del {
+    _fly_hist_init || return
+    typeset params="${1//$'\''/$'\'\''}"
+    "$_fly_sqlite" "$FLY_HISTFILE" "DELETE FROM flyto WHERE params='$params'"
+}
+
+function _fly_hist {
+    typeset sep="$2"
+    _fly_hist_list "$1"| awk -F'|' '
+      {for(i=1;i<=NF;i++) {if (length($i)>mw[i]) mw[i]=length($i);it[NR,i]=$i}}
+      END{ 
+        for(i=1;i<=NR;i++) {
+          printf("%s%s", it[i,1], sep)
+          for(j=2;j<=NF;j++) printf("%-*s ", mw[j], it[i,j])
+          printf("\n")
+        }
+      }
+    ' sep="$sep"
+}
+
+_fly_hist_key() {
+    typeset item="${_aitems[$_nsel]}"
+    # F8 Ctl-D Del
+    case "$1" in
+        '[19~'|$'\x04'|'[3~') _fly_hist_del "${item%%$'\t'*}";;
+    esac
+    return 2
+}
+
+function flyto_history {
+    [ "$SELECTOR_CASEI" ] && {
+        typeset s
+        selector -i "$(_fly_hist "$1" $'\t')" -m 10 -k _fly_hist_key >/dev/null
+        s="$selected";unset selected
+        [ "$s" ] || return 0
+        echo "flyto $s" >&2
+        eval _fly_ssh "$s"; return $?
+    }
+    _fly_hist_list "$1" -column -header
 }
 
 function _fly_ssh
 {
+    _fly_hist_add()
+    {
+        typeset hostname user
+        _fly_hist_init || return
+        read hostname user <<<"$(ssh -G "${ssh_args[@]}" "${ssh_argc[@]}" 2>/dev/null | awk '/^hostname /{h=$2} /^user /{u=$2} h && u {exit} END{print h, u}')"
+        "$_fly_sqlite" "$FLY_HISTFILE" "INSERT OR REPLACE INTO flyto (params, begin, sudo_user, hostname, user) VALUES ('$params', datetime('now','localtime'), '$SUDO_USER', '$hostname', '$user')"
+    }
+    _fly_hist_end()
+    {
+        _fly_hist_init || return
+        "$_fly_sqlite" "$FLY_HISTFILE" "UPDATE flyto SET end=datetime('now','localtime'), exit_code=$e WHERE params='$params'"
+    }
     _ssh2()
     {
-        _fly_package | ssh -o LogLevel=Error "$@" "/bin/sh -c '$(_fly_xpretar);$(_fly_xpackage)'" || return $?
-        ssh "$@" -t "exec /bin/sh -c 'FLY_HOME=\"$_fly_tmpdir\";$(_fly_pkg_login "${fly_cmd[@]}")'"
+        _fly_package | ssh -o LogLevel=Error "${ssh_args[@]}" "${ssh_argc[@]}" "/bin/sh -c '$(_fly_xpretar);$(_fly_xpackage)'" || return $?
+        ssh "${ssh_args[@]}" "${ssh_argc[@]}" -t "exec /bin/sh -c 'FLY_HOME=\"$_fly_tmpdir\";$(_fly_pkg_login "${fly_cmd[@]}")'"
+        e=$?
+        _fly_hist_end
     }
-    typeset cmd ssh_args=() ssh_config ssh_argc=() fly_cmd e
+    typeset cmd ssh_args=() ssh_config ssh_argc=() fly_cmd e params q=$'\''
+    set -A ssh_args 2>/dev/null;set -A ssh_argc 2>/dev/null
     while [ "$1" ];do
         case "$1" in
+        --usage|-V) ssh "$1"; return $?;;
         -F)  shift; ssh_config="Include $1"; ssh_argc=(-F "$1");;
         -*F) ssh_args+=("${1%F}");shift;ssh_config="Include $1";ssh_argc=(-F "$1");;
         -F*) ssh_config="Include ${1#-F}"; ssh_argc=("$1");;
@@ -444,10 +567,13 @@ function _fly_ssh
         esac
         shift
     done
+    params="$(printf '%q ' "${ssh_args[@]}" "${ssh_argc[@]}")";params="${params% }"
+    params="${params//$q/$q$q}";
+    _fly_hist_add
     cmd="exec /bin/sh -c '$(_fly_pkg_warp "${fly_cmd[@]}")'"
     cmd="${cmd//$'\n'/;}"
-    ! $_fly_ssh_ok && { _ssh2 "${ssh_args[@]}" "${ssh_argc[@]}"; return $?; } 
-    [ ${#cmd} -gt 130000 ] && { _ssh2 "${ssh_args[@]}" "${ssh_argc[@]}"; return $?; }
+    [ "$_fly_ssh_ok" ] || _fly_ssh_ok
+    $_fly_ssh_ok && [ ${#cmd} -lt 130000 ] || { _ssh2 ; return $e; } 
     [ ! "$ssh_config" ] && [ -f ~/.ssh/config ] && ssh_config="Include $HOME/.ssh/config"
     cat - <<_EOF_ >"$FLY_HOME/.fly.ssh"
 RequestTTY yes
@@ -455,6 +581,7 @@ RemoteCommand $cmd
 $ssh_config
 _EOF_
     \cd "$FLY_HOME";ssh -F .fly.ssh "${ssh_args[@]}";e=$?;\cd "$OLDPWD"
+    _fly_hist_end
     return $e
 }
 
@@ -466,9 +593,7 @@ function _fly
     _fly_tarz="$FLY_TARZ"
     case "$1" in
         list)
-            _fly_zsh_glob fix
-            (\cd "$FLY_HOME/.fly.d/plugins" && ls -1 -- */*.plugin."${FLY_SHELL##*/}")
-            _fly_zsh_glob reset
+            (\cd "$FLY_HOME/.fly.d/plugins" && printf '%s\n' */*.plugin."${FLY_SHELL##*/}")
         ;;
         shell)
             shift
@@ -478,8 +603,7 @@ function _fly
         ;;
         ssh|to) 
             shift
-            [ "$_fly_ssh_ok" ] || _fly_ssh_ok
-            [ ! "$1" ] && echo "fly: error: missing destination/ssh params" && return 1
+            [ "${1:--H}" = -H ] && { flyto_history "$2"; return $?; }
             _fly_ssh "$@"
             return $?
         ;;
@@ -563,8 +687,7 @@ case "$1" in
     ;;
     updateall)
         shift
-        _fly_zsh_glob fix
-        for plugin in $(ls -d "$FLY_HOME/.fly.d/plugins"/*/.git) ;do
+        for plugin in "$FLY_HOME/.fly.d/plugins"/*/.git ;do
             [ -d "$plugin" ] && (\cd "$plugin/.." && git pull origin "$(git rev-parse --abbrev-ref HEAD)")
             [ -s "$plugin" ] && submodule=1
         done
@@ -572,7 +695,7 @@ case "$1" in
             git submodule update --remote --merge 2>/dev/null
             git submodule foreach git pull 2>/dev/null
         })
-        _fly_zsh_glob reset
+        unset plugin submodule
         [ "$_fly_fish" ] || . "$_fly_lib/.source_plugins"
     ;;
     upgrade)
