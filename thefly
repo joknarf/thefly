@@ -416,11 +416,11 @@ function _fly_xpackage
 
 function _fly_sudo
 {
-    typeset user="${1:-root}" e
-    [ "$user" = '-' ] && user='root'
+    typeset user="${1:--}" e sopt=""
+    [ "$user" = '-' ] || sopt=(u "$user")
     [ "$1" ] && shift
     \cd /
-    sudo -Hu "$user" '/bin/sh' <<<"$(_fly_pkg_warp "$@")"; e=$?
+    sudo -H"${sopt[@]}" '/bin/sh' <<<"$(_fly_pkg_warp "$@")"; e=$?
     \cd "$OLDPWD"
     return $e
 }
