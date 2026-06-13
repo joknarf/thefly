@@ -263,6 +263,9 @@ alias ksu='_fly_destshell=ksh _fly sudo'
 alias zsu='_fly_destshell=zsh _fly sudo'
 alias fsuf='_fly_destshell=fish _fly sudo'
 
+alias flyin='_fly in'
+alias fin='_fly in'
+
 alias flyls='_fly list'
 alias flypack='_fly pack'
 alias cdfly='cd $FLY_HOME/.fly.d'
@@ -423,6 +426,17 @@ function _fly_sudo
     sudo -H"${sopt[@]}" '/bin/sh' <<<"$(_fly_pkg_warp "$@")"; e=$?
     \cd "$OLDPWD"
     return $e
+}
+
+function _fly_in
+{
+    typeset container="$1" copt=(-it) cmd
+    [[ $container = *@* ]] && copt+=(-u "${container%%@*}")
+    container="${container#*@}"
+    read cmd <<<"$(whence podman docker)"
+    [ "$cmd" ] || return 1
+    shift
+    "$cmd" exec "${copt[@]}" "$container" /bin/sh -c "$(_fly_pkg_warp "$@")"
 }
 
 function _fly_ssh_ok
@@ -611,6 +625,12 @@ function _fly
             shift;
             [ "$_fly_destshell" ] && ! type "$_fly_destshell" >/dev/null 2>&1 && echo "Cannot find shell $2" >&2 && return 1
             _fly_sudo "$@"
+            return $?
+        ;;
+        in)
+            shift;
+            _fly_tarz='-z'
+            _fly_in "$@"
             return $?
         ;;
         pack)
