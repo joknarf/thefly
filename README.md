@@ -53,7 +53,7 @@ Keep your full shell environment anywhere you go, just maintain it once and tele
 * multi-shell dotfiles manager
 * teleport dotfiles and plugins through sudo (`flyas`)
 * teleport dotfiles and plugins through ssh (`flyto`)
-* teleport dofiles and plugins though docker (`flyin`)
+* teleport dotfiles and plugins though docker (`flyin`)
 * chain env teleportations though sudo and ssh (`flyto <host> -- flyas <user>...`)
 * nothing to install on remote servers (standard gnu/unix tools only)
 * no configuration modification on target user/host when teleporting, resides on `/tmp`
@@ -203,7 +203,7 @@ or just using flyto tab completion (bash/zsh)
 
 Enter a docker/podman container with your full environment using `flyin`
 ```
-flyin [<user>@]container [cmd]
+flyin [<user>@]<container> [cmd]
 ```
 
 ### To another shell
