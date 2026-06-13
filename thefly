@@ -324,6 +324,17 @@ _flyas()
 complete -F _flyas flyas fsu bsu zsh ksu flyas fsudo fsub fsuz fsuk fsuf
 FLY_EOF
 
+cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/completions/_flyin.bash
+_flyin()
+{
+   case "$COMP_CWORD" in
+     1) COMPREPLY=($(compgen -W "$(docker ps --format '{{.Names}}' 2>/dev/null)" -- "${COMP_WORDS[$COMP_CWORD]}"));return 0;;
+     *) COMPREPLY=($(compgen -c -- "${COMP_WORDS[$COMP_CWORD]}"));return 0;;
+   esac
+}
+complete -F _flyin flyin fin
+FLY_EOF
+
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/completions/_flyto.bash
 _fly_hist_array() {
     local IFS=$'\n'
@@ -346,7 +357,7 @@ FLY_EOF
 cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/completions/_fly_
 #compdef _fly
 function _fly_ {
-  local -a commands
+  local -a commands containers
   local COMPADD_ARGS=(-Q)
   case "${words[2]}" in
     ssh)
@@ -356,6 +367,10 @@ function _fly_ {
       _describe -t commands 'flyto command' commands
     ;;
     sudo) [ "$CURRENT" = 3 ] && _users
+    ;;
+    in)  [ "$CURRENT" = 3 ] || return
+      containers=(${(f)"$(podman ps --format '{{.Names}}' 2>/dev/null)"})
+      compadd -- $containers
     ;;
   esac
 }
