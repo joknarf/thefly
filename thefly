@@ -510,14 +510,37 @@ function _fly_hist_init
     [ "$_fly_sqlite" ] || return 1
     [ -f "$FLY_HISTFILE" ] || (
         umask 0077
-        "$_fly_sqlite" "$FLY_HISTFILE" 'CREATE TABLE flyto (params PRIMARY KEY, begin datetime, end datetime, sudo_user, exit_code INTEGER, hostname, user)' 2>/dev/null
+        "$_fly_sqlite" "$FLY_HISTFILE" '
+          CREATE TABLE flyto (params PRIMARY KEY, begin datetime, end datetime, sudo_user, exit_code INTEGER, hostname, user, alias);
+          CREATE INDEX idx_begin ON flyto(begin);
+        ' 2>/dev/null
     ) || return 1
+}
+
+function _fly_hist_migr
+{
+   _fly_hist_init || return 1
+   "$_fly_sqlite" "$FLY_HISTFILE" 'ALTER TABLE flyto add alias' 2>/dev/null
+}
+
+function _fly_sql_parse
+{
+    awk -F'|' '
+      {for(i=1;i<=NF;i++) {if (length($i)>mw[i]) mw[i]=length($i);it[NR,i]=$i}}
+      END{
+        for(i=1;i<=NR;i++) {
+          printf("%s%s", it[i,1], sep)
+          for(j=2;j<=NF;j++) printf("%-*s ", mw[j], it[i,j])
+          printf("\n")
+        }
+      }
+    ' sep="$1"
 }
 
 function _fly_hist_list {
     _fly_hist_init || return
     typeset filter="$1";shift
-    "$_fly_sqlite" "$@" "$FLY_HISTFILE" "SELECT params, strftime('%Y-%m-%d %H:%M',begin) AS start, user||'@'||hostname AS host, exit_code AS e, sudo_user AS s FROM flyto WHERE params LIKE '$filter%' ORDER BY begin DESC"
+    "$_fly_sqlite" "$@" "$FLY_HISTFILE" "SELECT params, alias, strftime('%Y-%m-%d %H:%M',begin) AS start, user||'@'||hostname AS host, exit_code AS e, sudo_user AS s FROM flyto WHERE params LIKE '$filter%' ORDER BY begin DESC" || fly_hist_migr
 }
 
 function _fly_hist_del {
@@ -527,17 +550,7 @@ function _fly_hist_del {
 }
 
 function _fly_hist {
-    typeset sep="$2"
-    _fly_hist_list "$1"| awk -F'|' '
-      {for(i=1;i<=NF;i++) {if (length($i)>mw[i]) mw[i]=length($i);it[NR,i]=$i}}
-      END{ 
-        for(i=1;i<=NR;i++) {
-          printf("%s%s", it[i,1], sep)
-          for(j=2;j<=NF;j++) printf("%-*s ", mw[j], it[i,j])
-          printf("\n")
-        }
-      }
-    ' sep="$sep"
+    _fly_hist_list "$1"| _fly_sql_parse "$2"
 }
 
 _fly_hist_key() {
@@ -565,10 +578,12 @@ function _fly_ssh
 {
     _fly_hist_add()
     {
-        typeset hostname user
+        typeset hostname user aliasupd
         _fly_hist_init || return
         read hostname user <<<"$(ssh -G "${ssh_args[@]}" "${ssh_argc[@]}" 2>/dev/null | awk '/^hostname /{h=$2} /^user /{u=$2} h && u {exit} END{print h, u}')"
-        "$_fly_sqlite" "$FLY_HISTFILE" "INSERT OR REPLACE INTO flyto (params, begin, sudo_user, hostname, user) VALUES ('$params', datetime('now','localtime'), '$SUDO_USER', '$hostname', '$user')"
+        [ "$halias" ] && aliasupd=", alias='$halias'"
+        "$_fly_sqlite" "$FLY_HISTFILE" "INSERT OR IGNORE INTO flyto (params) VALUES ('$params');
+        UPDATE flyto set begin=datetime('now','localtime'), sudo_user='$SUDO_USER', hostname='$hostname', user='$user' $aliasupd where params='$params';" || _fly_hist_migr
     }
     _fly_hist_end()
     {
@@ -582,16 +597,17 @@ function _fly_ssh
         e=$?
         _fly_hist_end
     }
-    typeset cmd ssh_args=() ssh_config ssh_argc=() fly_cmd e params q=$'\''
+    typeset cmd ssh_args=() ssh_config ssh_argc=() fly_cmd e params q=$'\'' halias
     set -A ssh_args 2>/dev/null;set -A ssh_argc 2>/dev/null
     while [ "$1" ];do
         case "$1" in
         --usage|-V) ssh "$1"; return $?;;
-        -F)  shift; ssh_config="Include $1"; ssh_argc=(-F "$1");;
-        -*F) ssh_args+=("${1%F}");shift;ssh_config="Include $1";ssh_argc=(-F "$1");;
+        -F)  shift; ssh_config="$1"; ssh_argc=(-F "$1");;
+        -*F) ssh_args+=("${1%F}");shift;ssh_config="$1";ssh_argc=(-F "$1");;
         -F*) ssh_config="Include ${1#-F}"; ssh_argc=("$1");;
-        -*F*) ssh_args+=("${1%%F*}");ssh_config="Include ${1#-*F}";ssh_argc=(-F "${1#-*F}");;
+        -*F*) ssh_args+=("${1%%F*}");ssh_config="${1#-*F}";ssh_argc=(-F "${1#-*F}");;
         --)  shift && fly_cmd=("$@"); break;;
+        *#*) halias="${1#*#}"; ssh_args+=("${1%#*}");;
         *)   ssh_args+=("$1");;
         esac
         shift
@@ -603,7 +619,12 @@ function _fly_ssh
     cmd="${cmd//$'\n'/;}"
     [ "$_fly_ssh_ok" ] || _fly_ssh_ok
     $_fly_ssh_ok && [ ${#cmd} -lt 130000 ] || { _ssh2 ; return $e; } 
-    [ ! "$ssh_config" ] && [ -f ~/.ssh/config ] && ssh_config="Include $HOME/.ssh/config"
+    if [ "$ssh_config" ] ;then
+         [[ $ssh_config = /* ]] || ssh_config="$PWD/$ssh_config"
+         ssh_config="Include $ssh_config"
+    else
+         [ -f ~/.ssh/config ] && ssh_config="Include $HOME/.ssh/config"
+    fi
     cat - <<_EOF_ >"$FLY_HOME/.fly.ssh"
 RequestTTY yes
 RemoteCommand $cmd
