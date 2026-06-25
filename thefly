@@ -540,7 +540,7 @@ function _fly_sql_parse
 function _fly_hist_list {
     _fly_hist_init || return
     typeset filter="$1";shift
-    "$_fly_sqlite" "$@" "$FLY_HISTFILE" "SELECT params, alias, strftime('%Y-%m-%d %H:%M',begin) AS start, user||'@'||hostname AS host, exit_code AS e, sudo_user AS s FROM flyto WHERE params LIKE '$filter%' ORDER BY begin DESC" || fly_hist_migr
+    "$_fly_sqlite" "$@" "$FLY_HISTFILE" "SELECT params, alias, strftime('%Y-%m-%d %H:%M',begin) AS start, user||'@'||hostname AS host, exit_code AS e, sudo_user AS s FROM flyto WHERE params LIKE '$filter%' ORDER BY begin DESC" || _fly_hist_migr
 }
 
 function _fly_hist_del {
