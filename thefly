@@ -404,7 +404,7 @@ alias fly=". $FLY_HOME/.fly.d/fly"
 type whence >/dev/null 2>&1 || whence() { type -p "$@"; }
 read _fly_sqlite <<<"$(whence sqlite3 sqlite)"
 read _fly_tar <<<"$(whence gtar gnutar tar)"
-[[ "$($_fly_tar --version 2>/dev/null)" = *busybox* ]] && {
+[[ "$($_fly_tar --version 2>/dev/null)" = *box* ]] && {
     _fly_taropts=( --exclude=.git --exclude=.github --exclude=.gitignore )
 } || _fly_taropts=( --no-xattrs --exclude-vcs )
 
