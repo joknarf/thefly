@@ -404,7 +404,7 @@ alias fly=". $FLY_HOME/.fly.d/fly"
 type whence >/dev/null 2>&1 || whence() { type -p "$@"; }
 read _fly_sqlite <<<"$(whence sqlite3 sqlite)"
 read _fly_tar <<<"$(whence gtar gnutar tar)"
-: "${$_fly_tar:=tar}"
+: "${_fly_tar:=tar}"
 [[ "$($_fly_tar --version 2>/dev/null)" = *box* ]] && {
     _fly_taropts=( --exclude=.git --exclude=.github --exclude=.gitignore )
 } || _fly_taropts=( --no-xattrs --exclude-vcs )
@@ -435,11 +435,11 @@ function _fly_xpackage
 
 function _fly_sudo
 {
-    typeset user="${1:--}" e sopt=""
-    [ "$user" = '-' ] || sopt=(u "$user")
+    typeset user="${1:--}" e sopt=(--)
+    [ "$user" = '-' ] || sopt=(-u "$user")
     [ "$1" ] && shift
     \cd /
-    sudo -H"${sopt[@]}" '/bin/sh' <<<"$(_fly_pkg_warp "$@")"; e=$?
+    sudo "${sopt[@]}" '/bin/sh' <<<"$(_fly_pkg_warp "$@")"; e=$?
     \cd "$OLDPWD"
     return $e
 }
@@ -546,7 +546,7 @@ function _fly_hist_list {
 
 function _fly_hist_del {
     _fly_hist_init || return
-    typeset params="${1//$'\''/$'\'\''}"
+    typeset q=$'\'' params="${1//$q/$q$q}"
     "$_fly_sqlite" "$FLY_HISTFILE" "DELETE FROM flyto WHERE params='$params'" 2>/dev/null
 }
 
@@ -555,7 +555,6 @@ function _fly_hist {
 }
 
 _fly_hist_key() {
-    typeset item="${_aitems[$_nsel]}"
     # F8 Ctl-D Del
     case "$1" in
         '[19~'|$'\x04'|'[3~') _fly_hist_del "${item%%$'\t'*}";;
