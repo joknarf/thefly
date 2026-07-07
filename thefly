@@ -812,7 +812,7 @@ alias fly.fish='. $FLY_HOME/.fly.d/fly.fish'
 end # fish cannot return...
 FLY_EOF
 
-cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/plugins.d/00-pre/null.zsh
+cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/plugins.d/00-pre/null.plugin.zsh
 
 FLY_EOF
 
