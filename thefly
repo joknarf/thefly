@@ -358,7 +358,7 @@ cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/completions/_fly_
 #compdef _fly
 function _fly_ {
   local -a commands containers
-  local COMPADD_ARGS=(-Q)
+  COMPADD_ARGS=(-Q)
   case "${words[2]}" in
     ssh)
       commands=(
@@ -369,7 +369,7 @@ function _fly_ {
     sudo) [ "$CURRENT" = 3 ] && _users
     ;;
     in)  [ "$CURRENT" = 3 ] || return
-      containers=(${(f)"$(podman ps --format '{{.Names}}' 2>/dev/null)"})
+      containers=(${(f)"$(docker ps --format '{{.Names}}' 2>/dev/null)"})
       compadd -- $containers
     ;;
   esac
