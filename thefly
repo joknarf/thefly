@@ -439,7 +439,7 @@ function _fly_sudo
     [ "$user" = '-' ] || sopt=(-u "$user")
     [ "$1" ] && shift
     \cd /
-    sudo "${sopt[@]}" '/bin/sh' <<<"$(_fly_pkg_warp "$@")"; e=$?
+    _fly_pkg_warp "$@" |sudo "${sopt[@]}" '/bin/sh'; e=$?
     \cd "$OLDPWD"
     return $e
 }
@@ -541,12 +541,13 @@ function _fly_sql_parse
 function _fly_hist_list {
     _fly_hist_init || return
     typeset filter="$1";shift
-    "$_fly_sqlite" "$@" "$FLY_HISTFILE" "SELECT params, alias, strftime('%Y-%m-%d %H:%M',begin) AS start, user||'@'||hostname AS host, exit_code AS e, sudo_user AS s FROM flyto WHERE params LIKE '$filter%' ORDER BY begin DESC" 2>/dev/null || _fly_hist_migr
+    "$_fly_sqlite" "$@" "$FLY_HISTFILE" "SELECT params, alias, strftime('%Y-%m-%d %H:%M',begin) AS start, user||'@'||hostname AS host, exit_code AS e, sudo_user AS s FROM flyto WHERE params LIKE '$filter%' OR alias LIKE '$filter%' ORDER BY begin DESC" 2>/dev/null || _fly_hist_migr
 }
 
 function _fly_hist_del {
     _fly_hist_init || return
-    typeset q=$'\'' params="${1//$q/$q$q}"
+    typeset q=$'\''
+    typeset params="${1//$q/$q$q}"
     "$_fly_sqlite" "$FLY_HISTFILE" "DELETE FROM flyto WHERE params='$params'" 2>/dev/null
 }
 
@@ -556,8 +557,8 @@ function _fly_hist {
 
 _fly_hist_key() {
     # F8 Ctl-D Del
-    case "$1" in
-        '[19~'|$'\x04'|'[3~') _fly_hist_del "${item%%$'\t'*}";;
+    case "$key" in
+        '[19~'|'ctrl-d'|'[3~') _fly_hist_del "${item%%$'\t'*}";;
     esac
     return 2
 }
@@ -590,6 +591,11 @@ function _fly_ssh
         _fly_hist_init || return
         "$_fly_sqlite" "$FLY_HISTFILE" "UPDATE flyto SET end=datetime('now','localtime'), exit_code=$e WHERE params='$params'" 2>/dev/null
     }
+    _fly_hist_alias() {
+        _fly_hist_init || return
+        "$_fly_sqlite" "$FLY_HISTFILE" "SELECT params FROM flyto WHERE alias='$1' ORDER BY begin DESC LIMIT 1"
+    }
+
     _ssh2()
     {
         _fly_package | ssh -o LogLevel=Error "${ssh_args[@]}" "${ssh_argc[@]}" "/bin/sh -c '$(_fly_xpretar);$(_fly_xpackage)'" || return $?
@@ -613,6 +619,12 @@ function _fly_ssh
         shift
     done
     params="$(printf '%q ' "${ssh_args[@]}" "${ssh_argc[@]}")";params="${params% }"
+    typeset _params="$(_fly_hist_alias "$params")"
+    [ "$_params" ] && {
+      params="$_params" 
+      eval "set -- $params"
+      ssh_args=("$@")
+    }
     params="${params//$q/$q$q}";
     _fly_hist_add
     cmd="exec /bin/sh -c '$(_fly_pkg_warp "${fly_cmd[@]}")'"
