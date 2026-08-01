@@ -411,7 +411,7 @@ read _fly_tar <<<"$(whence gtar gnutar tar)"
 function _fly_package
 {
     [ "$FLY_RC" ] && [ -r "$FLY_RC" ] && cp "$FLY_RC" "$_fly_lib"
-    $_fly_tar -cf - -C "$FLY_HOME" "$_fly_tarz" "${_fly_taropts[@]}" --exclude=README.md --exclude='plugins/*/.*' --exclude '*/*/tests' .fly.d
+    $_fly_tar -cf - -C "$FLY_HOME" "${_fly_taropts[@]}" --exclude=README.md --exclude='plugins/*/.*' --exclude '*/*/tests' "$_fly_tarz" .fly.d
 }
 
 function _fly_xpretar
@@ -429,7 +429,7 @@ EOF
 
 function _fly_xpackage
 {   
-    printf '$tar -xmf - -C "$FLY_HOME" %s --no-same-owner' "$_fly_tarz"
+    printf '$tar -xmf - -C "$FLY_HOME" --no-same-owner %s' "$_fly_tarz"
 }
 
 function _fly_sudo
@@ -671,6 +671,7 @@ function _fly
         sudo|as) 
             shift;
             [ "$_fly_destshell" ] && ! type "$_fly_destshell" >/dev/null 2>&1 && echo "Cannot find shell $2" >&2 && return 1
+            _fly_tarz='--'
             _fly_sudo "$@"
             return $?
         ;;
