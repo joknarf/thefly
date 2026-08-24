@@ -10,7 +10,7 @@
 <img align="left" width="150" alt="flyn2" src="https://github.com/user-attachments/assets/06efbf60-3231-4bf9-82f6-860648d9bf68" />
 
 <br/>
-bash/zsh/ksh/fish plugin/dotfiles manager and teleporter  
+bash/zsh/ksh/fish plugin/dotfiles/ssh connections manager and env teleporter  
 
 Your shell env and plugins are available everywhere (hosts/users)  
 
