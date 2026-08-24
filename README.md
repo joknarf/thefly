@@ -178,11 +178,13 @@ shellcode/command executed using PATH of your fly env, and can use any function/
 
 ### To another host
 
-ssh connect with interactive shell to another host with your env
+ssh connect with interactive shell to another host with your env, you can create `alias` to recall the connection with `alias`.
 ```
-$ flyto [<ssh opts>] <user>[<@host>] [-- <shellcode>|<command> [<arg>]...] 
+$ flyto [<ssh opts>] <user>[<@host>][#<alias>] [-- <shellcode>|<command> [<arg>]...]
+$ flyto <alias>
 or
-$ fssh [<ssh opts>] <user>[<@host>] [-- <shellcode>|<command> [<arg>]...]
+$ fssh [<ssh opts>] <user>[<@host>][#<alias>] [-- <shellcode>|<command> [<arg>]...]
+$ fssh <alias>
 ```
 
 by default uses `<user>` shell, to force your favorite shell use `fsshb` (bash) - `fsshz` (zsh) - `fsshk` (ksh)
