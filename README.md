@@ -60,7 +60,7 @@ Keep your full shell environment anywhere you go, just maintain it once and tele
 * automatic cleaning of tmp teleportation directory when last fly session exits (`flock` needed)
 * force specific destination shell when sudo or ssh (not using target user shell)
 * directly execute commands using teleported env (fish excluded)
-* flyto (ssh) connection history / completion (`sqlite` needed)
+* flyto (ssh) connections history and aliases / completion (`sqlite` needed)
 * lightweight/fast, only few KB / pure shell
 * create a single pak env file including dotfiles and plugins to be used anywhere (`flypack >pak`, `. ./pak`)
 * get a full coherent nice/powerfull environment with joknarf plugins: visit [Joknarf Tools](https://joknarf.github.io/joknarf-tools)
@@ -312,8 +312,8 @@ $ fly add joknarf/dfbar        # df enhancer (colors/usage bar)
 
 Remember that `~/.fly.d` directory will be duplicated in `/tmp` when teleporting, don't put huge data in your `~/.fly.d` directory, the consequences could be dramatic ! (ask Jeff G. ;-)
 
-The files will remain and will be only be cleared by OS tmpfiles mechanism, the ideal size is to stay below 128K.
+The temporary files are automatically cleared when last fly shell exits, the ideal size is to stay below 128K (compressed+base64 size).
 
-(typically thefly will use a ssh config RemoteCommand for the duplication+connect, but if size is over 128K, will use 2 ssh connection, ssh duplicate + ssh interactive connect) 
+(typically thefly will use a ssh config RemoteCommand for the duplication+connect, but if size is over 128K, it will use 2 ssh connections as command cannot exceed 128K, ssh duplicate + ssh interactive connect) 
 
 Bzzz Bzzz
