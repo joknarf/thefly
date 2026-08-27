@@ -611,7 +611,7 @@ function _fly_ssh
         -F*) ssh_config="Include ${1#-F}"; ssh_argc=("$1");;
         -*F*) ssh_args+=("${1%%F*}");ssh_config="${1#-*F}";ssh_argc=(-F "${1#-*F}");;
         --)  shift && fly_cmd=("$@"); break;;
-        *#*) halias="${1#*#}"; ssh_args+=("${1%#*}");;
+        *'#'*) halias="${1#*#}"; ssh_args+=("${1%#*}");;
         *)   ssh_args+=("$1");;
         esac
         shift
