@@ -563,14 +563,12 @@ _fly_hist_key() {
     return 2
 }
 
-function flyto_history {
+flyto_history() {
     [ "$SELECTOR_CASEI" ] && {
-        typeset s
         selector -i "$(_fly_hist "$1" $'\t')" -m 10 -k _fly_hist_key >/dev/null
-        s="$selected";unset selected
-        [ "$s" ] || return 0
+        [ "$selected" ] || return 0
         echo "flyto $s" >&2
-        eval _fly_ssh "$s"; return $?
+        eval _fly_ssh "$selected"; return $?
     }
     _fly_hist_list "$1" -column -header
 }
@@ -671,7 +669,7 @@ function _fly
         ;;
         ssh|to)
             shift
-            [ "${1:--H}" = -H ] && { flyto_history "$2"; return $?; }
+            [ "${1:--H}" = -H ] && { flyto_history "$2"; unset selected; return $?; }
             _fly_ssh "$@"
             return $?
         ;;
