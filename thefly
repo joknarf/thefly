@@ -488,7 +488,7 @@ function _fly_pack
 EOF
 }
 
-function _fly_pkg_login
+_fly_pkg_login()
 {
     cat - <<EOF
 _fly_destshell="$_fly_destshell"
@@ -499,7 +499,7 @@ _fly_cmd="$([ "$1" ] && printf '%q ' "$@" |base64 -w 0)"
 EOF
 }
 
-function _fly_pkg_warp
+_fly_pkg_warp()
 {
     _fly_package_zfx
     _fly_pkg_login "$@"
