@@ -608,7 +608,8 @@ function _fly_ssh
         e=$?
         _fly_hist_end
     }
-    typeset __ cmd ssh_args=($__) ssh_config ssh_argc=($__) fly_cmd e params q=$'\'' halias
+    typeset __
+    typeset cmd ssh_args=($__) ssh_config ssh_argc=($__) fly_cmd e params q=$'\'' halias
     while [ "$1" ];do
         case "$1" in
         --usage|-V) ssh "$1"; return $?;;
