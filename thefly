@@ -434,8 +434,8 @@ function _fly_xpackage
 
 function _fly_sudo
 {
-    typeset user="${1:--}" e sopt=(--)
-    [ "$user" = '-' ] || sopt=(-u "$user")
+    typeset user="${1:--}" e sopt
+    [ "$user" = '-' ] && sopt=(--) || sopt=(-u "$user")
     [ "$1" ] && shift
     \cd /
     _fly_pkg_warp "$@" |sudo "${sopt[@]}" '/bin/sh'; e=$?
@@ -445,7 +445,8 @@ function _fly_sudo
 
 function _fly_in
 {
-    typeset container="$1" copt=(-it) cmd
+    typeset container="$1" copt cmd
+    copt=(-it)
     [[ $container = *@* ]] && copt+=(-u "${container%%@*}")
     container="${container#*@}"
     read cmd < <(whence podman docker)
