@@ -567,7 +567,7 @@ flyto_history() {
     [ "$SELECTOR_CASEI" ] && {
         selector -i "$(_fly_hist "$1" $'\t')" -m 10 -k _fly_hist_key >/dev/null
         [ "$selected" ] || return 0
-        echo "flyto $s" >&2
+        echo "flyto $selected" >&2
         eval _fly_ssh "$selected"; return $?
     }
     _fly_hist_list "$1" -column -header
