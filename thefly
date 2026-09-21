@@ -599,15 +599,28 @@ function _fly_ssh
         _fly_hist_init || return
         "$_fly_sqlite" "$FLY_HISTFILE" "SELECT params FROM flyto WHERE alias='$1' ORDER BY begin DESC LIMIT 1"
     }
-
-    _ssh2()
+    _fly_ssh_conf()
     {
-        _fly_package | ssh -o LogLevel=Error "${ssh_args[@]}" "${ssh_argc[@]}" "/bin/sh -c '$(_fly_xpretar);$(_fly_xpackage)'" || return $?
-        ssh "${ssh_args[@]}" "${ssh_argc[@]}" -t "exec /bin/sh -c 'FLY_HOME=\"$_fly_tmpdir\";$(_fly_pkg_login "${fly_cmd[@]}")'"
+        cmd=${cmd//$'\n'/;}
+        cat - <<_EOF_ >"$FLY_HOME/.fly.ssh"
+RequestTTY $1
+RemoteCommand $cmd
+$ssh_config
+_EOF_
+    }
+
+    _fly_ssh2()
+    {
+        cmd="/bin/sh -c '$(_fly_xpretar);$(_fly_xpackage)'"
+        _fly_ssh_conf no
+        _fly_package | ssh -o LogLevel=Error "${ssh_args[@]}" || return $?
+        cmd="exec /bin/sh -c 'FLY_HOME=\"$_fly_tmpdir\";$(_fly_pkg_login "${fly_cmd[@]}")'"
+        _fly_ssh_conf yes
+        ssh "${ssh_args[@]}"
         e=$?
         _fly_hist_end
     }
-    typeset __ cmd ssh_args ssh_config ssh_argc fly_cmd e params q=$'\'' halias
+    typeset __ cmd ssh_args ssh_argc ssh_config fly_cmd e params q=$'\'' halias
     ssh_args=($__);ssh_argc=($__)
     (($# == 1)) && {
         params="$(_fly_hist_alias "$1")"
@@ -629,22 +642,17 @@ function _fly_ssh
     params="$(printf '%q ' "${ssh_args[@]}" "${ssh_argc[@]}")";params="${params% }"
     params="${params//$q/$q$q}";
     _fly_hist_add
-    cmd="exec /bin/sh -c '$(_fly_pkg_warp "${fly_cmd[@]}")'"
-    cmd="${cmd//$'\n'/;}"
     [ "$_fly_ssh_ok" ] || _fly_ssh_ok
-    $_fly_ssh_ok && [ ${#cmd} -lt 130000 ] || { _ssh2 ; return $e; }
     if [ "$ssh_config" ] ;then
-         [[ $ssh_config = /* ]] || ssh_config="$PWD/$ssh_config"
          ssh_config="Include $ssh_config"
     else
-         [ -f ~/.ssh/config ] && ssh_config="Include $HOME/.ssh/config"
+         [ -f ~/.ssh/config ] && ssh_config="Include ~/.ssh/config"
     fi
-    cat - <<_EOF_ >"$FLY_HOME/.fly.ssh"
-RequestTTY yes
-RemoteCommand $cmd
-$ssh_config
-_EOF_
-    \cd "$FLY_HOME";ssh -F .fly.ssh "${ssh_args[@]}";e=$?;\cd "$OLDPWD"
+    ssh_args+=(-F "$FLY_HOME/.fly.ssh")
+    cmd="exec /bin/sh -c '$(_fly_pkg_warp "${fly_cmd[@]}")'"
+    $_fly_ssh_ok && [ ${#cmd} -lt 130000 ] || { _fly_ssh2 ; return $e; }
+    _fly_ssh_conf yes
+    ssh "${ssh_args[@]}";e=$?
     _fly_hist_end
     return $e
 }
