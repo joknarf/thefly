@@ -612,11 +612,9 @@ _EOF_
     _fly_ssh2()
     {
         cmd="/bin/sh -c '$(_fly_xpretar);$(_fly_xpackage)'"
-        _fly_ssh_conf no
-        _fly_package | ssh -o LogLevel=Error "${ssh_args[@]}" || return $?
+        _fly_package | ssh -o LogLevel=Error "${ssh_args[@]}" "${ssh_argc[@]}" "$cmd" || return $?
         cmd="exec /bin/sh -c 'FLY_HOME=\"$_fly_tmpdir\";$(_fly_pkg_login "${fly_cmd[@]}")'"
-        _fly_ssh_conf yes
-        ssh "${ssh_args[@]}"
+        ssh -t "${ssh_args[@]}" "${ssh_argc[@]}" "$cmd"
         e=$?
         _fly_hist_end
     }
@@ -648,9 +646,9 @@ _EOF_
     else
          [ -f ~/.ssh/config ] && ssh_config="Include ~/.ssh/config"
     fi
-    ssh_args+=(-F "$FLY_HOME/.fly.ssh")
     cmd="exec /bin/sh -c '$(_fly_pkg_warp "${fly_cmd[@]}")'"
     $_fly_ssh_ok && [ ${#cmd} -lt 130000 ] || { _fly_ssh2 ; return $e; }
+    ssh_args+=(-F "$FLY_HOME/.fly.ssh")
     _fly_ssh_conf yes
     ssh "${ssh_args[@]}";e=$?
     _fly_hist_end
