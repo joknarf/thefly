@@ -532,7 +532,7 @@ function _fly_sql_parse
       END{
         for(i=1;i<=NR;i++) {
           printf("%s%s", it[i,1], sep)
-          for(j=2;j<=NF;j++) printf("%-*s ", mw[j], it[i,j])
+          for(j=2;j<=NF;j++) printf("%-"mw[j]"s ", it[i,j])
           printf("\n")
         }
       }
