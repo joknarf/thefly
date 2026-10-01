@@ -541,14 +541,14 @@ function _fly_sql_parse
 function _fly_hist_list {
     _fly_hist_init || return
     typeset filter="$1";shift
-    "$_fly_sqlite" "$@" "$FLY_HISTFILE" "SELECT params, alias, strftime('%Y-%m-%d %H:%M',begin) AS start, user||'@'||hostname AS host, exit_code AS e, sudo_user AS s FROM flyto WHERE params LIKE '$filter%' OR alias LIKE '$filter%' ORDER BY begin DESC" 2>/dev/null || _fly_hist_migr
+    "$_fly_sqlite" "$@" "$FLY_HISTFILE" '.timeout 2000' "SELECT params, alias, strftime('%Y-%m-%d %H:%M',begin) AS start, user||'@'||hostname AS host, exit_code AS e, sudo_user AS s FROM flyto WHERE params LIKE '$filter%' OR alias LIKE '$filter%' ORDER BY begin DESC" 2>/dev/null || _fly_hist_migr
 }
 
 function _fly_hist_del {
     _fly_hist_init || return
     typeset q=$'\''
     typeset params="${1//$q/$q$q}"
-    "$_fly_sqlite" "$FLY_HISTFILE" "DELETE FROM flyto WHERE params='$params'" 2>/dev/null
+    "$_fly_sqlite" "$FLY_HISTFILE" '.timeout 2000' "DELETE FROM flyto WHERE params='$params'" 2>/dev/null
 }
 
 function _fly_hist {
@@ -587,17 +587,17 @@ function _fly_ssh
           [ "$hostname" ] && [ "$user" ] && break
         done < <(ssh -G "${ssh_args[@]}" "${ssh_argc[@]}" 2>/dev/null)
         [ "$halias" ] && aliasupd=", alias='$halias'"
-        "$_fly_sqlite" "$FLY_HISTFILE" "INSERT OR IGNORE INTO flyto (params) VALUES ('$params');
+        "$_fly_sqlite" "$FLY_HISTFILE" '.timeout 2000' "INSERT OR IGNORE INTO flyto (params) VALUES ('$params');
         UPDATE flyto set begin=datetime('now','localtime'), sudo_user='$SUDO_USER', hostname='$hostname', user='$user' $aliasupd where params='$params';" 2>/dev/null || _fly_hist_migr
     }
     _fly_hist_end()
     {
         _fly_hist_init || return
-        "$_fly_sqlite" "$FLY_HISTFILE" "UPDATE flyto SET end=datetime('now','localtime'), exit_code=$e WHERE params='$params'" 2>/dev/null
+        "$_fly_sqlite" "$FLY_HISTFILE" '.timeout 2000' "UPDATE flyto SET end=datetime('now','localtime'), exit_code=$e WHERE params='$params'" 2>/dev/null
     }
     _fly_hist_alias() {
         _fly_hist_init || return
-        "$_fly_sqlite" "$FLY_HISTFILE" "SELECT params FROM flyto WHERE alias='$1' ORDER BY begin DESC LIMIT 1"
+        "$_fly_sqlite" "$FLY_HISTFILE" '.timeout 2000' "SELECT params FROM flyto WHERE alias='$1' ORDER BY begin DESC LIMIT 1"
     }
     _fly_ssh_conf()
     {
