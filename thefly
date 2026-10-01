@@ -521,7 +521,7 @@ function _fly_hist_init
 function _fly_sql
 {
     _fly_hist_init || return 1
-    "$_fly_sqlite" -init <(echo .timeout 2000) -batch "$@" "$FLY_HISTFILE" 2>/dev/null
+    "$_fly_sqlite" -init <(echo .timeout 2000) "$@" "$FLY_HISTFILE" 2>/dev/null
 }
 
 function _fly_hist_migr
