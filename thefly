@@ -709,7 +709,7 @@ function _fly_cleanup
 }
 
 case "$1" in
-    help)  cat "$_fly_lib/usage";;
+    *help|-h)  cat "$_fly_lib/usage";;
     login)
         shift
         echo "$FLY_MSG" >&2
