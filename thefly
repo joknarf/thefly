@@ -402,8 +402,9 @@ export FLY_HOME
 [[ $_fly_uuid =~ ^[A-Za-z0-9-]+$ ]] || _fly_uuid="$(LC_ALL=C tr -dc 'a-f0-9' </dev/urandom| head -c 16)"
 _fly_lib="$FLY_HOME/.fly.d/.fly.lib"
 . "$_fly_lib/.fshell"
-alias fly=". $(printf '%q' "$FLY_HOME")/.fly.d/fly"
+alias fly=". '$FLY_HOME/.fly.d/fly'"
 . "$_fly_lib/aliases"
+read _fly_sqlite < <(command -v sqlite3 sqlite)
 
 [ "$_fly_lock" ] && trap 'flock -u 4' TERM
 
@@ -519,7 +520,6 @@ _fly_pkg_warp()
 function _fly_hist_init
 {
     [ "$FLY_HISTFILE" ] || return 1
-    [ "$_fly_sqlite" ] || read _fly_sqlite < <(command -v sqlite3 sqlite)
     [ "$_fly_sqlite" ] || return 1
     [ -f "$FLY_HISTFILE" ] || (
         umask 0077
