@@ -12,10 +12,11 @@ $_fly_sourced && _ret=return || _ret=exit
 ! $_fly_sourced && [ ! "$SHELLOK" ] && {
   export SHELLOK=1
   case "$SHELL" in
-    *bash|*ksh|*zsh) exec $SHELL $0 "$@";;
-    *) exec /usr/bin/env bash $0 "$@";;
+    *bash|*ksh|*zsh) exec "$SHELL" "$0" "$@";;
+    *) exec /usr/bin/env bash "$0" "$@";;
   esac
 }
+unset SHELLOK
 : "${FLY_HOME:=$HOME}"
 : "${_fly_githubraw:=https://raw.githubusercontent.com}"
 
@@ -24,28 +25,29 @@ type uuidgen >/dev/null 2>&1 || uuidgen() {
 }
 
 function _fly_http_extract {
-    curl -s -o .fly.pak -L "$2" || exit 1
+    typeset tar
+    curl -s -o .fly.pak -L "$2" || return 1
     _fly_uuid=$(tar -xmzf .fly.pak .fly.d/.flyuuid -O)
     [ ! "$_fly_uuid" ] && echo "not fly package" && return 1
-    [ "$1" = "remote" ] && FLY_HOME="/tmp/.fly.$USER/$_fly_uuid"
+    [ "$1" = "remote" ] && FLY_HOME="/tmp/.fly.`id -u`/$_fly_uuid"
     (umask 077;mkdir -p "$FLY_HOME")
-    type gtar >/dev/null 2>&1 && _fly_tar=gtar || _fly_tar=tar
-    $_fly_tar -C $FLY_HOME -xmzf .fly.pak || return 1
+    read tar < <(command -v gtar tar)
+    $tar -C "$FLY_HOME" --no-same-owner -xmzf .fly.pak || return 1
     rm -f .fly.pak
     return 0
 }
 
 function _fly_git_extract {
-    _fly_uuid=$(curl -L -s "$_fly_githubraw/$2/main/.flyuuid") || return 1
-    [ ! "$_fly_uuid" ] && echo "not fly repo" && exit 1
-    [ "$1" = "remote" ] && FLY_HOME="/tmp/.fly.$USER/$_fly_uuid"
+    _fly_uuid=$(curl -fsSL "$_fly_githubraw/$2/main/.flyuuid") || return 1
+    [ ! "$_fly_uuid" ] && echo "not fly repo" && return 1
+    [ "$1" = "remote" ] && FLY_HOME="/tmp/.fly.`id -u`/$_fly_uuid"
     [ -d "$FLY_HOME/.fly.d/.git" ] && return 0
     (
         umask 077
         mkdir -p "$FLY_HOME"
         \cd "$FLY_HOME" || exit 1
         git clone --depth 1 --shallow-submodules --recurse-submodules --remote-submodules -j8 "https://github.com/$2" .fly.d -q 2>/dev/null || \
-        git clone --depth 1 --recursive "https://github.com/$2" .fly.d -q >/dev/null
+        git clone --depth 1 --recursive "https://github.com/$2" .fly.d -q >/dev/null || return 1
         mkdir -p "$FLY_HOME/.fly.d/.fly.lib"
     )
 }
@@ -54,22 +56,23 @@ function _fly_init
 {
     (
         umask 077
-        [ ! -d $FLY_HOME/.fly.d ] && { mkdir $FLY_HOME/.fly.d || exit 1; }
+        [ ! -d "$FLY_HOME/.fly.d" ] && { mkdir "$FLY_HOME/.fly.d" || exit 1; }
         ! chmod 700 "$FLY_HOME/.fly.d" && echo "Not owner of $FLY_HOME/.fly.d. Abort" >&2 && return 1
-        \cd $FLY_HOME/.fly.d || exit 1
+        \cd "$FLY_HOME/.fly.d" || return 1
         for f in .flyrc .bashrc .zshrc .kshrc .fishrc;do
             [ -f $f ] || touch $f
         done
         [ -s ".flyuuid" ] || uuidgen >".flyuuid"
         mkdir -p .fly.lib plugins plugins.d plugins.d/{00-pre,99-post} completions
-        [ -d .git ] || { git init;git -M main; git checkout -b main; printf '%s\n%s' fly .fly.lib >.gitignore; } >/dev/null 2>&1
+        [ -d .git ] || { git init -q -b main; git checkout -b main; printf '%s\n%s' fly .fly.lib >.gitignore; } >/dev/null 2>&1
         cd .fly.lib
         for f in .bashrc .zshrc;do
             ln -s .login $f 2>/dev/null
         done
         [ -r .teleport ] && rm .teleport
         [ -r init_fly ] && rm init_fly
-    )
+        :
+    ) || return 1
     return 0
 }
 
@@ -77,9 +80,11 @@ case "$1" in
     install|remote)
         unset _fly_loaded
         [ "$1" =  "remote" ] && {
-            (umask 077;mkdir -p "/tmp/.fly.$USER")
-            ! chmod 700 /tmp/.fly.$USER && echo "Not owner of /tmp/.fly.$USER. Abort" >&2 && return 1
-            \cd "/tmp/.fly.$USER" || $_ret 1
+            _fly_tmpdir="/tmp/.fly.`id -u`"
+            (umask 077;mkdir -p "$_fly_tmpdir")
+            ! chmod 700 "$_fly_tmpdir" && echo "Not owner of $_fly_tmpdir. Abort" >&2 && $_ret 1
+
+            \cd "$_fly_tmpdir" || $_ret 1
         }
         case "$2" in
             http*://*) _fly_http_extract "$1" "$2" || $_ret 1; set -- loginshell;;
@@ -96,11 +101,11 @@ unset -f _fly_init _fly_http_extract _fly_git_extract
 _fly_lib="$FLY_HOME/.fly.d/.fly.lib"
 (
     umask 077
-cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/.fishrc
+cat - <<'FLY_EOF' >"$FLY_HOME/.fly.d/.fly.lib/.fishrc"
 . "$FLY_HOME/.fly.d/fly.fish" login
 FLY_EOF
 
-cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/.fshell
+cat - <<'FLY_EOF' >"$FLY_HOME/.fly.d/.fly.lib/.fshell"
 [ "$0" != "/bin/sh" ] && [[ $0 != -* ]] && {
   : "${_fly_destshell:=$ZSH_NAME}"
   : "${_fly_destshell:=$0}"
@@ -113,11 +118,11 @@ esac
 FLY_SHELL="$_fly_destshell"
 FLY_EOF
 
-cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/.login
+cat - <<'FLY_EOF' >"$FLY_HOME/.fly.d/.fly.lib/.login"
 . "$FLY_HOME/.fly.d/fly" login
 FLY_EOF
 
-cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/.login.bash
+cat - <<'FLY_EOF' >"$FLY_HOME/.fly.d/.fly.lib/.login.bash"
 alias typeset="typeset +r"
 alias readonly=typeset
 shopt() { [ "$2" = login_shell ] && return 0; builtin shopt "$@"; }
@@ -132,7 +137,7 @@ unalias typeset readonly
 unset -f shopt
 FLY_EOF
 
-cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/.login.fish
+cat - <<'FLY_EOF' >"$FLY_HOME/.fly.d/.fly.lib/.login.fish"
 cd /;cd
 # TODO: spawn with fish -N to manage FLY_ETC_RC/FLY_USER_RC
 # for i in /etc/fish/conf.d/*.fish ~/.config/fish/conf.d/*.fish /etc/fish/config.fish ~/.config/fish/config.fish
@@ -140,7 +145,7 @@ cd /;cd
 # end
 FLY_EOF
 
-cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/.login.ksh
+cat - <<'FLY_EOF' >"$FLY_HOME/.fly.d/.fly.lib/.login.ksh"
 typeset +x ENV
 ENV=~/.kshrc
 #alias typeset="typeset +r"
@@ -156,7 +161,7 @@ alias _src_etc_profile_d='true' # rhel
 unalias _src_etc_profile_d
 FLY_EOF
 
-cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/.login.zsh
+cat - <<'FLY_EOF' >"$FLY_HOME/.fly.d/.fly.lib/.login.zsh"
 ZDOTDIR=~/
 \cd
 for i in zshenv zprofile zshrc;do
@@ -167,7 +172,7 @@ unset i
 #typeset +r PS1
 FLY_EOF
 
-cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/.loginshell
+cat - <<'FLY_EOF' >"$FLY_HOME/.fly.d/.fly.lib/.loginshell"
 ## /!\ sourced by /bin/sh
 FLY_ETC_RC="${FLY_ETC_RC:-1}"
 FLY_USER_RC="${FLY_USER_RC:-1}"
@@ -179,14 +184,14 @@ export FLY_HOME FLY_ETC_RC FLY_USER_RC _fly_cmd
   flock -s 5 2>/dev/null && export _fly_share="$FLY_HOME"
 }
 case "$FLY_SHELL" in
-    *bash) PS1="" exec $FLY_SHELL --rcfile ".bashrc";;
-    *zsh)  ZDOTDIR=$FLY_HOME/.fly.d/.fly.lib exec $FLY_SHELL -d;;
-    *ksh)  export ENV=$FLY_HOME/.fly.d/.fly.lib/.login; exec $FLY_SHELL;;
-    *fish) exec $FLY_SHELL -C ". .fishrc";;
+    *bash) PS1="" exec "$FLY_SHELL" --rcfile ".bashrc";;
+    *zsh)  ZDOTDIR="$FLY_HOME/.fly.d/.fly.lib" exec "$FLY_SHELL" -d;;
+    *ksh)  export ENV="$FLY_HOME/.fly.d/.fly.lib/.login"; exec "$FLY_SHELL";;
+    *fish) exec "$FLY_SHELL" -C ". .fishrc";;
 esac <&1 #</dev/tty makes it readonly on fsu
 FLY_EOF
 
-cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/.source_plugins
+cat - <<'FLY_EOF' >"$FLY_HOME/.fly.d/.fly.lib/.source_plugins"
 [ "$1" ] && _fly_p="/$1" || _fly_p=""
 _fly_shell="${FLY_SHELL##*[/\\]}"
 set --
@@ -201,7 +206,7 @@ done
 unset _fly_p _fly_plugin _fly_shell
 FLY_EOF
 
-cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/.source_plugins.fish
+cat - <<'FLY_EOF' >"$FLY_HOME/.fly.d/.fly.lib/.source_plugins.fish"
 set -l _fly_p ''
 if test (count $argv) -gt 0
     set _fly_p "/$argv[1]"
@@ -231,7 +236,7 @@ end
 set -e _fly_p _fly_plugin _fly_shell _fly_pdir
 FLY_EOF
 
-cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/aliases
+cat - <<'FLY_EOF' >"$FLY_HOME/.fly.d/.fly.lib/aliases"
 alias flysh='_fly shell'
 alias fbash='_fly shell bash'
 alias fzsh='_fly shell zsh'
@@ -262,17 +267,16 @@ alias fsu='_fly sudo'
 alias bsu='_fly_destshell=bash _fly sudo'
 alias ksu='_fly_destshell=ksh _fly sudo'
 alias zsu='_fly_destshell=zsh _fly sudo'
-alias fsuf='_fly_destshell=fish _fly sudo'
 
 alias flyin='_fly in'
 alias fin='_fly in'
 
 alias flyls='_fly list'
 alias flypack='_fly pack'
-alias cdfly='cd $FLY_HOME/.fly.d'
+alias cdfly='cd "$FLY_HOME/.fly.d"'
 FLY_EOF
 
-cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/.fly.lib/usage
+cat - <<'FLY_EOF' >"$FLY_HOME/.fly.d/.fly.lib/usage"
 usage: fly <action> <options>
 $ fly add <gituser/reponame>    # add plugin from github repository
 $ fly del <plugin>              # remove plugin with name <plugin> (repo)
@@ -291,10 +295,10 @@ $ fbash                         # flysh bash
 $ fksh                          # flysh ksh
 $ fzsh                          # flysh zsh
 
-$ fsudo                         # flyas
-$ fsudob                        # flyas with bash
-$ fsudok                        # flyas with ksh
-$ fusdoz                        # flyas with zsh
+$ fsu                           # flyas
+$ fsub                          # flyas with bash
+$ fsuk                          # flyas with ksh
+$ fsuz                          # flyas with zsh
 
 $ fssh                          # flyto
 $ fsshb                         # flyto with bash
@@ -308,13 +312,13 @@ $ fsshz                         # flyto with zsh
 ~/.fly.d/.zshrc                 # specific zsh environment
 FLY_EOF
 
-cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/completions/compdef.zsh
+cat - <<'FLY_EOF' >"$FLY_HOME/.fly.d/completions/compdef.zsh"
 fpath=("${0%/*}" $fpath)
 autoload -Uz compinit
 compinit
 FLY_EOF
 
-cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/completions/_flyas.bash
+cat - <<'FLY_EOF' >"$FLY_HOME/.fly.d/completions/_flyas.bash"
 _flyas()
 {
    case "$COMP_CWORD" in
@@ -322,10 +326,10 @@ _flyas()
      *) COMPREPLY=($(compgen -c -- "${COMP_WORDS[$COMP_CWORD]}"));return 0;;
    esac
 }
-complete -F _flyas flyas fsu bsu zsh ksu flyas fsudo fsub fsuz fsuk fsuf
+complete -F _flyas flyas fsu bsu zsu ksu flyas fsudo fsub fsuz fsuk fsuf
 FLY_EOF
 
-cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/completions/_flyin.bash
+cat - <<'FLY_EOF' >"$FLY_HOME/.fly.d/completions/_flyin.bash"
 _flyin()
 {
    case "$COMP_CWORD" in
@@ -336,7 +340,7 @@ _flyin()
 complete -F _flyin flyin fin
 FLY_EOF
 
-cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/completions/_flyto.bash
+cat - <<'FLY_EOF' >"$FLY_HOME/.fly.d/completions/_flyto.bash"
 _fly_hist_array() {
     local IFS=$'\n'
     set -f; FLY_HIST=($(cat)); set +f
@@ -355,7 +359,7 @@ declare -F _completion_loader >/dev/null && _completion_loader ssh
 complete -F _flyto flyto fto fssh bto kto zto fsshb fsshk fsshz
 FLY_EOF
 
-cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/completions/_fly_
+cat - <<'FLY_EOF' >"$FLY_HOME/.fly.d/completions/_fly_"
 #compdef _fly
 function _fly_ {
   local -a commands containers
@@ -377,7 +381,7 @@ function _fly_ {
 }
 FLY_EOF
 
-cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/fly
+cat - <<'FLY_EOF' >"$FLY_HOME/.fly.d/fly"
 ############ fly ##########
 # Author: Franck Jouvanceau
 ###########################
@@ -394,21 +398,25 @@ export FLY_HOME
 : "${FLY_TMPDIR:=/tmp}"
 : "${FLY_HISTFILE:=$HOME/.fly_history}"
 : "${FLY_TARZ:=-z}"
-: "${_fly_uuid:=$(cat "$FLY_HOME/.fly.d/.flyuuid" 2>/dev/null || uuidgen)}"
+: "${_fly_uuid:=$(cat "$FLY_HOME/.fly.d/.flyuuid" 2>/dev/null)}"
+[[ $_fly_uuid =~ ^[A-Za-z0-9-]+$ ]] || _fly_uuid="$(LC_ALL=C tr -dc 'a-f0-9' </dev/urandom| head -c 16)"
 _fly_lib="$FLY_HOME/.fly.d/.fly.lib"
 . "$_fly_lib/.fshell"
-alias fly=". $FLY_HOME/.fly.d/fly"
+alias fly=". $(printf '%q' "$FLY_HOME")/.fly.d/fly"
 . "$_fly_lib/aliases"
 
 [ "$_fly_lock" ] && trap 'flock -u 4' TERM
 
-type whence >/dev/null 2>&1 || whence() { type -p "$@"; }
-read _fly_sqlite < <(whence sqlite3 sqlite)
-read _fly_tar < <(whence gtar gnutar tar)
-: "${_fly_tar:=tar}"
-[[ "$($_fly_tar --version 2>&1)" = *[Bb]ox* ]] && {
-    _fly_taropts=( --exclude=.git --exclude=.github --exclude=.gitignore )
-} || _fly_taropts=( --no-xattrs --exclude-vcs )
+
+function _fly_tar_init
+{
+    [ "$_fly_tar" ] && return
+    read _fly_tar < <(command -v gtar gnutar tar)
+    : "${_fly_tar:=tar}"
+    [[ "$($_fly_tar --version 2>&1)" = *[Bb]ox* ]] && {
+        _fly_taropts=( --exclude=.git --exclude=.github --exclude=.gitignore )
+    } || _fly_taropts=( --no-xattrs --exclude-vcs )
+}
 
 function _fly_package
 {
@@ -439,6 +447,7 @@ function _fly_sudo
     typeset user="${1:--}" e sopt
     [ "$user" = '-' ] && sopt=(--) || sopt=(-u "$user")
     [ "$1" ] && shift
+    _fly_tar_init
     \cd /
     _fly_pkg_warp "$@" |sudo "${sopt[@]}" '/bin/sh'; e=$?
     \cd "$OLDPWD"
@@ -451,9 +460,10 @@ function _fly_in
     copt=(-it)
     [[ $container = *@* ]] && copt+=(-u "${container%%@*}")
     container="${container#*@}"
-    read cmd < <(whence podman docker)
+    read cmd < <(command -v podman docker)
     [ "$cmd" ] || return 1
     shift
+    _fly_tar_init
     "$cmd" exec "${copt[@]}" "$container" /bin/sh -c "$(_fly_pkg_warp "$@")"
 }
 
@@ -463,25 +473,24 @@ function _fly_ssh_ok
     _fly_ssh_ok=0
     type ssh >/dev/null 2>&1 || return
     read -r ssh_ver r < <(ssh -V 2>&1)
-    ssh_ver="${ssh_ver#*_}";ssh_ver="${ssh_ver%p*}"
+    ssh_ver="${ssh_ver##*_}";ssh_ver="${ssh_ver%p*}"
     IFS='.' read -r ssh_maj ssh_min r <<<"$ssh_ver"
-    [ "$ssh_maj" -gt 8 ] && _fly_ssh_ok=1 && return
+    ((ssh_maj>8)) && _fly_ssh_ok=1 && return
     # ssh 8.0 RemoteCommand buffer too short
-    [ "$ssh_maj" = 8 ] && [ "$ssh_min" -gt 0 ] && _fly_ssh_ok=1
+    ((ssh_maj==8 && ssh_min>0)) && _fly_ssh_ok=1
     return 0
 }
 
 function _fly_package_zfx
 {
-    typeset b64opt
-    base64 -w0 <<<ok >/dev/null 2>&1 && b64opt='-w0'
     cat - <<EOF
-$(_fly_xpretar);echo "$(_fly_package |base64 $b64opt)"|base64 -d|$(_fly_xpackage)
+$(_fly_xpretar);echo "$(_fly_package |(base64 -w0 2>/dev/null ||base64))"|base64 -d|$(_fly_xpackage)
 EOF
 }
 
 function _fly_pack
 {
+    _fly_tar_init
     cat - <<EOF
 [ "\$_fly_lock" ] && return
 [ "\$1" = install ] && FLY_HOME="\$HOME" || $(_fly_package_zfx)
@@ -496,7 +505,7 @@ _fly_pkg_login()
 _fly_destshell="$_fly_destshell"
 FLY_ETC_RC="$FLY_ETC_RC"
 FLY_USER_RC="$FLY_USER_RC"
-_fly_cmd="$([ "$1" ] && printf '%q ' "$@" |base64 -w 0)"
+_fly_cmd="$([ "$1" ] && printf '%q ' "$@" |(base64 -w0 2>/dev/null||base64))"
 . "\$FLY_HOME/.fly.d/.fly.lib/.loginshell"
 EOF
 }
@@ -510,6 +519,7 @@ _fly_pkg_warp()
 function _fly_hist_init
 {
     [ "$FLY_HISTFILE" ] || return 1
+    [ "$_fly_sqlite" ] || read _fly_sqlite < <(command -v sqlite3 sqlite)
     [ "$_fly_sqlite" ] || return 1
     [ -f "$FLY_HISTFILE" ] || (
         umask 0077
@@ -604,8 +614,10 @@ function _fly_ssh
     }
     _fly_ssh_conf()
     {
+        typeset f="$FLY_HOME/.fly.ssh"
         cmd=${cmd//$'\n'/;}
-        cat - <<_EOF_ >"$FLY_HOME/.fly.ssh"
+        touch "$f";chmod 600 "$f"
+        cat - <<_EOF_ >"$f"
 RequestTTY $1
 RemoteCommand $cmd
 $ssh_config
@@ -627,15 +639,15 @@ _EOF_
         params="$(_fly_hist_alias "$1")"
         [ "$params" ] && eval "set -- $params"
     }
-    while [ "$1" ];do
+    while (($#)) ;do
         case "$1" in
         --usage|-V) ssh "$1"; return $?;;
         -F)  shift; ssh_config="$1"; ssh_argc=(-F "$1");;
         -*F) ssh_args+=("${1%F}");shift;ssh_config="$1";ssh_argc=(-F "$1");;
-        -F*) ssh_config="Include ${1#-F}"; ssh_argc=("$1");;
+        -F*) ssh_config="${1#-F}"; ssh_argc=("$1");;
         -*F*) ssh_args+=("${1%%F*}");ssh_config="${1#-*F}";ssh_argc=(-F "${1#-*F}");;
         --)  shift && fly_cmd=("$@"); break;;
-        *'#'*) halias="${1#*#}"; ssh_args+=("${1%#*}");;
+        *'#'*) halias="${1#*'#'}"; ssh_args+=("${1%'#'*}");;
         *)   ssh_args+=("$1");;
         esac
         shift
@@ -649,6 +661,7 @@ _EOF_
     else
          [ -f ~/.ssh/config ] && ssh_config="Include ~/.ssh/config"
     fi
+    _fly_tar_init
     cmd="exec /bin/sh -c '$(_fly_pkg_warp "${fly_cmd[@]}")'"
     ((_fly_ssh_ok)) && [ ${#cmd} -lt 130000 ] || { _fly_ssh2 ; return $e; }
     ssh_args+=(-F "$FLY_HOME/.fly.ssh")
@@ -672,7 +685,7 @@ function _fly
             shift
             [ "$1" ] && ! type "$1" >/dev/null 2>&1 && echo "Cannot find shell $1" >&2 && return 1
             unset _fly_fish
-            _fly_destshell="${1:-$FLY_SHELL}" exec /bin/sh -c ". $_fly_lib/.loginshell"
+            _fly_destshell="${1:-$FLY_SHELL}" exec /bin/sh -c ". '$_fly_lib/.loginshell'"
         ;;
         ssh|to)
             shift
@@ -682,7 +695,7 @@ function _fly
         ;;
         sudo|as)
             shift;
-            [ "$_fly_destshell" ] && ! type "$_fly_destshell" >/dev/null 2>&1 && echo "Cannot find shell $2" >&2 && return 1
+            [ "$_fly_destshell" ] && ! type "$_fly_destshell" >/dev/null 2>&1 && echo "Cannot find shell $_fly_destshell" >&2 && return 1
             _fly_tarz='--'
             _fly_sudo "$@"
             return $?
@@ -720,7 +733,9 @@ case "$1" in
           _fly_cmd="$(base64 -d <<<"$_fly_cmd")" || exit 1
           eval "cmd=($_fly_cmd)"
           [ "$_fly_lock" ] && flock -u 4
-          [ "${#cmd[@]}" = 1 ] && ! type "$cmd" >/dev/null 2>&1 && { . <(printf %s "$cmd"); e=$?; } || { eval "${cmd[@]}"; e=$?; }
+          if ((${#cmd[@]}==1)) && ! type "$cmd" >/dev/null 2>&1
+          then . <(printf %s "$cmd"); e=$?; 
+          else eval "$_fly_cmd"; e=$?; fi
           _fly_cleanup "$_fly_share"
           exit "$e"
         }
@@ -728,7 +743,7 @@ case "$1" in
     ;;
     loginshell|install)
         export _fly_destshell FLY_ETC_RC FLY_USER_RC
-        exec /bin/sh -c ". $_fly_lib/.loginshell"
+        exec /bin/sh -c ". '$_fly_lib/.loginshell'"
     ;;
     source|activate)
         shift
@@ -742,7 +757,6 @@ case "$1" in
         } || (\cd "$FLY_HOME/.fly.d/plugins" && git clone "$_fly_github/$1" -q >/dev/null)
         (\cd "$FLY_HOME/.fly.d" && git config -f ".gitmodules submodule.plugins/${1##*/}.shallow" true >/dev/null 2>/dev/null)
         ln -s "../plugins/${1##*/}" "$FLY_HOME/.fly.d/plugins.d/50-${1##*/}"
-        set --
         ((_fly_fish)) || . "$_fly_lib/.source_plugins" "${1#*/}"
         :
     ;;
@@ -780,7 +794,7 @@ case "$1" in
     ;;
     upgrade)
         shift
-        . <(curl -s -L -H 'Pragma: no-cache' -H 'Cache-Control: no-cache' "$_fly_githubraw/$_fly_gitrepo/main/thefly") install
+        . <(curl -fsSL -H 'Pragma: no-cache' -H 'Cache-Control: no-cache' "$_fly_githubraw/$_fly_gitrepo/main/thefly") install
     ;;
 esac
 
@@ -790,7 +804,7 @@ unset _fly_share _fly_lock _fly_destshell
 :
 FLY_EOF
 
-cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/fly.fish
+cat - <<'FLY_EOF' >"$FLY_HOME/.fly.d/fly.fish"
 if test (count $argv) -gt 0 -a "$argv[1]" != source
     set -e _fly_loaded
 end
@@ -823,46 +837,24 @@ test -n "$_fly_share" && trap "flock -n 5 && flock '$_fly_share/.fly.lock' rm -r
 set -e _fly_share
 
 function fly
-   FLY_HOME="$FLY_HOME" bash -c 'args=("$@");. $FLY_HOME/.fly.d/fly "${args[@]}"' _ $argv
+   FLY_HOME="$FLY_HOME" bash -c 'args=("$@");. "$FLY_HOME/.fly.d/fly" "${args[@]}"' _ $argv
 end
 
 function _fly
-   FLY_HOME="$FLY_HOME" bash -c 'args=("$@");. $FLY_HOME/.fly.d/fly;_fly "${args[@]}"' _ $argv
+   FLY_HOME="$FLY_HOME" bash -c 'args=("$@");. "$FLY_HOME/.fly.d/fly";_fly "${args[@]}"' _ $argv
 end
 
-alias fly.fish='. $FLY_HOME/.fly.d/fly.fish'
+alias fly.fish='. "$FLY_HOME/.fly.d/fly.fish"'
 
 . $_fly_lib/aliases
 end # fish cannot return...
 FLY_EOF
 
-cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/plugins.d/00-pre/null.plugin.zsh
+cat - <<'FLY_EOF' >"$FLY_HOME/.fly.d/plugins.d/00-pre/null.plugin.zsh"
 
-FLY_EOF
-
-cat - <<'FLY_EOF' >$FLY_HOME/.fly.d/_fly_
-#compdef _fly
-function _fly_ {
-  local -a commands containers
-  local COMPADD_ARGS=(-Q)
-  case "${words[2]}" in
-    ssh)
-      commands=(
-        "${(@f)$(_fly_hist "$words[$CURRENT]" ':')}"
-      )
-      _describe -t commands 'flyto command' commands
-    ;;
-    sudo) [ "$CURRENT" = 3 ] && _users
-    ;;
-    in)  [ "$CURRENT" = 3 ] || return
-      containers=(${(f)"$(docker ps --format '{{.Names}}' 2>/dev/null)"})
-      compadd -- $containers
-    ;;
-  esac
-}
 FLY_EOF
 
 )
-base64 -d <<<'G1s/MjVsICAbWzM4OzI7MjU0OzU4OzcwbV8bWzM4OzI7MjUzOzUxOzc4bV8bWzM4OzI7MjUyOzQzOzg3bV8bWzM4OzI7MjUwOzM2Ozk3bV8bWzM4OzI7MjQ3OzMwOzEwNm1fG1szODsyOzI0MzsyNDsxMTVtXxtbMzg7MjsyMzk7MTk7MTI1bV8bWzM4OzI7MjM0OzE0OzEzNG1fICAgICAgICAgG1szODsyOzE1ODs1OzIxOW1fG1szODsyOzE0OTs4OzIyNW1fG1szODsyOzEzOTsxMjsyMzFtXxtbMzg7MjsxMzA7MTY7MjM2bV8bWzM4OzI7MTIwOzIxOzI0MW1fG1szODsyOzExMTsyNzsyNDVtXxtbMzg7MjsxMDE7MzM7MjQ4bV8bWzM4OzI7OTI7Mzk7MjUxbV8gICAgICAgICAgIBtbMzg7MjsxMDsxNDQ7MjI4bV8bWzM4OzI7NzsxNTQ7MjIybV8gICAbWzM4OzI7MTsxODk7MTkzbV8bWzM4OzI7MTsxOTg7MTg0bV8gICAbWzM4OzI7OTsyMjY7MTQ4bV8bWzM4OzI7MTI7MjMxOzEzOW1fCiAbWzM4OzI7MjUwOzM2Ozk3bS8bWzM4OzI7MjQ3OzMwOzEwNm1fICAbWzM4OzI7MjM0OzE0OzEzNG1fG1szODsyOzIyODsxMDsxNDRtXxtbMzg7MjsyMjI7NzsxNTNtLyAbWzM4OzI7MjA5OzI7MTcxbS8bWzM4OzI7MjAxOzE7MTgwbV8gIBtbMzg7MjsxNzY7MjsyMDVtXxtbMzg7MjsxNjc7MzsyMTJtXxtbMzg7MjsxNTg7NTsyMTltXyAgG1szODsyOzEzMDsxNjsyMzZtLyAbWzM4OzI7MTExOzI3OzI0NW1fG1szODsyOzEwMTszMzsyNDhtXxtbMzg7Mjs5MjszOTsyNTFtXxtbMzg7Mjs4Mzs0NzsyNTNtXxtbMzg7Mjs3NDs1NDsyNTRtLyAbWzM4OzI7NTg7NzA7MjU0bS8bWzM4OzI7NTA7Nzk7MjUzbV8gIBtbMzg7MjszMDsxMDc7MjQ2bV8bWzM4OzI7MjQ7MTE2OzI0M21f8J+qsCAgIBtbMzg7MjsyOzE3MjsyMDhtLyAbWzM4OzI7MTsxODk7MTkzbS8gIBtbMzg7MjszOzIxMzsxNjdtLyAbWzM4OzI7OTsyMjY7MTQ4bS8gIBtbMzg7MjsyMjsyNDE7MTIwbS8gG1szODsyOzMzOzI0ODsxMDFtLwogIBtbMzg7MjsyMjg7MTA7MTQ0bS8gG1szODsyOzIxNjs0OzE2Mm0vIBtbMzg7MjsyMDE7MTsxODBtLyAbWzM4OzI7MTg1OzE7MTk3bV8bWzM4OzI7MTc2OzI7MjA1bV8gG1szODsyOzE1ODs1OzIxOW1cG1szODsyOzE0OTs4OzIyNW0vIBtbMzg7MjsxMzA7MTY7MjM2bV8gG1szODsyOzExMTsyNzsyNDVtXBtbMzg7MjsxMDE7MzM7MjQ4bS8gG1szODsyOzgzOzQ3OzI1M20vG1szODsyOzc0OzU0OzI1NG1fICAbWzM4OzI7NTA7Nzk7MjUzbS8gG1szODsyOzM2Ozk3OzI0OW0vIBtbMzg7MjsyNDsxMTY7MjQzbS8gG1szODsyOzE0OzEzNTsyMzRtLyAbWzM4OzI7NzsxNTQ7MjIybS8gICAgG1szODsyOzE7MTk4OzE4NG0vIBtbMzg7MjszOzIxMzsxNjdtLyAgG1szODsyOzEyOzIzMTsxMzltLyAbWzM4OzI7MjI7MjQxOzEyMG0vICAbWzM4OzI7NDA7MjUxOzkybS8gG1szODsyOzU1OzI1NDs3NG0vIAogG1szODsyOzIwOTsyOzE3MW0vIBtbMzg7MjsxOTM7MTsxODltLyAbWzM4OzI7MTc2OzI7MjA1bS8gG1szODsyOzE1ODs1OzIxOW0vIBtbMzg7MjsxMzk7MTI7MjMxbS8gG1szODsyOzEyMDsyMTsyNDFtLyAgG1szODsyOzkyOzM5OzI1MW1fG1szODsyOzgzOzQ3OzI1M21fG1szODsyOzc0OzU0OzI1NG0vIBtbMzg7Mjs1ODs3MDsyNTRtXxtbMzg7Mjs1MDs3OTsyNTNtXxtbMzg7Mjs0Mzs4ODsyNTJtLyAbWzM4OzI7MzA7MTA3OzI0Nm0vIBtbMzg7MjsxOTsxMjU7MjM4bS8gG1szODsyOzEwOzE0NDsyMjhtLxtbMzg7Mjs3OzE1NDsyMjJtXxtbMzg7Mjs0OzE2MzsyMTVtLyAbWzM4OzI7MTsxODE7MjAxbS8gICAgG1szODsyOzY7MjE5OzE1N20vG1szODsyOzk7MjI2OzE0OG1fG1szODsyOzEyOzIzMTsxMzltLyAgG1szODsyOzI3OzI0NTsxMTBtLxtbMzg7MjszMzsyNDg7MTAxbV8bWzM4OzI7NDA7MjUxOzkybS8gIBtbMzg7Mjs2MzsyNTQ7NjVtLxtbMzg7Mjs3MTsyNTQ7NTdtXxtbMzg7Mjs4MDsyNTM7NDltLyAgChtbMzg7MjsxODU7MTsxOTdtLxtbMzg7MjsxNzY7MjsyMDVtXxtbMzg7MjsxNjc7MzsyMTJtLyAbWzM4OzI7MTQ5Ozg7MjI1bS8bWzM4OzI7MTM5OzEyOzIzMW1fG1szODsyOzEzMDsxNjsyMzZtLyAbWzM4OzI7MTExOzI3OzI0NW0vG1szODsyOzEwMTszMzsyNDhtXxtbMzg7Mjs5MjszOTsyNTFtLxtbMzg7Mjs4Mzs0NzsyNTNtXBtbMzg7Mjs3NDs1NDsyNTRtXxtbMzg7Mjs2Njs2MjsyNTRtXxtbMzg7Mjs1ODs3MDsyNTRtXxtbMzg7Mjs1MDs3OTsyNTNtLxtbMzg7Mjs0Mzs4ODsyNTJtXxtbMzg7MjszNjs5NzsyNDltLyAgIBtbMzg7MjsxNDsxMzU7MjM0bS8bWzM4OzI7MTA7MTQ0OzIyOG1fG1szODsyOzc7MTU0OzIyMm0vG1szODsyOzQ7MTYzOzIxNW1cG1szODsyOzI7MTcyOzIwOG1fG1szODsyOzE7MTgxOzIwMW1fG1szODsyOzE7MTg5OzE5M20sIBtbMzg7MjsyOzIwNTsxNzZtLyAgICAbWzM4OzI7MTc7MjM3OzEyOW0oG1szODsyOzIyOzI0MTsxMjBtXxtbMzg7MjsyNzsyNDU7MTEwbSkgIBtbMzg7Mjs0NzsyNTM7ODNtKBtbMzg7Mjs1NTsyNTQ7NzRtXxtbMzg7Mjs2MzsyNTQ7NjVtKSAgG1szODsyOzg5OzI1Mjs0Mm0oG1szODsyOzk4OzI0OTszNW1fG1szODsyOzEwNzsyNDY7MjltKSAgIAogICAgICAgICAgICAgICAgICAgICAgIBtbMzg7MjsxOzE4OTsxOTNtLxtbMzg7MjsxOzE5ODsxODRtXxtbMzg7MjsyOzIwNTsxNzZtXxtbMzg7MjszOzIxMzsxNjdtXxtbMzg7Mjs2OzIxOTsxNTdtXxtbMzg7Mjs5OzIyNjsxNDhtLyAgICAgICAgICAgICAgICAgICAgIAobWzM5bRtbPzI1aAo='
-$_fly_sourced && . $FLY_HOME/.fly.d/fly activate
+[ -t 1 ] && base64 -d <<<'G1s/MjVsICAbWzM4OzI7MjU0OzU4OzcwbV8bWzM4OzI7MjUzOzUxOzc4bV8bWzM4OzI7MjUyOzQzOzg3bV8bWzM4OzI7MjUwOzM2Ozk3bV8bWzM4OzI7MjQ3OzMwOzEwNm1fG1szODsyOzI0MzsyNDsxMTVtXxtbMzg7MjsyMzk7MTk7MTI1bV8bWzM4OzI7MjM0OzE0OzEzNG1fICAgICAgICAgG1szODsyOzE1ODs1OzIxOW1fG1szODsyOzE0OTs4OzIyNW1fG1szODsyOzEzOTsxMjsyMzFtXxtbMzg7MjsxMzA7MTY7MjM2bV8bWzM4OzI7MTIwOzIxOzI0MW1fG1szODsyOzExMTsyNzsyNDVtXxtbMzg7MjsxMDE7MzM7MjQ4bV8bWzM4OzI7OTI7Mzk7MjUxbV8gICAgICAgICAgIBtbMzg7MjsxMDsxNDQ7MjI4bV8bWzM4OzI7NzsxNTQ7MjIybV8gICAbWzM4OzI7MTsxODk7MTkzbV8bWzM4OzI7MTsxOTg7MTg0bV8gICAbWzM4OzI7OTsyMjY7MTQ4bV8bWzM4OzI7MTI7MjMxOzEzOW1fCiAbWzM4OzI7MjUwOzM2Ozk3bS8bWzM4OzI7MjQ3OzMwOzEwNm1fICAbWzM4OzI7MjM0OzE0OzEzNG1fG1szODsyOzIyODsxMDsxNDRtXxtbMzg7MjsyMjI7NzsxNTNtLyAbWzM4OzI7MjA5OzI7MTcxbS8bWzM4OzI7MjAxOzE7MTgwbV8gIBtbMzg7MjsxNzY7MjsyMDVtXxtbMzg7MjsxNjc7MzsyMTJtXxtbMzg7MjsxNTg7NTsyMTltXyAgG1szODsyOzEzMDsxNjsyMzZtLyAbWzM4OzI7MTExOzI3OzI0NW1fG1szODsyOzEwMTszMzsyNDhtXxtbMzg7Mjs5MjszOTsyNTFtXxtbMzg7Mjs4Mzs0NzsyNTNtXxtbMzg7Mjs3NDs1NDsyNTRtLyAbWzM4OzI7NTg7NzA7MjU0bS8bWzM4OzI7NTA7Nzk7MjUzbV8gIBtbMzg7MjszMDsxMDc7MjQ2bV8bWzM4OzI7MjQ7MTE2OzI0M21f8J+qsCAgIBtbMzg7MjsyOzE3MjsyMDhtLyAbWzM4OzI7MTsxODk7MTkzbS8gIBtbMzg7MjszOzIxMzsxNjdtLyAbWzM4OzI7OTsyMjY7MTQ4bS8gIBtbMzg7MjsyMjsyNDE7MTIwbS8gG1szODsyOzMzOzI0ODsxMDFtLwogIBtbMzg7MjsyMjg7MTA7MTQ0bS8gG1szODsyOzIxNjs0OzE2Mm0vIBtbMzg7MjsyMDE7MTsxODBtLyAbWzM4OzI7MTg1OzE7MTk3bV8bWzM4OzI7MTc2OzI7MjA1bV8gG1szODsyOzE1ODs1OzIxOW1cG1szODsyOzE0OTs4OzIyNW0vIBtbMzg7MjsxMzA7MTY7MjM2bV8gG1szODsyOzExMTsyNzsyNDVtXBtbMzg7MjsxMDE7MzM7MjQ4bS8gG1szODsyOzgzOzQ3OzI1M20vG1szODsyOzc0OzU0OzI1NG1fICAbWzM4OzI7NTA7Nzk7MjUzbS8gG1szODsyOzM2Ozk3OzI0OW0vIBtbMzg7MjsyNDsxMTY7MjQzbS8gG1szODsyOzE0OzEzNTsyMzRtLyAbWzM4OzI7NzsxNTQ7MjIybS8gICAgG1szODsyOzE7MTk4OzE4NG0vIBtbMzg7MjszOzIxMzsxNjdtLyAgG1szODsyOzEyOzIzMTsxMzltLyAbWzM4OzI7MjI7MjQxOzEyMG0vICAbWzM4OzI7NDA7MjUxOzkybS8gG1szODsyOzU1OzI1NDs3NG0vIAogG1szODsyOzIwOTsyOzE3MW0vIBtbMzg7MjsxOTM7MTsxODltLyAbWzM4OzI7MTc2OzI7MjA1bS8gG1szODsyOzE1ODs1OzIxOW0vIBtbMzg7MjsxMzk7MTI7MjMxbS8gG1szODsyOzEyMDsyMTsyNDFtLyAgG1szODsyOzkyOzM5OzI1MW1fG1szODsyOzgzOzQ3OzI1M21fG1szODsyOzc0OzU0OzI1NG0vIBtbMzg7Mjs1ODs3MDsyNTRtXxtbMzg7Mjs1MDs3OTsyNTNtXxtbMzg7Mjs0Mzs4ODsyNTJtLyAbWzM4OzI7MzA7MTA3OzI0Nm0vIBtbMzg7MjsxOTsxMjU7MjM4bS8gG1szODsyOzEwOzE0NDsyMjhtLxtbMzg7Mjs3OzE1NDsyMjJtXxtbMzg7Mjs0OzE2MzsyMTVtLyAbWzM4OzI7MTsxODE7MjAxbS8gICAgG1szODsyOzY7MjE5OzE1N20vG1szODsyOzk7MjI2OzE0OG1fG1szODsyOzEyOzIzMTsxMzltLyAgG1szODsyOzI3OzI0NTsxMTBtLxtbMzg7MjszMzsyNDg7MTAxbV8bWzM4OzI7NDA7MjUxOzkybS8gIBtbMzg7Mjs2MzsyNTQ7NjVtLxtbMzg7Mjs3MTsyNTQ7NTdtXxtbMzg7Mjs4MDsyNTM7NDltLyAgChtbMzg7MjsxODU7MTsxOTdtLxtbMzg7MjsxNzY7MjsyMDVtXxtbMzg7MjsxNjc7MzsyMTJtLyAbWzM4OzI7MTQ5Ozg7MjI1bS8bWzM4OzI7MTM5OzEyOzIzMW1fG1szODsyOzEzMDsxNjsyMzZtLyAbWzM4OzI7MTExOzI3OzI0NW0vG1szODsyOzEwMTszMzsyNDhtXxtbMzg7Mjs5MjszOTsyNTFtLxtbMzg7Mjs4Mzs0NzsyNTNtXBtbMzg7Mjs3NDs1NDsyNTRtXxtbMzg7Mjs2Njs2MjsyNTRtXxtbMzg7Mjs1ODs3MDsyNTRtXxtbMzg7Mjs1MDs3OTsyNTNtLxtbMzg7Mjs0Mzs4ODsyNTJtXxtbMzg7MjszNjs5NzsyNDltLyAgIBtbMzg7MjsxNDsxMzU7MjM0bS8bWzM4OzI7MTA7MTQ0OzIyOG1fG1szODsyOzc7MTU0OzIyMm0vG1szODsyOzQ7MTYzOzIxNW1cG1szODsyOzI7MTcyOzIwOG1fG1szODsyOzE7MTgxOzIwMW1fG1szODsyOzE7MTg5OzE5M20sIBtbMzg7MjsyOzIwNTsxNzZtLyAgICAbWzM4OzI7MTc7MjM3OzEyOW0oG1szODsyOzIyOzI0MTsxMjBtXxtbMzg7MjsyNzsyNDU7MTEwbSkgIBtbMzg7Mjs0NzsyNTM7ODNtKBtbMzg7Mjs1NTsyNTQ7NzRtXxtbMzg7Mjs2MzsyNTQ7NjVtKSAgG1szODsyOzg5OzI1Mjs0Mm0oG1szODsyOzk4OzI0OTszNW1fG1szODsyOzEwNzsyNDY7MjltKSAgIAogICAgICAgICAgICAgICAgICAgICAgIBtbMzg7MjsxOzE4OTsxOTNtLxtbMzg7MjsxOzE5ODsxODRtXxtbMzg7MjsyOzIwNTsxNzZtXxtbMzg7MjszOzIxMzsxNjdtXxtbMzg7Mjs2OzIxOTsxNTdtXxtbMzg7Mjs5OzIyNjsxNDhtLyAgICAgICAgICAgICAgICAgICAgIAobWzM5bRtbPzI1aAo='
+$_fly_sourced && . "$FLY_HOME/.fly.d/fly" activate
 :
