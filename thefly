@@ -183,12 +183,14 @@ export FLY_HOME FLY_ETC_RC FLY_USER_RC _fly_cmd
   exec 5<>"$FLY_HOME/.fly.share"
   flock -s 5 2>/dev/null && export _fly_share="$FLY_HOME"
 }
+[ ! -t 0 ] && [ -t 1 ] && exec <&1
 case "$FLY_SHELL" in
     *bash) PS1="" exec "$FLY_SHELL" --rcfile ".bashrc";;
-    *zsh)  ZDOTDIR="$FLY_HOME/.fly.d/.fly.lib" exec "$FLY_SHELL" -d;;
+    *zsh) case "$(uname)" in FreeBSD|Darwin) kill -TTIN $$;;esac
+          ZDOTDIR="$FLY_HOME/.fly.d/.fly.lib" exec "$FLY_SHELL" -d;;
     *ksh)  export ENV="$FLY_HOME/.fly.d/.fly.lib/.login"; exec "$FLY_SHELL";;
     *fish) exec "$FLY_SHELL" -C ". .fishrc";;
-esac <&1 #</dev/tty makes it readonly on fsu
+esac #</dev/tty #<&1 (warn mesg n </dev/tty change /dev/tty mode / prevent tmux start)
 FLY_EOF
 
 cat - <<'FLY_EOF' >"$FLY_HOME/.fly.d/.fly.lib/.source_plugins"
