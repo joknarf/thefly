@@ -400,6 +400,7 @@ export FLY_HOME
 : "${FLY_TMPDIR:=/tmp}"
 : "${FLY_HISTFILE:=$HOME/.fly_history}"
 : "${FLY_TARZ:=-z}"
+: "${FLY_SSH_MUX:=0}"
 : "${_fly_uuid:=$(cat "$FLY_HOME/.fly.d/.flyuuid" 2>/dev/null)}"
 [[ $_fly_uuid =~ ^[A-Za-z0-9-]+$ ]] || _fly_uuid="$(LC_ALL=C tr -dc 'a-f0-9' </dev/urandom| head -c 16)"
 _fly_lib="$FLY_HOME/.fly.d/.fly.lib"
@@ -427,9 +428,14 @@ function _fly_package
     $_fly_tar -cf - -C "$FLY_HOME" "${_fly_taropts[@]}" --exclude=README.md --exclude='plugins/*/.*' --exclude '*/*/tests' "$_fly_tarz" .fly.d
 }
 
+function _fly_home
+{
+    printf 'FLY_HOME="%s/.fly.`id -u`/%s"\n' "$FLY_TMPDIR" "$_fly_uuid"
+}
+
 function _fly_xpretar
 {
-    printf 'FLY_HOME="%s"\n' "$_fly_tmpdir"
+    _fly_home
     cat - <<'EOF'
 (umask 077;mkdir -p "$FLY_HOME")
 ! chmod 700 "$FLY_HOME" && echo "Not owner of $FLY_HOME. Abort" >&2 && exit 1
@@ -616,27 +622,42 @@ function _fly_ssh
     }
     _fly_ssh_conf()
     {
-        typeset f="$FLY_HOME/.fly.ssh"
+        typeset f="$tmp/.fly.ssh" t=$1
+        shift
         cmd=${cmd//$'\n'/;}
         touch "$f";chmod 600 "$f"
         cat - <<_EOF_ >"$f"
-RequestTTY $1
+RequestTTY $t
 RemoteCommand $cmd
+$(printf "%s\n" "$@")
 $ssh_config
 _EOF_
     }
 
-    _fly_ssh2()
+    _fly_ssh_mux()
     {
+        mkdir -p -m 700 "$tmp/.fly.s"
         cmd="/bin/sh -c '$(_fly_xpretar);$(_fly_xpackage)'"
-        _fly_package | ssh -o LogLevel=Error "${ssh_args[@]}" "${ssh_argc[@]}" "$cmd" || return $?
-        cmd="exec /bin/sh -c 'FLY_HOME=\"$_fly_tmpdir\";$(_fly_pkg_login "${fly_cmd[@]}")'"
-        ssh -t "${ssh_args[@]}" "${ssh_argc[@]}" "$cmd"
-        e=$?
+        ((_fly_ssh_ok)) && {
+            mux=("ControlMaster auto" "ControlPath $tmp/.fly.s/%C" "ControlPersist=10")
+            _fly_ssh_conf no "LogLevel Error" "${mux[@]}"
+            ssh_opts=("${ssh_args[@]}" -F "$tmp/.fly.ssh")
+        } || {
+            mux=(-o ControlMaster=auto -o ControlPath="$tmp/.fly.s/%r.%h.%p" -o ControlPersist=10)
+            ssh_opts=(-o LogLevel=Error "${mux[@]}" "${ssh_args[@]}" "${ssh_argc[@]}" "$cmd")
+        }
+        _fly_package 2>/dev/null | ssh "${ssh_opts[@]}"; (($?==255)) && return 255 # bsdtar/box pad
+
+        cmd="exec /bin/sh -c '$(_fly_home);$(_fly_pkg_login "${fly_cmd[@]}")'"
+        ((_fly_ssh_ok)) && _fly_ssh_conf yes "${mux[@]}" || \
+            ssh_opts=(-t "${mux[@]}" "${ssh_args[@]}" "${ssh_argc[@]}" "$cmd")
+        ssh "${ssh_opts[@]}"; e=$?
         _fly_hist_end
     }
-    typeset __ cmd ssh_args ssh_argc ssh_config fly_cmd e params q=$'\'' halias
+    typeset __ cmd ssh_args ssh_argc ssh_config fly_cmd e params q=$'\'' halias mux ssh_opts
     ssh_args=($__);ssh_argc=($__)
+    typeset tmp="$FLY_HOME"
+    [ -O "$XDG_RUNTIME_DIR" ] && tmp="$XDG_RUNTIME_DIR"
     (($# == 1)) && {
         params="$(_fly_hist_alias "$1")"
         [ "$params" ] && eval "set -- $params"
@@ -665,10 +686,11 @@ _EOF_
     fi
     _fly_tar_init
     cmd="exec /bin/sh -c '$(_fly_pkg_warp "${fly_cmd[@]}")'"
-    ((_fly_ssh_ok)) && [ ${#cmd} -lt 130000 ] || { _fly_ssh2 ; return $e; }
-    ssh_args+=(-F "$FLY_HOME/.fly.ssh")
+    ((FLY_SSH_MUX)) && { _fly_ssh_mux; return $e; }
+    ((_fly_ssh_ok)) && [ ${#cmd} -lt 130000 ] || { _fly_ssh_mux ; return $e; }
+    ssh_args+=(-F "$tmp/.fly.ssh")
     _fly_ssh_conf yes
-    ssh "${ssh_args[@]}";e=$?
+    ssh "${ssh_args[@]}"; e=$?
     _fly_hist_end
     return $e
 }
@@ -677,7 +699,6 @@ _EOF_
 function _fly
 {
     typeset plugin submodule
-    _fly_tmpdir="$FLY_TMPDIR/.fly.\`id -u\`/$_fly_uuid"
     _fly_tarz="$FLY_TARZ"
     case "$1" in
         list)
