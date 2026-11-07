@@ -419,7 +419,7 @@ function _fly_tar_init
     : "${_fly_tar:=tar}"
     [[ "$($_fly_tar --version 2>&1)" = *[Bb]ox* ]] && {
         _fly_taropts=( --exclude=.git --exclude=.github --exclude=.gitignore )
-    } || _fly_taropts=( --no-xattrs --exclude-vcs )
+    } || _fly_taropts=( -b 1 --no-xattrs --exclude-vcs )
 }
 
 function _fly_package
